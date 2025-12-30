@@ -23,7 +23,7 @@ export function isOtpComplete(d: OtpCodeDigits): boolean {
  */
 export function maskPhoneDigits(phoneDigits?: string): string {
   const digits = (phoneDigits ?? "").replace(/\D/g, "");
-  if (digits.length < 4) return "+1 (***) ***-****";
+  if (digits.length < 4) return "(***) ***-****";
   const last4 = digits.slice(-4);
-  return `+1 (***) ***-${last4}`;
+  return `(***) ***-${last4}`;
 }

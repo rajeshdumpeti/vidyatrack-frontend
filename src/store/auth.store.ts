@@ -40,8 +40,12 @@ function parseJwtPayload(token: string): JwtPayload {
 }
 
 function coerceRole(value: unknown): UserRole | null {
-  if (value === "management" || value === "principal" || value === "teacher")
-    return value;
+  if (typeof value !== "string") return null;
+
+  const v = value.toLowerCase().trim();
+  if (v === "management" || v === "principal" || v === "teacher")
+    return v as UserRole;
+
   return null;
 }
 
