@@ -3,6 +3,8 @@ import { AuthLayout } from "../layouts/AuthLayout";
 import { TeacherLayout } from "../layouts/TeacherLayout";
 import { PrincipalLayout } from "../layouts/PrincipalLayout";
 import { ManagementLayout } from "../layouts/ManagementLayout";
+import { OtpRequestPage } from "../features/auth/OtpRequestPage";
+import { OtpVerifyPage } from "../features/auth/OtpVerifyPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -11,8 +13,11 @@ export const router = createBrowserRouter([
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      { path: "login", element: <div>OTP Login (UI TBD)</div> },
-      { path: "verify", element: <div>OTP Verify (UI TBD)</div> },
+      {
+        path: "login",
+        element: <OtpRequestPage />,
+      },
+      { path: "verify", element: <OtpVerifyPage /> },
     ],
   },
 
