@@ -4,6 +4,10 @@ import { digitsOnly } from "../../utils/phone";
 import { FiPhone, FiHelpCircle, FiArrowRight } from "react-icons/fi";
 import { HiAcademicCap } from "react-icons/hi2";
 import { MdWifi } from "react-icons/md";
+import { useMutation } from "@tanstack/react-query";
+import { requestOtp } from "../../api/auth.api";
+import { ErrorState } from "../../components/feedback/ErrorState";
+import { getUserFriendlyErrorMessage } from "../../components/feedback/errorMessage";
 
 type FormValues = {
   phone: string;
@@ -21,14 +25,21 @@ export function OtpRequestPage() {
     mode: "onBlur",
   });
 
+  const otpRequestMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      await requestOtp(phone);
+    },
+  });
+
   const onSubmit = (values: FormValues) => {
     const phoneDigits = digitsOnly(values.phone);
 
-    // UI-only verification
-    console.log("[auth][otp-request] submit", { phoneDigits });
-
-    // Navigate to verify (still UI placeholder is acceptable in this step)
-    navigate("/auth/verify", { state: { phoneDigits } });
+    otpRequestMutation.mutate(phoneDigits, {
+      onSuccess: () => {
+        // Do not lose phone value on navigation
+        navigate("/auth/verify", { state: { phoneDigits } });
+      },
+    });
   };
 
   return (
@@ -101,7 +112,7 @@ export function OtpRequestPage() {
                   >
                     <FiPhone className="mr-3 h-4 w-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-700">
-                      +91
+                      Phone
                     </span>
                     <span className="mx-3 h-5 w-px bg-gray-200" />
                     <input
@@ -124,6 +135,16 @@ export function OtpRequestPage() {
                       })}
                     />
                   </div>
+                  {otpRequestMutation.isError ? (
+                    <div className="mt-3">
+                      <ErrorState
+                        title="OTP not sent"
+                        message={getUserFriendlyErrorMessage(
+                          otpRequestMutation.error
+                        )}
+                      />
+                    </div>
+                  ) : null}
 
                   {errors.phone ? (
                     <p className="mt-2 text-sm text-red-600">
@@ -134,7 +155,7 @@ export function OtpRequestPage() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || otpRequestMutation.isPending}
                   className={[
                     "mt-2 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white",
                     "hover:bg-blue-700",
@@ -142,7 +163,10 @@ export function OtpRequestPage() {
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-2">
-                    Send OTP <FiArrowRight className="h-4 w-4" />
+                    {otpRequestMutation.isPending
+                      ? "Sending OTP..."
+                      : "Send OTP"}
+                    <FiArrowRight className="h-4 w-4" />
                   </span>
                 </button>
 

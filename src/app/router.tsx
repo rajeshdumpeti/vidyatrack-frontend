@@ -5,6 +5,7 @@ import { PrincipalLayout } from "../layouts/PrincipalLayout";
 import { ManagementLayout } from "../layouts/ManagementLayout";
 import { OtpRequestPage } from "../features/auth/OtpRequestPage";
 import { OtpVerifyPage } from "../features/auth/OtpVerifyPage";
+import { RoleGuard } from "../hooks/useRoleGuard";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -23,19 +24,33 @@ export const router = createBrowserRouter([
 
   {
     path: "/teacher",
-    element: <TeacherLayout />,
+    element: (
+      <RoleGuard allowed="teacher">
+        <TeacherLayout />
+      </RoleGuard>
+    ),
     children: [{ index: true, element: <div>Teacher Dashboard (UI TBD)</div> }],
   },
 
   {
     path: "/principal",
-    element: <PrincipalLayout />,
+    element: (
+      <RoleGuard allowed="principal">
+        <PrincipalLayout />
+      </RoleGuard>
+    ),
+
     children: [{ index: true, element: <div>Principal Home (UI TBD)</div> }],
   },
 
   {
     path: "/management",
-    element: <ManagementLayout />,
+    element: (
+      <RoleGuard allowed="management">
+        <ManagementLayout />
+      </RoleGuard>
+    ),
+
     children: [{ index: true, element: <div>Management Home (UI TBD)</div> }],
   },
 
