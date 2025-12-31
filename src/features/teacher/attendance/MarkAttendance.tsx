@@ -1,17 +1,14 @@
 // src/features/teacher/attendance/MarkAttendance.tsx
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type ReactNode } from "react";
 import { EmptyState } from "../../../components/feedback/EmptyState";
 import { ErrorState } from "../../../components/feedback/ErrorState";
 import { LoadingState } from "../../../components/feedback/LoadingState";
+import { useQuery } from "@tanstack/react-query";
+import { getMyAttendanceSection } from "../../../api/teachers.api";
+import { getStudentsBySection } from "../../../api/students.api";
+import axios from "axios";
 
 type UiState = "loading" | "error" | "empty" | "ready";
-
-type Student = {
-  studentId: ReactNode;
-  id: string;
-  rollNo: string; // required column
-  name: string;
-};
 
 function formatToday(): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -25,37 +22,50 @@ function formatToday(): string {
 export function MarkAttendance() {
   // UI-only: change this locally to validate skeleton states
   const [uiState] = useState<UiState>("ready");
-
+  const [presentById, setPresentById] = useState<Record<string, boolean>>({});
   // UI-only mocks (single section per pilot rule)
-  const sectionLabel = "Class 5 - Section B";
+
   const todayLabel = formatToday();
 
-  const students: Student[] = useMemo(
-    () => [
-      { studentId: "STU001", id: "s1", rollNo: "01", name: "Aarav Patel" },
-      { studentId: "STU002", id: "s2", rollNo: "02", name: "Aditi Rao" },
-      { studentId: "STU003", id: "s3", rollNo: "03", name: "Arjun Singh" },
-      { studentId: "STU004", id: "s4", rollNo: "04", name: "Diya Sharma" },
-      { studentId: "STU005", id: "s5", rollNo: "05", name: "Ishan Gupta" },
-      { studentId: "STU006", id: "s6", rollNo: "06", name: "Kavya Reddy" },
-      { studentId: "STU007", id: "s7", rollNo: "07", name: "Neha Kumari" },
-      { studentId: "STU008", id: "s8", rollNo: "08", name: "Rohan Mehta" },
-      { studentId: "STU009", id: "s9", rollNo: "09", name: "Saanvi Gupta" },
-      { studentId: "STU010", id: "s10", rollNo: "10", name: "Vikram Singh" },
-      { studentId: "STU011", id: "s11", rollNo: "11", name: "Meera Sharma" },
-      { studentId: "STU012", id: "s12", rollNo: "12", name: "Rahul Verma" },
-    ],
-    []
-  );
+  const sectionQuery = useQuery({
+    queryKey: ["teacher", "me", "attendance-section"],
+    queryFn: getMyAttendanceSection,
+  });
+  // 2) students (depends on section_id)
+  const studentsQuery = useQuery({
+    queryKey: ["students", "by-section", sectionQuery.data?.section_id],
+    queryFn: () => getStudentsBySection(sectionQuery.data!.section_id),
+    enabled: !!sectionQuery.data?.section_id,
+  });
 
-  // Default state: Present
-  const [presentById, setPresentById] = useState<Record<string, boolean>>(
-    () => {
-      const initial: Record<string, boolean> = {};
-      for (const s of students) initial[s.id] = true;
-      return initial;
-    }
-  );
+  const sectionLabel = sectionQuery.data
+    ? `${sectionQuery.data.class_name} - ${sectionQuery.data.section_name}`
+    : "";
+  const students = useMemo(() => {
+    const list = studentsQuery.data ?? [];
+    return list.map((s, idx) => ({
+      id: String(s.id),
+      rollNo:
+        s.roll_no != null
+          ? String(s.roll_no)
+          : String(idx + 1).padStart(2, "0"),
+      name: s.name,
+    }));
+  }, [studentsQuery.data]);
+
+  useEffect(() => {
+    if (!students.length) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPresentById((prev) => {
+      // Do not reset existing toggles; only initialize new students
+      const next = { ...prev };
+      for (const s of students) {
+        if (next[s.id] === undefined) next[s.id] = true;
+      }
+      return next;
+    });
+  }, [students]);
 
   const toggleStatus = (studentId: string, p0: string) => {
     setPresentById((prev) => ({ ...prev, [studentId]: !prev[studentId] }));
@@ -90,6 +100,38 @@ export function MarkAttendance() {
     );
   if (uiState === "empty")
     return <EmptyState message="No students found for this section." />;
+
+  const isLoading = sectionQuery.isLoading || studentsQuery.isLoading;
+
+  if (isLoading) return <LoadingState label="Loading students..." />;
+
+  if (sectionQuery.isError) {
+    const err = sectionQuery.error;
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+
+    if (status === 404) {
+      return (
+        <ErrorState
+          title="No attendance section assigned"
+          message="Please contact management to assign your attendance section."
+        />
+      );
+    }
+
+    return (
+      <ErrorState title="Attendance unavailable" message="Please try again." />
+    );
+  }
+
+  if (studentsQuery.isError) {
+    return (
+      <ErrorState title="Students unavailable" message="Please try again." />
+    );
+  }
+
+  if ((studentsQuery.data ?? []).length === 0) {
+    return <EmptyState message="No students found for this section." />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -141,7 +183,7 @@ export function MarkAttendance() {
                         {s.name}
                       </div>
                       <div className="mt-0.5 text-xs font-medium text-gray-500">
-                        ID: {s.studentId}
+                        ID: {s.id}
                       </div>
                     </div>
 
