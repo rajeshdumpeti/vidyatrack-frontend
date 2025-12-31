@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient";
+import { API_ENDPOINTS } from "./endpoints";
 
 export type OtpRequestBody = { phone: string };
 export type OtpVerifyBody = { phone: string; otp: string };
@@ -10,7 +11,7 @@ export type OtpVerifyResponse = {
 
 export async function requestOtp(phone: string): Promise<void> {
   const body: OtpRequestBody = { phone };
-  await apiClient.post("/api/v1/auth/otp/request", body);
+  await apiClient.post(API_ENDPOINTS.auth.otpRequest, body);
 }
 
 export async function verifyOtp(
@@ -19,7 +20,7 @@ export async function verifyOtp(
 ): Promise<OtpVerifyResponse> {
   const body: OtpVerifyBody = { phone, otp };
   const res = await apiClient.post<OtpVerifyResponse>(
-    "/api/v1/auth/otp/verify",
+    API_ENDPOINTS.auth.otpVerify,
     body
   );
   return res.data;
