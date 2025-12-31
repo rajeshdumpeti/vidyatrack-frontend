@@ -27,7 +27,7 @@ export function OtpRequestPage() {
 
   const otpRequestMutation = useMutation({
     mutationFn: async (phone: string) => {
-      await requestOtp(phone);
+      await requestOtp(`+91${phone}`);
     },
   });
 
@@ -112,7 +112,7 @@ export function OtpRequestPage() {
                   >
                     <FiPhone className="mr-3 h-4 w-4 text-gray-500" />
                     <span className="text-sm font-medium text-gray-700">
-                      Phone
+                      +91
                     </span>
                     <span className="mx-3 h-5 w-px bg-gray-200" />
                     <input

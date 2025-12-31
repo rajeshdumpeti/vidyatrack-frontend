@@ -49,7 +49,7 @@ export function OtpVerifyPage() {
 
   const otpVerifyMutation = useMutation({
     mutationFn: async (payload: { phone: string; otp: string }) => {
-      return verifyOtp(payload.phone, payload.otp);
+      return verifyOtp(`+91${payload.phone}`, payload.otp);
     },
   });
 
