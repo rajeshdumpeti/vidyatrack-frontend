@@ -6,6 +6,8 @@ import { ManagementLayout } from "../layouts/ManagementLayout";
 import { OtpRequestPage } from "../features/auth/OtpRequestPage";
 import { OtpVerifyPage } from "../features/auth/OtpVerifyPage";
 import { RoleGuard } from "../hooks/useRoleGuard";
+import { TeacherDashboard } from "../features/teacher/dashboard/TeacherDashboard";
+import { MarkAttendance } from "../features/teacher/attendance/MarkAttendance";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -29,7 +31,10 @@ export const router = createBrowserRouter([
         <TeacherLayout />
       </RoleGuard>
     ),
-    children: [{ index: true, element: <div>Teacher Dashboard (UI TBD)</div> }],
+    children: [
+      { index: true, element: <TeacherDashboard /> },
+      { path: "attendance", element: <MarkAttendance /> },
+    ],
   },
 
   {
