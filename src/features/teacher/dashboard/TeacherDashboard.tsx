@@ -1,16 +1,110 @@
-// src/features/teacher/dashboard/TeacherDashboard.tsx
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { FiCheckCircle } from "react-icons/fi";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
 import { IoTimeOutline } from "react-icons/io5";
 
+import { LoadingState } from "../../../components/feedback/LoadingState";
+import { ErrorState } from "../../../components/feedback/ErrorState";
+import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
+import { logger } from "../../../utils/logger";
+
 export function TeacherDashboard() {
   const navigate = useNavigate();
+  const trace = useMemo(() => logger.traceId(), []);
 
-  // UI-only mocks (will be replaced by backend later)
-  const sectionLabel = "Class 5 - Section B";
-  const subjectLabel = "Mathematics";
-  const timeLabel = "09:00 AM — 10:00 AM";
+  const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
+
+  useEffect(() => {
+    logger.info("[teacher][dashboard] loaded", { trace });
+  }, [trace]);
+
+  useEffect(() => {
+    if (data) {
+      logger.info("[teacher][dashboard] section resolved", {
+        trace,
+        class_name: data.class_name,
+        section_name: data.section_name,
+        section_id: data.section_id,
+      });
+    }
+  }, [data, trace]);
+
+  if (isLoading) {
+    return <LoadingState label="Loading your section..." />;
+  }
+
+  if (error) {
+    const status = axios.isAxiosError(error)
+      ? error.response?.status
+      : undefined;
+
+    if (status === 404) {
+      return (
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="mx-auto w-full max-w-2xl">
+            <ErrorState
+              title="No attendance section assigned"
+              message="Please contact management to assign your attendance section."
+            />
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto w-full max-w-2xl">
+          <ErrorState
+            title="Dashboard unavailable"
+            message="Unable to load your attendance section. Please try again."
+          />
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto w-full max-w-2xl">
+          <ErrorState
+            title="No attendance section assigned"
+            message="Please contact management to assign your attendance section."
+          />
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Replace only placeholder section with API-backed value (no other UX/copy changes)
+  const sectionLabel = `${data.class_name} - ${data.section_name}`;
+
+  // Still not backed by API (do not guess contracts)
+  const subjectLabel = "Current Session";
+  const timeLabel = "Today";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -29,9 +123,8 @@ export function TeacherDashboard() {
           </p>
         </div>
 
-        {/* Session card */}
         <div className="mt-10 overflow-hidden rounded-2xl shadow-lg">
-          <div className="relative bg-gradient-to-br from-slate-700 via-slate-700 to-slate-900 px-6 py-8">
+          <div className="relative bg-linear-to-br from-slate-700 via-slate-700 to-slate-900 px-6 py-8">
             <div className="absolute inset-0 opacity-20" />
 
             <div className="relative">
@@ -69,7 +162,6 @@ export function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Thin accent line (matches screenshot feel) */}
           <div className="h-1 w-full bg-blue-600" />
         </div>
 

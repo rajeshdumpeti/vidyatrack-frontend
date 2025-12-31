@@ -1,13 +1,10 @@
+import type {
+  OtpRequestBody,
+  OtpVerifyBody,
+  OtpVerifyResponse,
+} from "../types/auth.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
-
-export type OtpRequestBody = { phone: string };
-export type OtpVerifyBody = { phone: string; otp: string };
-
-export type OtpVerifyResponse = {
-  access_token: string;
-  token_type: string;
-};
 
 export async function requestOtp(phone: string): Promise<void> {
   const body: OtpRequestBody = { phone };

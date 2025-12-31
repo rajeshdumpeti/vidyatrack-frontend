@@ -1,13 +1,15 @@
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { digitsOnly } from "../../utils/phone";
 import { FiPhone, FiHelpCircle, FiArrowRight } from "react-icons/fi";
 import { HiAcademicCap } from "react-icons/hi2";
 import { MdWifi } from "react-icons/md";
-import { useMutation } from "@tanstack/react-query";
-import { requestOtp } from "../../api/auth.api";
+
+import { digitsOnly } from "../../utils/phone";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "../../components/feedback/errorMessage";
+import { useOtpRequest } from "../../hooks/useOtpRequest";
+import { logger } from "../../utils/logger";
 
 type FormValues = {
   phone: string;
@@ -15,6 +17,7 @@ type FormValues = {
 
 export function OtpRequestPage() {
   const navigate = useNavigate();
+  const trace = useMemo(() => logger.traceId(), []);
 
   const {
     register,
@@ -25,19 +28,20 @@ export function OtpRequestPage() {
     mode: "onBlur",
   });
 
-  const otpRequestMutation = useMutation({
-    mutationFn: async (phone: string) => {
-      await requestOtp(`+91${phone}`);
-    },
-  });
+  const { requestOtp, isLoading, error } = useOtpRequest();
 
   const onSubmit = (values: FormValues) => {
     const phoneDigits = digitsOnly(values.phone);
+    const phoneE164 = `+91${phoneDigits}`;
 
-    otpRequestMutation.mutate(phoneDigits, {
+    logger.info("[auth][otp-request] submit", { trace, phoneDigits });
+
+    requestOtp(phoneE164, {
       onSuccess: () => {
-        // Do not lose phone value on navigation
         navigate("/auth/verify", { state: { phoneDigits } });
+      },
+      onError: (err) => {
+        logger.warn("[auth][otp-request] failed", { trace, err });
       },
     });
   };
@@ -135,13 +139,12 @@ export function OtpRequestPage() {
                       })}
                     />
                   </div>
-                  {otpRequestMutation.isError ? (
+
+                  {error ? (
                     <div className="mt-3">
                       <ErrorState
                         title="OTP not sent"
-                        message={getUserFriendlyErrorMessage(
-                          otpRequestMutation.error
-                        )}
+                        message={getUserFriendlyErrorMessage(error)}
                       />
                     </div>
                   ) : null}
@@ -155,7 +158,7 @@ export function OtpRequestPage() {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting || otpRequestMutation.isPending}
+                  disabled={isSubmitting || isLoading}
                   className={[
                     "mt-2 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white",
                     "hover:bg-blue-700",
@@ -163,9 +166,7 @@ export function OtpRequestPage() {
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-2">
-                    {otpRequestMutation.isPending
-                      ? "Sending OTP..."
-                      : "Send OTP"}
+                    {isLoading ? "Sending OTP..." : "Send OTP"}
                     <FiArrowRight className="h-4 w-4" />
                   </span>
                 </button>
@@ -174,8 +175,9 @@ export function OtpRequestPage() {
                   type="button"
                   className="mx-auto flex items-center justify-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
                   onClick={() =>
-                    console.log(
-                      "[auth][otp-request] trouble logging in clicked"
+                    logger.info(
+                      "[auth][otp-request] trouble logging in clicked",
+                      { trace }
                     )
                   }
                 >
@@ -191,7 +193,9 @@ export function OtpRequestPage() {
                     type="button"
                     className="underline hover:text-gray-700"
                     onClick={() =>
-                      console.log("[auth][otp-request] terms clicked")
+                      logger.info("[auth][otp-request] terms clicked", {
+                        trace,
+                      })
                     }
                   >
                     Terms & Privacy Policy

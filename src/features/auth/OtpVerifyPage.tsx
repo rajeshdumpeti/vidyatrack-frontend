@@ -1,15 +1,18 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useMemo as _useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiHelpCircle } from "react-icons/fi";
 import { HiAcademicCap, HiLockClosed } from "react-icons/hi2";
-import { useMutation } from "@tanstack/react-query";
-import { verifyOtp, requestOtp } from "../../api/auth.api";
+
 import { useAuthStore } from "../../store/auth.store";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { getOtpVerifyErrorMessage } from "./auth.errors";
-import type { AuthLocationState, OtpCodeDigits } from "./auth.types";
+import type { AuthLocationState, OtpCodeDigits } from "../../types/auth.types";
 import { buildOtpCode, digitsFromInput, maskPhoneDigits } from "./otp.utils";
+
+import { useOtpVerify } from "../../hooks/useOtpVerify";
+import { useOtpResend } from "../../hooks/useOtpResend";
+import { logger } from "../../utils/logger";
 
 type FormValues = {
   d1: string;
@@ -24,10 +27,14 @@ function toDigits(values: FormValues): OtpCodeDigits {
 
 export function OtpVerifyPage() {
   const navigate = useNavigate();
-  const setToken = useAuthStore((s) => s.setToken);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
   const location = useLocation();
   const state = (location.state || {}) as AuthLocationState;
+
+  const trace = useMemo(() => logger.traceId(), []);
+
+  const setToken = useAuthStore((s) => s.setToken);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
+
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phoneDigits = state.phoneDigits ?? "";
   const hasPhone = phoneDigits.trim().length > 0;
@@ -47,17 +54,16 @@ export function OtpVerifyPage() {
     [state.phoneDigits]
   );
 
-  const otpVerifyMutation = useMutation({
-    mutationFn: async (payload: { phone: string; otp: string }) => {
-      return verifyOtp(`+91${payload.phone}`, payload.otp);
-    },
-  });
-
-  const otpResendMutation = useMutation({
-    mutationFn: async (phone: string) => {
-      await requestOtp(phone);
-    },
-  });
+  const {
+    verifyOtp,
+    isLoading: isVerifying,
+    error: verifyError,
+  } = useOtpVerify();
+  const {
+    resendOtp,
+    isLoading: isResending,
+    error: resendError,
+  } = useOtpResend();
 
   useEffect(() => {
     inputs.current[0]?.focus();
@@ -106,29 +112,32 @@ export function OtpVerifyPage() {
 
   const onSubmit = (values: FormValues) => {
     if (!hasPhone) {
-      console.log("[auth][otp-verify] missing phoneDigits in navigation state");
+      logger.warn(
+        "[auth][otp-verify] missing phoneDigits in navigation state",
+        { trace }
+      );
       return;
     }
 
     const digits = toDigits(values);
     const code = buildOtpCode(digits);
+    const phoneE164 = `+91${phoneDigits}`;
 
-    otpVerifyMutation.mutate(
-      { phone: phoneDigits, otp: code },
+    logger.info("[auth][otp-verify] submit", { trace });
+
+    verifyOtp(
+      { phoneE164, otp: code },
       {
         onSuccess: (data) => {
           try {
-            // Store + derive claims
             setToken(data.access_token);
 
             const { role } = useAuthStore.getState();
             if (!role) {
-              // Parsing/claim failure (fail-closed)
               clearAuth();
               throw new Error("invalid_token_claims");
             }
 
-            // Role routing (required)
             if (role === "teacher") navigate("/teacher", { replace: true });
             else if (role === "principal")
               navigate("/principal", { replace: true });
@@ -139,12 +148,14 @@ export function OtpVerifyPage() {
               throw new Error("unknown_role");
             }
           } catch (e) {
-            console.log("[auth][otp-verify] token handling failure", e);
+            logger.error("[auth][otp-verify] token handling failure", {
+              trace,
+              e,
+            });
           }
         },
         onError: (err) => {
-          // No redirect; Error UI will show via isError state
-          console.log("[auth][otp-verify] verify failed", err);
+          logger.warn("[auth][otp-verify] verify failed", { trace, err });
         },
       }
     );
@@ -153,17 +164,19 @@ export function OtpVerifyPage() {
   const onResend = () => {
     if (!hasPhone) return;
 
-    otpResendMutation.mutate(phoneDigits, {
-      onSuccess: () => {
-        console.log("[auth][otp-verify] resend success", { phoneDigits });
-      },
-      onError: (err) => {
-        console.log("[auth][otp-verify] resend failed", err);
-      },
+    const phoneE164 = `+91${phoneDigits}`;
+    logger.info("[auth][otp-verify] resend clicked", { trace });
+
+    resendOtp(phoneE164, {
+      onSuccess: () =>
+        logger.info("[auth][otp-verify] resend success", { trace }),
+      onError: (err) =>
+        logger.warn("[auth][otp-verify] resend failed", { trace, err }),
     });
   };
 
-  const onNeedHelp = () => console.log("[auth][otp-verify] need help clicked");
+  const onNeedHelp = () =>
+    logger.info("[auth][otp-verify] need help clicked", { trace });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -183,6 +196,7 @@ export function OtpVerifyPage() {
           Need Help? 📞
         </button>
       </header>
+
       <main className="flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md rounded-2xl bg-white px-8 py-10 shadow-lg">
           <div className="flex justify-center">
@@ -210,12 +224,13 @@ export function OtpVerifyPage() {
                   <input
                     key={key}
                     ref={(el) => {
-                      ref(el); // register's ref
-                      inputs.current[idx] = el; // your custom ref
+                      ref(el);
+                      inputs.current[idx] = el;
                     }}
                     inputMode="numeric"
                     maxLength={4}
-                    className="h-14 w-14 rounded-xl border border-gray-200 text-center text-xl font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    disabled={isVerifying}
+                    className="h-14 w-14 rounded-xl border border-gray-200 text-center text-xl font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 disabled:cursor-not-allowed"
                     {...rest}
                     onChange={handleDigitChange(idx as 0 | 1 | 2 | 3, key)}
                     onKeyDown={handleKeyDown(idx as 0 | 1 | 2 | 3, key)}
@@ -223,6 +238,7 @@ export function OtpVerifyPage() {
                 );
               })}
             </div>
+
             {!hasPhone ? (
               <div className="mt-4">
                 <ErrorState
@@ -232,23 +248,21 @@ export function OtpVerifyPage() {
               </div>
             ) : null}
 
-            {otpVerifyMutation.isError ? (
+            {verifyError ? (
               <div className="mt-4">
                 <ErrorState
                   title="Verification failed"
-                  message={getOtpVerifyErrorMessage(otpVerifyMutation.error)}
+                  message={getOtpVerifyErrorMessage(verifyError)}
                 />
               </div>
             ) : null}
 
             <button
               type="submit"
-              disabled={
-                isSubmitting || otpVerifyMutation.isPending || !hasPhone
-              }
+              disabled={isSubmitting || isVerifying || !hasPhone}
               className="mt-8 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {otpVerifyMutation.isPending ? "Verifying..." : "Verify"}
+              {isVerifying ? "Verifying..." : "Verify"}
             </button>
 
             <div className="mt-6 text-center text-sm text-gray-600">
@@ -257,13 +271,11 @@ export function OtpVerifyPage() {
                 type="button"
                 className="font-semibold text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={onResend}
-                disabled={
-                  otpResendMutation.isPending || otpVerifyMutation.isPending
-                }
+                disabled={isResending || isVerifying}
               >
-                {otpResendMutation.isPending ? "Resending..." : "Resend"}
+                {isResending ? "Resending..." : "Resend"}
               </button>
-              {otpResendMutation.isError ? (
+              {resendError ? (
                 <div className="mt-4">
                   <ErrorState
                     title="OTP not sent"
