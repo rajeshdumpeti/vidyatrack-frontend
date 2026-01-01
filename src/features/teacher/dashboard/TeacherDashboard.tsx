@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FiCheckCircle } from "react-icons/fi";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
@@ -15,6 +15,18 @@ export function TeacherDashboard() {
   const trace = useMemo(() => logger.traceId(), []);
 
   const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
+  const location = useLocation();
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const msg = (location.state as any)?.toast as string | undefined;
+    if (msg) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToast(msg);
+      // Clear navigation state so it doesn't re-show on future navigations
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     logger.info("[teacher][dashboard] loaded", { trace });
@@ -108,11 +120,43 @@ export function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {toast ? (
+        <div className="mx-auto mb-4 w-full max-w-5xl rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          <div className="flex items-center justify-between gap-3">
+            <span>{toast}</span>
+            <button
+              type="button"
+              className="rounded-lg px-3 py-1 text-sm font-semibold text-green-900 hover:bg-green-100"
+              onClick={() => setToast(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
         <div className="text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-700">
             <span className="h-2 w-2 rounded-full bg-green-500" />
             Active Session
+          </div>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => navigate("/teacher/attendance")}
+              className="h-12 w-full rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto sm:min-w-[200px]"
+            >
+              Mark Attendance
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate("/teacher/marks")}
+              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-900 hover:bg-gray-50 sm:w-auto sm:min-w-[200px]"
+            >
+              Enter Marks
+            </button>
           </div>
 
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-gray-900">

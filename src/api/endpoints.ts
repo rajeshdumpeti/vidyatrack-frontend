@@ -18,4 +18,8 @@ export const API_ENDPOINTS = {
     create: "/api/v1/attendance",
     submit: "/api/v1/attendance/submit",
   },
+  marks: {
+    record: "/api/v1/marks/record",
+    submit: "/api/v1/marks/submit",
+  },
 } as const;

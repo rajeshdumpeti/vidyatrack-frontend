@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { logger } from "../../../utils/logger";
+import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
+import { useStudentsBySection } from "../../../hooks/useStudentsBySection";
+import { useMarksSubmit } from "../../../hooks/useMarksSubmit";
+import type { MarksExamTypeDto } from "../../../types/marks-submit.types";
+import { useNavigate } from "react-router-dom";
 
 type ExamType =
   | "Unit Test"
@@ -21,6 +26,11 @@ type FormValues = {
   // marks keyed by student id
   marks: Record<string, string>;
 };
+const SUBJECT_ID_MAP: Record<string, number> = {
+  math: 1,
+  eng: 2,
+  sci: 3,
+};
 
 const MOCK_EXAM_TYPES: ExamType[] = [
   "Unit Test",
@@ -35,7 +45,20 @@ const MOCK_SUBJECTS = [
   { id: "eng", label: "English" },
   { id: "sci", label: "Science" },
 ];
-
+function mapExamTypeToDto(exam: ExamType): MarksExamTypeDto {
+  switch (exam) {
+    case "Unit Test":
+      return "UNIT_TEST";
+    case "Monthly Test":
+      return "MONTHLY_TEST";
+    case "Quarterly":
+      return "QUARTERLY";
+    case "Half Yearly":
+      return "HALF_YEARLY";
+    case "Annual":
+      return "ANNUAL";
+  }
+}
 const MOCK_STUDENTS: StudentRow[] = Array.from({ length: 20 }).map((_, i) => ({
   id: i + 1,
   rollNo: String(i + 1).padStart(2, "0"),
@@ -52,15 +75,24 @@ function isValidMark(value: string) {
 }
 
 export function EnterMarks() {
-  const trace = useMemo(() => logger.traceId(), []);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const sectionQuery = useTeacherAttendanceSection();
+  const sectionId = sectionQuery.data?.section_id;
+  const studentsQuery = useStudentsBySection(sectionId);
+  const navigate = useNavigate();
+
+  const {
+    submit,
+    isLoading: isSubmitting,
+    error: submitError,
+  } = useMarksSubmit();
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
       examType: "Unit Test",
@@ -70,21 +102,53 @@ export function EnterMarks() {
     mode: "onBlur",
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const subjectId = watch("subjectId");
   const examType = watch("examType");
 
   const onSubmit = (values: FormValues) => {
+    if (!sectionId) return;
+
     setSubmitSuccess(false);
 
-    logger.info("[teacher][marks] submit (UI-only)", {
-      trace,
-      examType: values.examType,
-      subjectId: values.subjectId,
-      marksCount: Object.keys(values.marks || {}).length,
-    });
+    const examTypeDto = mapExamTypeToDto(values.examType);
 
-    // UI-only success feedback
-    setSubmitSuccess(true);
+    // Only submit students where a mark was entered (UI-first, no forced zeros)
+    const entries = (studentsQuery.data ?? [])
+      .map((s) => {
+        const raw = values.marks?.[String(s.id)] ?? "";
+        const trimmed = String(raw).trim();
+        if (!trimmed) return null;
+        const n = Number(trimmed);
+        if (!Number.isFinite(n)) return null;
+        return { studentId: s.id, marks: n };
+      })
+      .filter(Boolean) as Array<{ studentId: number; marks: number }>;
+    if (!SUBJECT_ID_MAP[values.subjectId]) {
+      logger.warn("[teacher][marks] invalid subject mapping", {
+        subjectId: values.subjectId,
+      });
+      return;
+    }
+
+    submit(
+      {
+        sectionId,
+        subjectId: SUBJECT_ID_MAP[values.subjectId],
+        examType: examTypeDto,
+        students: entries,
+        concurrency: 8,
+      },
+      {
+        onSuccess: () => {
+          setSubmitSuccess(true);
+          navigate("/teacher", {
+            replace: true,
+            state: { toast: "Marks submitted" },
+          });
+        },
+      }
+    );
   };
 
   return (
