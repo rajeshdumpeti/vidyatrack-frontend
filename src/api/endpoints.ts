@@ -14,4 +14,8 @@ export const API_ENDPOINTS = {
   students: {
     list: "/api/v1/students",
   },
+  attendance: {
+    create: "/api/v1/attendance",
+    submit: "/api/v1/attendance/submit",
+  },
 } as const;

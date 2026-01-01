@@ -8,7 +8,9 @@ import { LoadingState } from "../../../components/feedback/LoadingState";
 import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
 import { useStudentsBySection } from "../../../hooks/useStudentsBySection";
 import { logger } from "../../../utils/logger";
-import { formatToday } from "../../../utils/date";
+import { formatToday, formatIsoDate } from "../../../utils/date";
+import { useAttendanceSubmit } from "../../../hooks/useAttendanceSubmit";
+import type { AttendanceStatusDto } from "../../../types/attendance-submit.types";
 
 type StudentUi = {
   id: string;
@@ -18,6 +20,14 @@ type StudentUi = {
 
 export function MarkAttendance() {
   const [presentById, setPresentById] = useState<Record<string, boolean>>({});
+  const {
+    submit,
+    isLoading: isSubmitting,
+    error: submitError,
+    reset: resetSubmitError,
+  } = useAttendanceSubmit();
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const todayIso = useMemo(() => formatIsoDate(new Date()), []);
 
   const trace = useMemo(() => logger.traceId(), []);
   const todayLabel = formatToday();
@@ -94,17 +104,47 @@ export function MarkAttendance() {
   }, [students, presentById]);
 
   const onSubmit = () => {
-    // UI-only: no POST in this cycle
-    const absentStudentIds = students
-      .filter((s) => presentById[s.id] === false)
-      .map((s) => s.id);
+    if (!section.data?.section_id) return;
 
-    logger.info("[teacher][attendance] submit (UI-only)", {
-      trace,
-      section: sectionLabel,
-      date: todayLabel,
-      absentStudentIds,
+    setSubmitSuccess(false);
+    resetSubmitError?.();
+
+    const studentsForApi = (studentsQuery.data ?? []).map((s) => {
+      const key = String(s.id);
+      const isPresent = presentById[key] !== false;
+
+      const status: AttendanceStatusDto = isPresent ? "PRESENT" : "ABSENT";
+      return { studentId: s.id, status };
     });
+
+    logger.info("[teacher][attendance] submit clicked", {
+      trace,
+      section_id: section.data.section_id,
+      date: todayIso,
+      total: studentsForApi.length,
+    });
+
+    submit(
+      {
+        sectionId: section.data.section_id,
+        dateIso: todayIso,
+        students: studentsForApi,
+        concurrency: 8,
+      },
+      {
+        onSuccess: () => {
+          setSubmitSuccess(true);
+          logger.info("[teacher][attendance] submit success", {
+            trace,
+            section_id: section.data?.section_id,
+            date: todayIso,
+          });
+        },
+        onError: (err) => {
+          logger.warn("[teacher][attendance] submit failed", { trace, err });
+        },
+      }
+    );
   };
 
   const isLoading = section.isLoading || studentsQuery.isLoading;
@@ -274,11 +314,33 @@ export function MarkAttendance() {
           <button
             type="button"
             onClick={onSubmit}
-            className="h-12 min-w-45 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            disabled={isSubmitting}
+            className="h-12 min-w-[180px] rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Submit Attendance
+            {isSubmitting ? "Submitting..." : "Submit Attendance"}
           </button>
         </div>
+      </div>
+      <div className="mt-2 text-right text-sm">
+        {submitSuccess ? (
+          <span className="font-semibold text-green-700">
+            Attendance submitted successfully.
+          </span>
+        ) : null}
+
+        {submitError ? (
+          <div className="mt-2">
+            <ErrorState title="Submit failed" message="Please try again." />
+            <button
+              type="button"
+              onClick={onSubmit}
+              className="mt-2 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+              disabled={isSubmitting}
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
