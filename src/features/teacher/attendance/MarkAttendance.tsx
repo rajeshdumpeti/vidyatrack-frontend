@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 import { EmptyState } from "../../../components/feedback/EmptyState";
 import { ErrorState } from "../../../components/feedback/ErrorState";
@@ -31,6 +32,7 @@ export function MarkAttendance() {
 
   const trace = useMemo(() => logger.traceId(), []);
   const todayLabel = formatToday();
+  const navigate = useNavigate();
 
   const section = useTeacherAttendanceSection();
   const sectionId = section.data?.section_id;
@@ -139,7 +141,12 @@ export function MarkAttendance() {
             section_id: section.data?.section_id,
             date: todayIso,
           });
+          navigate("/teacher", {
+            replace: true,
+            state: { toast: "Attendance submitted" },
+          });
         },
+
         onError: (err) => {
           logger.warn("[teacher][attendance] submit failed", { trace, err });
         },
