@@ -4,6 +4,8 @@ import { ErrorState } from "../../../components/feedback/ErrorState";
 import { EmptyState } from "../../../components/feedback/EmptyState";
 import { formatIsoDate } from "../../../utils/date";
 import { logger } from "../../../utils/logger";
+import { usePrincipalAttendanceHistory } from "../../../hooks/usePrincipalAttendanceHistory";
+import type { PrincipalAttendanceRowDto } from "../../../types/principalAttendance.types";
 
 type AttendanceStatus = "PRESENT" | "ABSENT";
 
@@ -15,9 +17,9 @@ type AttendanceRow = {
 };
 
 const MOCK_SECTIONS = [
-  { id: "5A", label: "Class 5 - Section A" },
-  { id: "5B", label: "Class 5 - Section B" },
-  { id: "6A", label: "Class 6 - Section A" },
+  { id: 1, label: "Class 5 - Section A" },
+  { id: 2, label: "Class 5 - Section B" },
+  { id: 3, label: "Class 6 - Section A" },
 ];
 
 const MOCK_RESULTS: AttendanceRow[] = [
@@ -30,8 +32,12 @@ type UiState = "data" | "loading" | "empty" | "error";
 
 export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
-  const [sectionId, setSectionId] = useState<string>(MOCK_SECTIONS[0].id);
+  const [sectionId, setSectionId] = useState<number | "">("");
   const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
+  const q = usePrincipalAttendanceHistory(
+    dateIso,
+    sectionId === "" ? undefined : sectionId
+  );
 
   // UI-only state toggles (for skeleton validation)
   const [uiState, setUiState] = useState<UiState>("data");
@@ -39,7 +45,7 @@ export function AttendanceHistoryPage() {
   const results = uiState === "data" ? MOCK_RESULTS : [];
 
   const onFilterChange = (
-    next: Partial<{ sectionId: string; dateIso: string }>
+    next: Partial<{ sectionId: number | ""; dateIso: string }>
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.dateIso !== undefined) setDateIso(next.dateIso);
@@ -75,10 +81,14 @@ export function AttendanceHistoryPage() {
               <select
                 className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 value={sectionId}
-                onChange={(e) => onFilterChange({ sectionId: e.target.value })}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onFilterChange({ sectionId: v === "" ? "" : Number(v) });
+                }}
               >
+                <option value="">All Sections</option>
                 {MOCK_SECTIONS.map((s) => (
-                  <option key={s.id} value={s.id}>
+                  <option key={s.id} value={String(s.id)}>
                     {s.label}
                   </option>
                 ))}
@@ -125,64 +135,73 @@ export function AttendanceHistoryPage() {
         </div>
 
         {/* States */}
-        {uiState === "loading" ? (
-          <LoadingState label="Loading attendance..." />
-        ) : null}
+        {q.isLoading ? <LoadingState label="Loading attendance..." /> : null}
 
-        {uiState === "error" ? (
+        {q.error ? (
           <ErrorState
             title="Unable to load attendance"
-            message="This is a placeholder error state (UI-only)."
+            message="Please try again."
           />
         ) : null}
 
-        {uiState === "empty" ? (
+        {!q.isLoading && !q.error && (q.data?.length ?? 0) === 0 ? (
           <EmptyState message="No records for the selected date/section." />
         ) : null}
 
-        {/* Results */}
-        {uiState === "data" ? (
+        {!q.isLoading && !q.error && (q.data?.length ?? 0) > 0 ? (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-200 px-4 py-3">
               <div className="text-sm font-semibold text-gray-900">Results</div>
               <div className="mt-1 text-xs font-medium text-gray-500">
-                Section: <span className="text-gray-900">{sectionId}</span> •
                 Date: <span className="text-gray-900">{dateIso}</span>
+                {sectionId !== "" ? (
+                  <>
+                    {" "}
+                    • Section:{" "}
+                    <span className="text-gray-900">{sectionId}</span>
+                  </>
+                ) : null}
               </div>
             </div>
 
             <ul className="divide-y divide-gray-100">
-              {results.map((r) => (
-                <li key={r.studentId} className="px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
-                          {r.rollNo}
-                        </span>
-                        <div className="truncate text-sm font-semibold text-gray-900">
-                          {r.studentName}
+              {(q.data as PrincipalAttendanceRowDto[]).map((r) => {
+                // No client-side joins. If backend doesn't provide name/roll, show safe fallbacks.
+                const roll = r.roll_no ?? String(r.student_id);
+                const name = r.student_name ?? `Student #${r.student_id}`;
+
+                return (
+                  <li key={r.id} className="px-4 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
+                            {roll}
+                          </span>
+                          <div className="truncate text-sm font-semibold text-gray-900">
+                            {name}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <span
-                      className={[
-                        "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold",
-                        r.status === "PRESENT"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-red-50 text-red-700",
-                      ].join(" ")}
-                    >
-                      {r.status === "PRESENT" ? "Present" : "Absent"}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                      <span
+                        className={[
+                          "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold",
+                          r.status === "PRESENT"
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700",
+                        ].join(" ")}
+                      >
+                        {r.status === "PRESENT" ? "Present" : "Absent"}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="px-4 py-3 text-center text-sm text-gray-500">
-              Showing {results.length} Students
+              Showing {q.data?.length ?? 0} Records
             </div>
           </div>
         ) : null}
