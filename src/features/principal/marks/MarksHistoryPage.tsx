@@ -3,6 +3,8 @@ import { LoadingState } from "../../../components/feedback/LoadingState";
 import { ErrorState } from "../../../components/feedback/ErrorState";
 import { EmptyState } from "../../../components/feedback/EmptyState";
 import { logger } from "../../../utils/logger";
+import { usePrincipalMarksHistory } from "../../../hooks/usePrincipalMarksHistory";
+import type { PrincipalMarksRowDto } from "../../../types/principalMarks.types";
 
 type MarksRow = {
   studentId: number;
@@ -13,15 +15,15 @@ type MarksRow = {
 };
 
 const MOCK_SECTIONS = [
-  { id: "5A", label: "Class 5 - Section A" },
-  { id: "5B", label: "Class 5 - Section B" },
-  { id: "6A", label: "Class 6 - Section A" },
+  { id: "1", label: "Class 5 - Section A" },
+  { id: "2", label: "Class 5 - Section B" },
+  { id: "3", label: "Class 6 - Section A" },
 ];
 
 const MOCK_SUBJECTS = [
-  { id: "math", label: "Mathematics" },
-  { id: "eng", label: "English" },
-  { id: "sci", label: "Science" },
+  { id: "1", label: "Mathematics" },
+  { id: "2", label: "English" },
+  { id: "3", label: "Science" },
 ];
 
 const MOCK_EXAMS = [
@@ -64,6 +66,11 @@ export function MarksHistoryPage() {
 
   // UI-only state toggles (for skeleton validation)
   const [uiState, setUiState] = useState<UiState>("data");
+  const q = usePrincipalMarksHistory({
+    sectionId: Number(sectionId),
+    subjectId: Number(subjectId),
+    examType,
+  });
 
   const results = uiState === "data" ? MOCK_RESULTS : [];
 
@@ -178,23 +185,21 @@ export function MarksHistoryPage() {
         </div>
 
         {/* States */}
-        {uiState === "loading" ? (
-          <LoadingState label="Loading marks..." />
-        ) : null}
+        {q.isLoading ? <LoadingState label="Loading marks..." /> : null}
 
-        {uiState === "error" ? (
+        {q.error ? (
           <ErrorState
             title="Unable to load marks"
-            message="This is a placeholder error state (UI-only)."
+            message="Please try again."
           />
         ) : null}
 
-        {uiState === "empty" ? (
+        {!q.isLoading && !q.error && (q.data?.length ?? 0) === 0 ? (
           <EmptyState message="No records for the selected filters." />
         ) : null}
 
         {/* Results */}
-        {uiState === "data" ? (
+        {!q.isLoading && !q.error && (q.data?.length ?? 0) > 0 ? (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
             <div className="border-b border-gray-200 px-4 py-3">
               <div className="text-sm font-semibold text-gray-900">Results</div>
@@ -206,34 +211,42 @@ export function MarksHistoryPage() {
             </div>
 
             <ul className="divide-y divide-gray-100">
-              {results.map((r) => (
-                <li key={r.studentId} className="px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-3">
-                        <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
-                          {r.rollNo}
-                        </span>
-                        <div className="truncate text-sm font-semibold text-gray-900">
-                          {r.studentName}
+              {(q.data as PrincipalMarksRowDto[]).map((r) => {
+                const roll = r.roll_no ?? String(r.student_id);
+                const name = r.student_name ?? `Student #${r.student_id}`;
+
+                return (
+                  <li key={r.id} className="px-4 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
+                            {roll}
+                          </span>
+                          <div className="truncate text-sm font-semibold text-gray-900">
+                            {name}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-xs font-medium text-gray-500">
+                          Marks:{" "}
+                          <span className="text-gray-900">
+                            {r.marks_obtained}
+                          </span>{" "}
+                          / <span className="text-gray-900">{r.max_marks}</span>
                         </div>
                       </div>
-                      <div className="mt-1 text-xs font-medium text-gray-500">
-                        Marks: <span className="text-gray-900">{r.marks}</span>{" "}
-                        / <span className="text-gray-900">{r.maxMarks}</span>
-                      </div>
-                    </div>
 
-                    <span className="inline-flex h-9 items-center rounded-full bg-gray-900 px-4 text-sm font-semibold text-white">
-                      {r.marks}/{r.maxMarks}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                      <span className="inline-flex h-9 items-center rounded-full bg-gray-900 px-4 text-sm font-semibold text-white">
+                        {r.marks_obtained}/{r.max_marks}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="px-4 py-3 text-center text-sm text-gray-500">
-              Showing {results.length} Students
+              Showing {q.data?.length ?? 0} Records
             </div>
           </div>
         ) : null}
