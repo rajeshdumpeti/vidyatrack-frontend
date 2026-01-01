@@ -9,6 +9,7 @@ import { RoleGuard } from "../hooks/useRoleGuard";
 import { TeacherDashboard } from "../features/teacher/dashboard/TeacherDashboard";
 import { MarkAttendance } from "../features/teacher/attendance/MarkAttendance";
 import { EnterMarks } from "../features/teacher/marks/EnterMarks";
+import { AttendanceHistoryPage } from "../features/principal/attendance/AttendanceHistoryPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -47,7 +48,10 @@ export const router = createBrowserRouter([
       </RoleGuard>
     ),
 
-    children: [{ index: true, element: <div>Principal Home (UI TBD)</div> }],
+    children: [
+      { index: true, element: <div>Principal Home (UI TBD)</div> },
+      { path: "attendance", element: <AttendanceHistoryPage /> },
+    ],
   },
 
   {
