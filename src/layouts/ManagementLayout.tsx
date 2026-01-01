@@ -1,9 +1,15 @@
-import { Outlet } from "react-router-dom";
+// import { Outlet } from "react-router-dom";
+
+// export function ManagementLayout() {
+//   return (
+//     <div>
+//       <Outlet />
+//     </div>
+//   );
+// }
+
+import { AppShell } from "./AppShell";
 
 export function ManagementLayout() {
-  return (
-    <div>
-      <Outlet />
-    </div>
-  );
+  return <AppShell />;
 }
