@@ -1,0 +1,16 @@
+export type NavRole = "teacher" | "principal" | "management";
+
+export type NavItem = {
+  label: string;
+  to: string;
+};
+
+export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
+  teacher: [
+    { label: "Dashboard", to: "/teacher" },
+    { label: "Mark Attendance", to: "/teacher/attendance" },
+    { label: "Enter Marks", to: "/teacher/marks" },
+  ],
+  principal: [{ label: "Dashboard", to: "/principal" }],
+  management: [{ label: "Dashboard", to: "/management" }],
+} as const;

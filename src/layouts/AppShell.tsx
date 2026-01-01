@@ -3,13 +3,27 @@ import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { Footer } from "./Footer";
-
+import { useMemo } from "react";
+import type { NavRole } from "../navigation/navConfig";
+import { NAV_ITEMS } from "../navigation/navConfig";
+import { useAuthStore } from "../store/auth.store";
+import { logger } from "../utils/logger";
 export function AppShell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
+  const trace = useMemo(() => logger.traceId(), []);
+  const role = useAuthStore((s) => s.role) as NavRole | null;
 
+  const navItems = useMemo(() => {
+    if (role === "teacher" || role === "principal" || role === "management") {
+      return { role, items: NAV_ITEMS[role] };
+    }
+
+    logger.warn("[layout][nav] missing_or_unknown_role", { trace, role });
+    return { role: undefined, items: [{ label: "Dashboard", to: "/" }] };
+  }, [role, trace]);
   // Escape closes drawer (mobile)
   useEffect(() => {
     if (!isDrawerOpen) return;
@@ -29,7 +43,7 @@ export function AppShell() {
       <div className="mx-auto flex w-full max-w-6xl">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
-          <Sidebar />
+          <Sidebar role={navItems.role} items={navItems.items} />{" "}
         </div>
 
         {/* Main content */}
@@ -58,7 +72,11 @@ export function AppShell() {
 
           {/* Drawer panel */}
           <div className="absolute left-0 top-0 h-full w-72 shadow-xl">
-            <Sidebar onClose={closeDrawer} />
+            <Sidebar
+              role={navItems.role}
+              items={navItems.items}
+              onClose={closeDrawer}
+            />{" "}
           </div>
         </div>
       ) : null}
