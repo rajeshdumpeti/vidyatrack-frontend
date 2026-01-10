@@ -11,6 +11,7 @@ import { MarkAttendance } from "../features/teacher/attendance/MarkAttendance";
 import { EnterMarks } from "../features/teacher/marks/EnterMarks";
 import { AttendanceHistoryPage } from "../features/principal/attendance/AttendanceHistoryPage";
 import { MarksHistoryPage } from "../features/principal/marks/MarksHistoryPage";
+import { StudentsListPage } from "../features/principal/students/StudentsListPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { index: true, element: <div>Principal Home (UI TBD)</div> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
+      { path: "students", element: <StudentsListPage /> },
     ],
   },
 
