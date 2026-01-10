@@ -1,84 +1,26 @@
 import { useMemo, useState } from "react";
+import { logger } from "../../../utils/logger";
+import { usePrincipalStudents } from "../../../hooks/usePrincipalStudents";
+import type { StudentDto } from "../../../types/student.types";
 import { LoadingState } from "../../../components/feedback/LoadingState";
 import { ErrorState } from "../../../components/feedback/ErrorState";
 import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
-
-type StudentRow = {
-  studentId: number;
-  rollNo: string;
-  name: string;
-  sectionLabel: string;
-  parentPhone?: string;
-};
 
 const MOCK_SECTIONS = [
-  { id: "ALL", label: "All Sections" },
-  { id: "5A", label: "Class 5 - Section A" },
-  { id: "5B", label: "Class 5 - Section B" },
-  { id: "6A", label: "Class 6 - Section A" },
+  { id: "", label: "All Sections" },
+  { id: "1", label: "Class 5 - Section A" },
+  { id: "2", label: "Class 5 - Section B" },
+  { id: "3", label: "Class 6 - Section A" },
 ];
-
-const MOCK_STUDENTS: StudentRow[] = [
-  {
-    studentId: 1,
-    rollNo: "01",
-    name: "Student 1",
-    sectionLabel: "Class 5 - Section A",
-    parentPhone: "9999999999",
-  },
-  {
-    studentId: 2,
-    rollNo: "02",
-    name: "Student 2",
-    sectionLabel: "Class 5 - Section A",
-    parentPhone: "9999999999",
-  },
-  {
-    studentId: 3,
-    rollNo: "03",
-    name: "Student 3",
-    sectionLabel: "Class 5 - Section B",
-    parentPhone: "9999999999",
-  },
-  {
-    studentId: 4,
-    rollNo: "04",
-    name: "Student 4",
-    sectionLabel: "Class 6 - Section A",
-    parentPhone: "9999999999",
-  },
-];
-
-type UiState = "data" | "loading" | "empty" | "error";
-
-function normalize(s: string) {
-  return s.trim().toLowerCase();
-}
 
 export function StudentsListPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const [sectionId, setSectionId] = useState<string>("ALL");
   const [search, setSearch] = useState<string>("");
+  const sectionIdNumber = sectionId ? Number(sectionId) : undefined;
+  const q = usePrincipalStudents({ sectionId: sectionIdNumber, search });
 
   // UI-only state toggles (for skeleton verification)
-  const [uiState, setUiState] = useState<UiState>("data");
-
-  const filtered = useMemo(() => {
-    const q = normalize(search);
-    const bySection =
-      sectionId === "ALL"
-        ? MOCK_STUDENTS
-        : MOCK_STUDENTS.filter((s) => s.sectionLabel.includes(sectionId));
-
-    if (!q) return bySection;
-
-    return bySection.filter((s) => {
-      return normalize(s.name).includes(q) || normalize(s.rollNo).includes(q);
-    });
-  }, [search, sectionId]);
-
-  const results = uiState === "data" ? filtered : [];
 
   const onFilterChange = (
     next: Partial<{ sectionId: string; search: string }>
@@ -140,77 +82,54 @@ export function StudentsListPage() {
               />
             </div>
           </div>
-
-          {/* Dev-only UI state toggles */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(["data", "loading", "empty", "error"] as UiState[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setUiState(s)}
-                className={[
-                  "h-11 rounded-xl px-4 text-sm font-semibold",
-                  uiState === s
-                    ? "bg-blue-600 text-white"
-                    : "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
-                ].join(" ")}
-              >
-                {s === "data"
-                  ? "Data"
-                  : s === "loading"
-                    ? "Loading"
-                    : s === "empty"
-                      ? "Empty"
-                      : "Error"}
-              </button>
-            ))}
-          </div>
         </div>
+      </main>
 
-        {/* States */}
-        {uiState === "loading" ? (
-          <LoadingState label="Loading students..." />
-        ) : null}
+      {q.isLoading ? <LoadingState label="Loading students..." /> : null}
 
-        {uiState === "error" ? (
-          <ErrorState
-            title="Unable to load students"
-            message="This is a placeholder error state (UI-only)."
-          />
-        ) : null}
+      {q.error ? (
+        <ErrorState
+          title="Unable to load students"
+          message="Please try again."
+        />
+      ) : null}
 
-        {uiState === "empty" ? (
-          <EmptyState message="No students match the selected filters." />
-        ) : null}
+      {!q.isLoading && !q.error && (q.data?.length ?? 0) === 0 ? (
+        <EmptyState message="No students match the selected filters." />
+      ) : null}
 
-        {/* Results */}
-        {uiState === "data" ? (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="text-sm font-semibold text-gray-900">Results</div>
-              <div className="mt-1 text-xs font-medium text-gray-500">
-                Showing {results.length} Students
-              </div>
+      {!q.isLoading && !q.error && (q.data?.length ?? 0) > 0 ? (
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-200 px-4 py-3">
+            <div className="text-sm font-semibold text-gray-900">Results</div>
+            <div className="mt-1 text-xs font-medium text-gray-500">
+              Showing {q.data.length} Students
             </div>
+          </div>
 
-            <ul className="divide-y divide-gray-100">
-              {results.map((s) => (
-                <li key={s.studentId} className="px-4 py-4">
-                  {/* Touch target >= 44px */}
+          <ul className="divide-y divide-gray-100">
+            {(q.data as StudentDto[]).map((s) => {
+              const roll = s.roll_no ?? String(s.id);
+              const sectionLabel =
+                MOCK_SECTIONS.find((x) => x.id === String(s.section_id))
+                  ?.label ?? `Section ${s.section_id}`;
+
+              return (
+                <li key={s.id} className="px-4 py-4">
                   <button
                     type="button"
                     className="flex w-full items-center justify-between gap-4 rounded-xl p-2 text-left hover:bg-gray-50"
                     onClick={() =>
                       logger.info("[principal][students] row_tap", {
                         trace,
-                        studentId: s.studentId,
+                        studentId: s.id,
                       })
                     }
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3">
                         <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
-                          {s.rollNo}
+                          {roll}
                         </span>
                         <div className="truncate text-sm font-semibold text-gray-900">
                           {s.name}
@@ -219,16 +138,9 @@ export function StudentsListPage() {
 
                       <div className="mt-2 text-xs font-medium text-gray-500">
                         Section:{" "}
-                        <span className="text-gray-900">{s.sectionLabel}</span>
-                        {s.parentPhone ? (
-                          <>
-                            {" "}
-                            • Parent:{" "}
-                            <span className="text-gray-900">
-                              {s.parentPhone}
-                            </span>
-                          </>
-                        ) : null}
+                        <span className="text-gray-900">{sectionLabel}</span> •
+                        Parent:{" "}
+                        <span className="text-gray-900">{s.parent_phone}</span>
                       </div>
                     </div>
 
@@ -237,11 +149,11 @@ export function StudentsListPage() {
                     </span>
                   </button>
                 </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </main>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }
