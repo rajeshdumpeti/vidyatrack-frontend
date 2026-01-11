@@ -23,7 +23,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
+      <div className="mx-auto flex h-14 w-full items-center justify-between px-4">
         <div className="flex min-w-0 items-center gap-3">
           {/* Mobile menu button */}
           <button

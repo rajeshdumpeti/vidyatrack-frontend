@@ -22,4 +22,7 @@ export const API_ENDPOINTS = {
     record: "/api/v1/marks/record",
     submit: "/api/v1/marks/submit",
   },
+  teachers: {
+    list: "/api/v1/teachers",
+  },
 } as const;
