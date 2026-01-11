@@ -40,7 +40,7 @@ export function AppShell() {
     <div className="min-h-screen bg-gray-50">
       <Header onMenuClick={openDrawer} />
 
-      <div className="mx-auto flex w-full max-w-6xl">
+      <div className="mx-auto flex w-full ">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
           <Sidebar role={navItems.role} items={navItems.items} />{" "}
