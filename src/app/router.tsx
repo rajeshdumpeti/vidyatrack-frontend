@@ -15,6 +15,7 @@ import { StudentsListPage } from "../features/principal/students/StudentsListPag
 import { TeachersListPage } from "../features/principal/teachers/TeachersListPage";
 import { ManageSchoolsPage } from "../features/management/setup/schools/ManageSchoolsPage";
 import { ManageClassesPage } from "../features/management/setup/classes/ManageClassesPage";
+import { ManageSectionsPage } from "../features/management/setup/sections/ManageSectionsPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: "students", element: <StudentsListPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/classes", element: <ManageClassesPage /> },
+      { path: "setup/sections", element: <ManageSectionsPage /> },
     ],
   },
 
