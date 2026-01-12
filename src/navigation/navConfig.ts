@@ -22,6 +22,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
     { label: "Dashboard", to: "/management" },
     { label: "Setup Schools", to: "/management/setup/schools" },
     { label: "Setup Classes", to: "/management/setup/classes" },
+    { label: "Setup Sections", to: "/management/setup/sections" },
     { label: "Attendance", to: "/management/attendance" },
     { label: "Marks", to: "/management/marks" },
     { label: "Students", to: "/management/students" },

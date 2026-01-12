@@ -33,4 +33,8 @@ export const API_ENDPOINTS = {
     list: "/api/v1/classes",
     create: "/api/v1/classes",
   },
+  sections: {
+    list: "/api/v1/sections",
+    create: "/api/v1/sections",
+  },
 } as const;
