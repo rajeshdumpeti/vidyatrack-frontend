@@ -13,6 +13,7 @@ import { AttendanceHistoryPage } from "../features/principal/attendance/Attendan
 import { MarksHistoryPage } from "../features/principal/marks/MarksHistoryPage";
 import { StudentsListPage } from "../features/principal/students/StudentsListPage";
 import { TeachersListPage } from "../features/principal/teachers/TeachersListPage";
+import { ManageSchoolsPage } from "../features/management/setup/schools/ManageSchoolsPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
 
     children: [
       { index: true, element: <div>Management Home (UI TBD)</div> },
+      { path: "setup/schools", element: <ManageSchoolsPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
       { path: "students", element: <StudentsListPage /> },
