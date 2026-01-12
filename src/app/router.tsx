@@ -68,7 +68,13 @@ export const router = createBrowserRouter([
       </RoleGuard>
     ),
 
-    children: [{ index: true, element: <div>Management Home (UI TBD)</div> }],
+    children: [
+      { index: true, element: <div>Management Home (UI TBD)</div> },
+      { path: "attendance", element: <AttendanceHistoryPage /> },
+      { path: "marks", element: <MarksHistoryPage /> },
+      { path: "students", element: <StudentsListPage /> },
+      { path: "teachers", element: <TeachersListPage /> },
+    ],
   },
 
   { path: "*", element: <div>404</div> },

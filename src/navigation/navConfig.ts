@@ -18,5 +18,11 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
     { label: "Students", to: "/principal/students" },
     { label: "Teachers", to: "/principal/teachers" },
   ],
-  management: [{ label: "Dashboard", to: "/management" }],
+  management: [
+    { label: "Dashboard", to: "/management" },
+    { label: "Attendance", to: "/management/attendance" },
+    { label: "Marks", to: "/management/marks" },
+    { label: "Students", to: "/management/students" },
+    { label: "Teachers", to: "/management/teachers" },
+  ],
 } as const;
