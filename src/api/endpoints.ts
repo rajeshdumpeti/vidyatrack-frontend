@@ -29,4 +29,8 @@ export const API_ENDPOINTS = {
     list: "/api/v1/schools",
     create: "/api/v1/schools",
   },
+  classes: {
+    list: "/api/v1/classes",
+    create: "/api/v1/classes",
+  },
 } as const;
