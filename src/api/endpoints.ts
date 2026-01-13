@@ -37,4 +37,8 @@ export const API_ENDPOINTS = {
     list: "/api/v1/sections",
     create: "/api/v1/sections",
   },
+  studentNotes: {
+    list: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+    create: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+  },
 } as const;

@@ -11,11 +11,12 @@ import { MarkAttendance } from "../features/teacher/attendance/MarkAttendance";
 import { EnterMarks } from "../features/teacher/marks/EnterMarks";
 import { AttendanceHistoryPage } from "../features/principal/attendance/AttendanceHistoryPage";
 import { MarksHistoryPage } from "../features/principal/marks/MarksHistoryPage";
-import { StudentsListPage } from "../features/principal/students/StudentsListPage";
+import { StudentsListPage } from "../features/students/StudentsListPage";
 import { TeachersListPage } from "../features/principal/teachers/TeachersListPage";
-import { ManageSchoolsPage } from "../features/management/setup/schools/ManageSchoolsPage";
-import { ManageClassesPage } from "../features/management/setup/classes/ManageClassesPage";
-import { ManageSectionsPage } from "../features/management/setup/sections/ManageSectionsPage";
+import { ManageSchoolsPage } from "../features/management/schools/ManageSchoolsPage";
+import { ManageClassesPage } from "../features/management/classes/ManageClassesPage";
+import { ManageSectionsPage } from "../features/management/sections/ManageSectionsPage";
+import { StudentProfilePage } from "../features/students/StudentProfilePage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -43,6 +44,8 @@ export const router = createBrowserRouter([
       { index: true, element: <TeacherDashboard /> },
       { path: "attendance", element: <MarkAttendance /> },
       { path: "marks", element: <EnterMarks /> },
+      { path: "students", element: <StudentsListPage /> },
+      { path: "students/:studentId", element: <StudentProfilePage /> },
     ],
   },
 
@@ -60,6 +63,7 @@ export const router = createBrowserRouter([
       { path: "marks", element: <MarksHistoryPage /> },
       { path: "students", element: <StudentsListPage /> },
       { path: "teachers", element: <TeachersListPage /> },
+      { path: "students/:studentId", element: <StudentProfilePage /> },
     ],
   },
 
@@ -80,6 +84,7 @@ export const router = createBrowserRouter([
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/classes", element: <ManageClassesPage /> },
       { path: "setup/sections", element: <ManageSectionsPage /> },
+      { path: "students/:studentId", element: <StudentProfilePage /> },
     ],
   },
 

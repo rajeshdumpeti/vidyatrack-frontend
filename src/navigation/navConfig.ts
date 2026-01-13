@@ -10,6 +10,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
     { label: "Dashboard", to: "/teacher" },
     { label: "Mark Attendance", to: "/teacher/attendance" },
     { label: "Enter Marks", to: "/teacher/marks" },
+    { label: "Students", to: "/teacher/students" },
   ],
   principal: [
     { label: "Dashboard", to: "/principal" },
