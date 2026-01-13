@@ -6,17 +6,18 @@ import { ManagementLayout } from "../layouts/ManagementLayout";
 import { OtpRequestPage } from "../features/auth/OtpRequestPage";
 import { OtpVerifyPage } from "../features/auth/OtpVerifyPage";
 import { RoleGuard } from "../hooks/useRoleGuard";
-import { TeacherDashboard } from "../features/teacher/dashboard/TeacherDashboard";
-import { MarkAttendance } from "../features/teacher/attendance/MarkAttendance";
-import { EnterMarks } from "../features/teacher/marks/EnterMarks";
+import { TeacherDashboard } from "../features/teachers/dashboard/TeacherDashboard";
+import { MarkAttendance } from "../features/teachers/attendance/MarkAttendance";
+import { EnterMarks } from "../features/teachers/marks/EnterMarks";
 import { AttendanceHistoryPage } from "../features/principal/attendance/AttendanceHistoryPage";
 import { MarksHistoryPage } from "../features/principal/marks/MarksHistoryPage";
 import { StudentsListPage } from "../features/students/StudentsListPage";
-import { TeachersListPage } from "../features/principal/teachers/TeachersListPage";
+import { TeachersListPage } from "../features/teachers/TeachersListPage";
 import { ManageSchoolsPage } from "../features/management/schools/ManageSchoolsPage";
 import { ManageClassesPage } from "../features/management/classes/ManageClassesPage";
 import { ManageSectionsPage } from "../features/management/sections/ManageSectionsPage";
 import { StudentProfilePage } from "../features/students/StudentProfilePage";
+import { TeacherProfilePage } from "../features/teachers/TeacherProfilePage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
       { path: "students", element: <StudentsListPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
+      { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
     ],
   },
 
@@ -85,6 +87,7 @@ export const router = createBrowserRouter([
       { path: "setup/classes", element: <ManageClassesPage /> },
       { path: "setup/sections", element: <ManageSectionsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
+      { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
     ],
   },
 

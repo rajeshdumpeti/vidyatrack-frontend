@@ -136,36 +136,12 @@ export function TeacherDashboard() {
       ) : null}
 
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-700">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            Active Session
-          </div>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button
-              type="button"
-              onClick={() => navigate("/teacher/attendance")}
-              className="h-12 w-full rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto sm:min-w-[200px]"
-            >
-              Mark Attendance
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/teacher/marks")}
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-900 hover:bg-gray-50 sm:w-auto sm:min-w-[200px]"
-            >
-              Enter Marks
-            </button>
-          </div>
-
-          <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-gray-900">
-            Current Session
-          </h1>
-          <p className="mt-2 text-base font-medium text-gray-600">
-            Your next action is waiting below.
-          </p>
-        </div>
+        <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-gray-900">
+          Current Session
+        </h1>
+        <p className="mt-2 text-base font-medium text-gray-600">
+          Your next action is waiting below.
+        </p>
 
         <div className="mt-10 overflow-hidden rounded-2xl shadow-lg">
           <div className="relative bg-linear-to-br from-slate-700 via-slate-700 to-slate-900 px-6 py-8">
@@ -207,11 +183,6 @@ export function TeacherDashboard() {
           </div>
 
           <div className="h-1 w-full bg-blue-600" />
-        </div>
-
-        <div className="mt-10 text-center text-sm text-gray-500">
-          Powered by{" "}
-          <span className="font-semibold text-gray-900">VidyaTrack</span>
         </div>
       </main>
     </div>

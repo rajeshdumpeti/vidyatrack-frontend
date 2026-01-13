@@ -34,6 +34,7 @@ export function Sidebar({ role, items, onClose }: SidebarProps) {
           <NavLink
             key={item.to}
             to={item.to}
+            onClick={onClose}
             className={({ isActive }) =>
               [
                 linkBase,

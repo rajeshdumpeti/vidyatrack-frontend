@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { getHeaderTitle } from "./headerTitles";
+import { Menu } from "lucide-react";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -29,10 +30,10 @@ export function Header({ onMenuClick }: HeaderProps) {
           <button
             type="button"
             onClick={onMenuClick}
-            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-900 hover:bg-gray-50 md:hidden"
+            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-white hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 md:hidden shadow-lg hover:shadow-xl"
             aria-label="Open menu"
           >
-            Menu
+            <Menu className="h-5 w-5" />
           </button>
 
           <div className="min-w-0">
