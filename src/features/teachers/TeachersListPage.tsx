@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
-import { usePrincipalTeachers } from "../../../hooks/usePrincipalTeachers";
-import { logger } from "../../../utils/logger";
-import type { TeacherDto } from "../../../types/teacher.types";
+import { usePrincipalTeachers } from "../../hooks/usePrincipalTeachers";
+import { logger } from "../../utils/logger";
+import type { TeacherDto } from "../../types/teacher.types";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/auth.store";
 
 export function TeachersListPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const [search, setSearch] = useState<string>("");
+  const navigate = useNavigate();
+  const role = useAuthStore((s) => s.role);
+  const navigateRole = role ?? "teacher";
 
   const q = usePrincipalTeachers(search);
 
@@ -67,12 +72,13 @@ export function TeachersListPage() {
                     <button
                       type="button"
                       className="flex w-full items-center justify-between gap-4 rounded-xl p-2 text-left hover:bg-gray-50"
-                      onClick={() =>
+                      onClick={() => {
                         logger.info("[principal][teachers] row_tap", {
                           trace,
                           teacherId: t.id,
-                        })
-                      }
+                        });
+                        navigate(`/${navigateRole}/teachers/${t.id}`);
+                      }}
                     >
                       <div className="min-w-0">
                         <div className="truncate text-sm font-semibold text-gray-900">
