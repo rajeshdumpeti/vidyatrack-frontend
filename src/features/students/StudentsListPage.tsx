@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
-import { logger } from "../../../utils/logger";
-import { usePrincipalStudents } from "../../../hooks/usePrincipalStudents";
-import type { StudentDto } from "../../../types/student.types";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
+import { logger } from "../../utils/logger";
+import { usePrincipalStudents } from "../../hooks/usePrincipalStudents";
+import type { StudentDto } from "../../types/student.types";
+import { LoadingState } from "../../components/feedback/LoadingState";
+import { ErrorState } from "../../components/feedback/ErrorState";
+import { EmptyState } from "../../components/feedback/EmptyState";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/auth.store"; // adjust relative path based on file location
 
 const MOCK_SECTIONS = [
   { id: "", label: "All Sections" },
@@ -19,6 +21,9 @@ export function StudentsListPage() {
   const [search, setSearch] = useState<string>("");
   const sectionIdNumber = sectionId ? Number(sectionId) : undefined;
   const q = usePrincipalStudents({ sectionId: sectionIdNumber, search });
+  const navigate = useNavigate();
+  const role = useAuthStore((s) => s.role);
+  const navigateRole = role ?? "teacher";
 
   // UI-only state toggles (for skeleton verification)
 
@@ -119,12 +124,13 @@ export function StudentsListPage() {
                   <button
                     type="button"
                     className="flex w-full items-center justify-between gap-4 rounded-xl p-2 text-left hover:bg-gray-50"
-                    onClick={() =>
+                    onClick={() => {
                       logger.info("[principal][students] row_tap", {
                         trace,
                         studentId: s.id,
-                      })
-                    }
+                      });
+                      navigate(`/${navigateRole}/students/${s.id}`);
+                    }}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-3">
@@ -144,7 +150,7 @@ export function StudentsListPage() {
                       </div>
                     </div>
 
-                    <span className="inline-flex h-9 items-center rounded-full bg-gray-900 px-4 text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-gray-700">
                       View
                     </span>
                   </button>

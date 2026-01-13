@@ -13,4 +13,7 @@ export type StudentDto = {
 
   // Optional fields (do NOT assume they exist everywhere)
   roll_no?: string | number;
+  class_name?: string | null;
+  section_name?: string | null;
+  class_id?: number | null;
 };
