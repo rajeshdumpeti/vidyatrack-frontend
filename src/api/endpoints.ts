@@ -33,9 +33,16 @@ export const API_ENDPOINTS = {
     list: "/api/v1/classes",
     create: "/api/v1/classes",
   },
+  subjects: {
+    list: "/api/v1/subjects",
+  },
   sections: {
     list: "/api/v1/sections",
     create: "/api/v1/sections",
+  },
+  teachingAssignments: {
+    list: "/api/v1/teaching-assignments",
+    create: "/api/v1/teaching-assignments",
   },
   studentNotes: {
     list: (studentId: number) => `/api/v1/students/${studentId}/notes`,
