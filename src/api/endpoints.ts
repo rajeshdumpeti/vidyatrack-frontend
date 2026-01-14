@@ -35,7 +35,9 @@ export const API_ENDPOINTS = {
   },
   subjects: {
     list: "/api/v1/subjects",
+    create: "/api/v1/subjects",
   },
+
   sections: {
     list: "/api/v1/sections",
     create: "/api/v1/sections",
