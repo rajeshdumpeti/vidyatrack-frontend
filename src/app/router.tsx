@@ -18,6 +18,7 @@ import { ManageClassesPage } from "../features/management/classes/ManageClassesP
 import { ManageSectionsPage } from "../features/management/sections/ManageSectionsPage";
 import { StudentProfilePage } from "../features/students/StudentProfilePage";
 import { TeacherProfilePage } from "../features/teachers/TeacherProfilePage";
+import { AssignSubjectsPage } from "../features/management/AssignSubjectsPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -88,6 +89,7 @@ export const router = createBrowserRouter([
       { path: "setup/sections", element: <ManageSectionsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
+      { path: "setup/assign-subjects", element: <AssignSubjectsPage /> },
     ],
   },
 
