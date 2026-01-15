@@ -20,6 +20,8 @@ import { StudentProfilePage } from "../features/students/StudentProfilePage";
 import { TeacherProfilePage } from "../features/teachers/TeacherProfilePage";
 import { AssignSubjectsPage } from "../features/management/setup/AssignSubjectsPage";
 import { SubjectsPage } from "../features/management/setup/SubjectsPage";
+import { TeachersPage } from "../features/management/setup/TeachersPage";
+import { StudentsSetupPage } from "../features/management/setup/StudentsSetupPage";
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
@@ -84,7 +86,7 @@ export const router = createBrowserRouter([
       { path: "setup/schools", element: <ManageSchoolsPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
-      { path: "students", element: <StudentsListPage /> },
+      { path: "students", element: <StudentsSetupPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/classes", element: <ManageClassesPage /> },
       { path: "setup/sections", element: <ManageSectionsPage /> },
@@ -92,6 +94,7 @@ export const router = createBrowserRouter([
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
       { path: "setup/assign-subjects", element: <AssignSubjectsPage /> },
       { path: "setup/subjects", element: <SubjectsPage /> },
+      { path: "setup/teachers", element: <TeachersPage /> },
     ],
   },
 

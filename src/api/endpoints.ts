@@ -50,4 +50,8 @@ export const API_ENDPOINTS = {
     list: (studentId: number) => `/api/v1/students/${studentId}/notes`,
     create: (studentId: number) => `/api/v1/students/${studentId}/notes`,
   },
+
+  management: {
+    teachersCreate: "/api/v1/management/teachers",
+  },
 } as const;

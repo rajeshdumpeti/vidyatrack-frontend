@@ -10,3 +10,16 @@ export type TeacherDto = {
   // Optional label returned by backend only (no joins client-side)
   assigned_section_label?: string | null;
 };
+
+export type Teacher = {
+  id: number;
+  name: string;
+  phone?: string;
+  email?: string | null;
+};
+
+export type CreateTeacherInput = {
+  name: string;
+  phone: string;
+  email?: string;
+};

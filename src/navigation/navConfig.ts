@@ -30,5 +30,6 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
     { label: "Marks", to: "/management/marks" },
     { label: "Students", to: "/management/students" },
     { label: "Teachers", to: "/management/teachers" },
+    { label: "Onboard Teachers", to: "/management/setup/teachers" },
   ],
 } as const;
