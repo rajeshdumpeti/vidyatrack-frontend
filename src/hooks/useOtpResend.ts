@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { requestOtp } from "../api/auth.api";
+import { requestOtp } from "@/api/auth.api";
 
 export function useOtpResend() {
   const mutation = useMutation({

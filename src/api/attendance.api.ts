@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "./endpoints";
 import type {
   CreateAttendanceRequest,
   SubmitAttendanceRequest,
-} from "../types/attendance-submit.types";
+} from "@/types/attendance-submit.types";
 
 export async function createAttendanceRecord(payload: CreateAttendanceRequest) {
   const res = await apiClient.post(API_ENDPOINTS.attendance.create, payload);

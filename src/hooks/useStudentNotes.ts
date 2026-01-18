@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getStudentNotes, createStudentNote } from "../api/studentNotes.api";
-import type { CreateStudentNotePayload } from "../types/studentNotes.types";
+import { getStudentNotes, createStudentNote } from "@/api/studentNotes.api";
+import type { CreateStudentNotePayload } from "@/types/studentNotes.types";
 
 export function useStudentNotes(studentId: number) {
   const query = useQuery({

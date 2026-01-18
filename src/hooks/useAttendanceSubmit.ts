@@ -1,12 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import {
-  createAttendanceRecord,
-  submitAttendance,
-} from "../api/attendance.api";
+import { createAttendanceRecord, submitAttendance } from "@/api/attendance.api";
 import type {
   AttendanceStatusDto,
   CreateAttendanceRequest,
-} from "../types/attendance-submit.types";
+} from "@/types/attendance-submit.types";
 
 type SubmitArgs = {
   sectionId: number;

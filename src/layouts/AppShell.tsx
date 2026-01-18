@@ -4,10 +4,10 @@ import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { Footer } from "./Footer";
 import { useMemo } from "react";
-import type { NavRole } from "../navigation/navConfig";
-import { NAV_ITEMS } from "../navigation/navConfig";
-import { useAuthStore } from "../store/auth.store";
-import { logger } from "../utils/logger";
+import type { NavRole } from "@/navigation/navConfig";
+import { NAV_ITEMS } from "@/navigation/navConfig";
+import { useAuthStore } from "@/store/auth.store";
+import { logger } from "@/utils/logger";
 export function AppShell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 

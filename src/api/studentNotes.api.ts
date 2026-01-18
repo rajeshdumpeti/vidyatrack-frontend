@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "./endpoints";
 import type {
   CreateStudentNotePayload,
   StudentNoteDto,
-} from "../types/studentNotes.types";
+} from "@/types/studentNotes.types";
 
 export async function getStudentNotes(
   studentId: number

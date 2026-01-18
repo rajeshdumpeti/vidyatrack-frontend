@@ -17,3 +17,9 @@ export type StudentDto = {
   section_name?: string | null;
   class_id?: number | null;
 };
+
+export type StudentCreateInput = {
+  name: string; // backend uses "name" (not full_name) in your DB/API
+  section_id: number;
+  parent_phone: string;
+};

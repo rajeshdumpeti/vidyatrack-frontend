@@ -6,13 +6,44 @@ import { LoadingState } from "../../components/feedback/LoadingState";
 import { ErrorState } from "../../components/feedback/ErrorState";
 import { EmptyState } from "../../components/feedback/EmptyState";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/auth.store"; // adjust relative path based on file location
+import { useAuthStore } from "../../store/auth.store";
 
 const MOCK_SECTIONS = [
   { id: "", label: "All Sections" },
   { id: "1", label: "Class 5 - Section A" },
   { id: "2", label: "Class 5 - Section B" },
   { id: "3", label: "Class 6 - Section A" },
+];
+
+const MOCK_STUDENTS: StudentDto[] = [
+  {
+    id: 101,
+    name: "Aarav Kumar",
+    section_id: 1,
+    parent_phone: "9876543210",
+    school_id: 1,
+  },
+  {
+    id: 102,
+    name: "Meera Shah",
+    section_id: 2,
+    parent_phone: "9876543211",
+    school_id: 1,
+  },
+  {
+    id: 103,
+    name: "Ishaan Verma",
+    section_id: 3,
+    parent_phone: "9876543212",
+    school_id: 1,
+  },
+  {
+    id: 104,
+    name: "Anaya Singh",
+    section_id: 1,
+    parent_phone: "9876543213",
+    school_id: 1,
+  },
 ];
 
 export function StudentsListPage() {
@@ -24,8 +55,6 @@ export function StudentsListPage() {
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.role);
   const navigateRole = role ?? "teacher";
-
-  // UI-only state toggles (for skeleton verification)
 
   const onFilterChange = (
     next: Partial<{ sectionId: string; search: string }>
@@ -39,6 +68,22 @@ export function StudentsListPage() {
       search: next.search ?? search,
     });
   };
+
+  const filteredMock = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = MOCK_STUDENTS.filter((s) =>
+      sectionIdNumber ? s.section_id === sectionIdNumber : true
+    );
+
+    if (!q) return list;
+
+    return list.filter((s) => {
+      const name = (s.name ?? "").toLowerCase();
+      const phone = (s.parent_phone ?? "").toLowerCase();
+      const roll = String((s as any).roll_no ?? "").toLowerCase();
+      return name.includes(q) || phone.includes(q) || roll.includes(q);
+    });
+  }, [search, sectionIdNumber]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -54,7 +99,6 @@ export function StudentsListPage() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
-        {/* Filters */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -99,21 +143,21 @@ export function StudentsListPage() {
         />
       ) : null}
 
-      {!q.isLoading && !q.error && (q.data?.length ?? 0) === 0 ? (
+      {filteredMock.length === 0 ? (
         <EmptyState message="No students match the selected filters." />
       ) : null}
 
-      {!q.isLoading && !q.error && (q.data?.length ?? 0) > 0 ? (
+      {filteredMock.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="border-b border-gray-200 px-4 py-3">
             <div className="text-sm font-semibold text-gray-900">Results</div>
             <div className="mt-1 text-xs font-medium text-gray-500">
-              Showing {q.data.length} Students
+              Showing {filteredMock.length} Students
             </div>
           </div>
 
           <ul className="divide-y divide-gray-100">
-            {(q.data as StudentDto[]).map((s) => {
+            {filteredMock.map((s) => {
               const roll = s.roll_no ?? String(s.id);
               const sectionLabel =
                 MOCK_SECTIONS.find((x) => x.id === String(s.section_id))

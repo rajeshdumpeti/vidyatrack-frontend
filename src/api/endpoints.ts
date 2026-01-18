@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     meAttendanceSection: "/api/v1/teacher/me/attendance-section",
   },
   students: {
+    create: "/api/v1/students",
     list: "/api/v1/students",
   },
   attendance: {

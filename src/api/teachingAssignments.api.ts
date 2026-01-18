@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "./endpoints";
 import type {
   TeachingAssignmentCreatePayload,
   TeachingAssignmentDto,
-} from "../types/teachingAssignment.types";
+} from "@/types/teachingAssignment.types";
 
 export async function getTeachingAssignmentsBySection(
   sectionId: number

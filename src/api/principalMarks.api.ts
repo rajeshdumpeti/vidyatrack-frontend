@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { PrincipalMarksRowDto } from "../types/principalMarks.types";
+import type { PrincipalMarksRowDto } from "@/types/principalMarks.types";
 
 export async function getPrincipalMarks(params: {
   sectionId: number;

@@ -2,16 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { LoadingState } from "../../../components/feedback/LoadingState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
 
-import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
-import { useStudentsBySection } from "../../../hooks/useStudentsBySection";
-import { logger } from "../../../utils/logger";
-import { formatToday, formatIsoDate } from "../../../utils/date";
-import { useAttendanceSubmit } from "../../../hooks/useAttendanceSubmit";
-import type { AttendanceStatusDto } from "../../../types/attendance-submit.types";
+import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
+import { useStudentsBySection } from "@/hooks/useStudentsBySection";
+import { logger } from "@/utils/logger";
+import { formatToday, formatIsoDate } from "@/utils/date";
+import { useAttendanceSubmit } from "@/hooks/useAttendanceSubmit";
+import type { AttendanceStatusDto } from "@/types/attendance-submit.types";
 
 type StudentUi = {
   id: string;

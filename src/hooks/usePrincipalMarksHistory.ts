@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPrincipalMarks } from "../api/principalMarks.api";
+import { getPrincipalMarks } from "@/api/principalMarks.api";
 
 export function usePrincipalMarksHistory(filters: {
   sectionId?: number;

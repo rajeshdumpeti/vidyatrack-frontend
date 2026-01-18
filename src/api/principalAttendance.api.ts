@@ -1,5 +1,5 @@
 import { apiClient } from "./apiClient";
-import type { PrincipalAttendanceRowDto } from "../types/principalAttendance.types";
+import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
 
 export async function getPrincipalAttendance(params: {
   date: string; // YYYY-MM-DD

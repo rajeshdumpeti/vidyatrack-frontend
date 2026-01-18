@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getTeachers } from "../api/teachers.api";
-import type { TeacherDto } from "../types/teacher.types";
+import { getTeachers } from "@/api/teachers.api";
+import type { TeacherDto } from "@/types/teacher.types";
 
 function normalize(v: string) {
   return v.trim().toLowerCase();

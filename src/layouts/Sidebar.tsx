@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import type { NavItem, NavRole } from "../navigation/navConfig";
+import type { NavItem, NavRole } from "@/navigation/navConfig";
 
 type SidebarProps = {
   role?: NavRole;

@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
-import type { SectionDto } from "../types/section.types";
+import type { SectionDto } from "@/types/section.types";
 
 export async function getSections(): Promise<SectionDto[]> {
   const res = await apiClient.get<SectionDto[]>(API_ENDPOINTS.sections.list);

@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
 import {
   useTeachingAssignments,
   useCreateTeachingAssignment,
-} from "../../../hooks/useTeachingAssignments";
-import { apiClient } from "../../../api/apiClient";
-import { API_ENDPOINTS } from "../../../api/endpoints";
-import type { TeachingAssignmentCreatePayload } from "../../../types/teachingAssignment.types";
+} from "@/hooks/useTeachingAssignments";
+import { apiClient } from "@/api/apiClient";
+import { API_ENDPOINTS } from "@/api/endpoints";
+import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
 
 type ClassDto = { id: number; name: string };
 type SectionDto = { id: number; name: string; class_id: number };

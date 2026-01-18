@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { usePrincipalTeachers } from "../../hooks/usePrincipalTeachers";
-import { logger } from "../../utils/logger";
-import type { TeacherDto } from "../../types/teacher.types";
+import { usePrincipalTeachers } from "@/hooks/usePrincipalTeachers";
+import { logger } from "@/utils/logger";
+import type { TeacherDto } from "@/types/teacher.types";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/auth.store";
+import { useAuthStore } from "@/store/auth.store";
 
 export function TeachersListPage() {
   const trace = useMemo(() => logger.traceId(), []);

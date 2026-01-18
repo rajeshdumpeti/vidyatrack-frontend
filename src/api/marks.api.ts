@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from "./endpoints";
 import type {
   RecordMarkRequest,
   SubmitMarksRequest,
-} from "../types/marks-submit.types";
+} from "@/types/marks-submit.types";
 
 export async function recordMark(payload: RecordMarkRequest) {
   const res = await apiClient.post(API_ENDPOINTS.marks.record, payload);

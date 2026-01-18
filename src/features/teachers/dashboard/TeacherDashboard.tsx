@@ -5,10 +5,10 @@ import { FiCheckCircle } from "react-icons/fi";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
 import { IoTimeOutline } from "react-icons/io5";
 
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
-import { logger } from "../../../utils/logger";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
+import { logger } from "@/utils/logger";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();

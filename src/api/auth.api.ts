@@ -2,7 +2,7 @@ import type {
   OtpRequestBody,
   OtpVerifyBody,
   OtpVerifyResponse,
-} from "../types/auth.types";
+} from "@/types/auth.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 

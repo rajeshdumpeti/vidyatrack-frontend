@@ -1,17 +1,14 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ErrorState } from "../../components/feedback/ErrorState";
-import { LoadingState } from "../../components/feedback/LoadingState";
-import { EmptyState } from "../../components/feedback/EmptyState";
-import { apiClient } from "../../api/apiClient";
-import { API_ENDPOINTS } from "../../api/endpoints";
-import { logger } from "../../utils/logger";
-import type { StudentDto } from "../../types/student.types";
-import {
-  useStudentNotes,
-  useCreateStudentNote,
-} from "../../hooks/useStudentNotes";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { apiClient } from "@/api/apiClient";
+import { API_ENDPOINTS } from "@/api/endpoints";
+import { logger } from "@/utils/logger";
+import type { StudentDto } from "@/types/student.types";
+import { useStudentNotes, useCreateStudentNote } from "@/hooks/useStudentNotes";
 import {
   User,
   Phone,

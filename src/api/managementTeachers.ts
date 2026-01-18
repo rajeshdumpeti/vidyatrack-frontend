@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
-import type { CreateTeacherInput, Teacher } from "../types/teacher.types";
+import type { CreateTeacherInput, Teacher } from "@/types/teacher.types";
 
 export async function createManagementTeacher(
   payload: CreateTeacherInput

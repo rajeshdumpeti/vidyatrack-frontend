@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
-import { usePrincipalMarksHistory } from "../../../hooks/usePrincipalMarksHistory";
-import type { PrincipalMarksRowDto } from "../../../types/principalMarks.types";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
+import { usePrincipalMarksHistory } from "@/hooks/usePrincipalMarksHistory";
+import type { PrincipalMarksRowDto } from "@/types/principalMarks.types";
 
 type MarksRow = {
   studentId: number;

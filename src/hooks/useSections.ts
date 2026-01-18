@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSection, getSections } from "../api/sections.api";
+import { createSection, getSections } from "@/api/sections.api";
 
 export function useSections() {
   const qc = useQueryClient();

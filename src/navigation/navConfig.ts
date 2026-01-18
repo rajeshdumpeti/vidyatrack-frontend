@@ -24,6 +24,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
     { label: "Setup Schools", to: "/management/setup/schools" },
     { label: "Setup Classes", to: "/management/setup/classes" },
     { label: "Setup Sections", to: "/management/setup/sections" },
+    { label: "Setup Students", to: "/management/setup/students" },
     { label: "Subjects", to: "/management/setup/subjects" },
     { label: "Assign Subjects", to: "/management/setup/assign-subjects" },
     { label: "Attendance", to: "/management/attendance" },

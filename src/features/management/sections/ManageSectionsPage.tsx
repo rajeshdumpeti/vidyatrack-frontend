@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { useClasses } from "../../../hooks/useClasses";
-import { useSections } from "../../../hooks/useSections";
-import { logger } from "../../../utils/logger";
-import type { ClassDto } from "../../../types/class.types";
-import type { SectionDto } from "../../../types/section.types";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { useClasses } from "@/hooks/useClasses";
+import { useSections } from "@/hooks/useSections";
+import { logger } from "@/utils/logger";
+import type { ClassDto } from "@/types/class.types";
+import type { SectionDto } from "@/types/section.types";
 
 type FormValues = {
   class_id: string; // keep as string for <select>

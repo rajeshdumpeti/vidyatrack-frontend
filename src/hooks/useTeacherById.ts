@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTeachers } from "../api/teachers.api";
-import type { TeacherDto } from "../types/teacher.types";
+import { getTeachers } from "@/api/teachers.api";
+import type { TeacherDto } from "@/types/teacher.types";
 
 export function useTeacherById(teacherId: number) {
   const qc = useQueryClient();

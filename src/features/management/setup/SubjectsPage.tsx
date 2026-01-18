@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useSubjects, useCreateSubject } from "../../../hooks/useSubjects";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
+import { useSubjects, useCreateSubject } from "@/hooks/useSubjects";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
 
 function normalize(s: string) {
   return s.trim().toLowerCase();

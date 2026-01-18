@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useTeachers } from "../../../hooks/useTeachers";
-import { useCreateManagementTeacher } from "../../../hooks/useCreateManagementTeacher";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
-import type { CreateTeacherInput, Teacher } from "../../../types/teacher.types";
+import { useTeachers } from "@/hooks/useTeachers";
+import { useCreateManagementTeacher } from "@/hooks/useCreateManagementTeacher";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
+import type { CreateTeacherInput, Teacher } from "@/types/teacher.types";
 
 function normalize(s: string) {
   return s.trim().toLowerCase();

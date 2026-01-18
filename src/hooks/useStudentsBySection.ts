@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getStudentsBySection } from "../api/students.api";
-import type { StudentListItem } from "../types/student.types";
+import { getStudentsBySection } from "@/api/students.api";
+import type { StudentListItem } from "@/types/student.types";
 
 export function useStudentsBySection(sectionId?: number) {
   const query = useQuery({

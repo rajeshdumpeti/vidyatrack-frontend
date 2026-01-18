@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { formatIsoDate } from "../../../utils/date";
-import { logger } from "../../../utils/logger";
-import { usePrincipalAttendanceHistory } from "../../../hooks/usePrincipalAttendanceHistory";
-import type { PrincipalAttendanceRowDto } from "../../../types/principalAttendance.types";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { formatIsoDate } from "@/utils/date";
+import { logger } from "@/utils/logger";
+import { usePrincipalAttendanceHistory } from "@/hooks/usePrincipalAttendanceHistory";
+import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
 
 type AttendanceStatus = "PRESENT" | "ABSENT";
 

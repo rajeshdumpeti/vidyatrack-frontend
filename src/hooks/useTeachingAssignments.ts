@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTeachingAssignment,
   getTeachingAssignmentsBySection,
-} from "../api/teachingAssignments.api";
-import type { TeachingAssignmentCreatePayload } from "../types/teachingAssignment.types";
+} from "@/api/teachingAssignments.api";
+import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
 
 export function useTeachingAssignments(sectionId: number | null) {
   const query = useQuery({

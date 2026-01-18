@@ -1,5 +1,5 @@
-import type { AttendanceSection } from "../types/attendance.types";
-import type { TeacherDto, Teacher } from "../types/teacher.types";
+import type { AttendanceSection } from "@/types/attendance.types";
+import type { TeacherDto, Teacher } from "@/types/teacher.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 

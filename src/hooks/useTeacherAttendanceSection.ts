@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyAttendanceSection } from "../api/teachers.api";
-import type { AttendanceSection } from "../types/attendance.types";
+import { getMyAttendanceSection } from "@/api/teachers.api";
+import type { AttendanceSection } from "@/types/attendance.types";
 
 export function useTeacherAttendanceSection() {
   const query = useQuery({

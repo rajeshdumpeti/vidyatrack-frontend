@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { logger } from "../../../utils/logger";
-import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
-import { useStudentsBySection } from "../../../hooks/useStudentsBySection";
-import { useMarksSubmit } from "../../../hooks/useMarksSubmit";
-import type { MarksExamTypeDto } from "../../../types/marks-submit.types";
+import { logger } from "@/utils/logger";
+import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
+import { useStudentsBySection } from "@/hooks/useStudentsBySection";
+import { useMarksSubmit } from "@/hooks/useMarksSubmit";
+import type { MarksExamTypeDto } from "@/types/marks-submit.types";
 import { useNavigate } from "react-router-dom";
 
 type ExamType =
