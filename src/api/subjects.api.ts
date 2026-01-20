@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
-import type { Subject, SubjectCreateInput } from "../types/subject.types";
+import type { Subject, SubjectCreateInput } from "@/types/subject.types";
 
 export async function listSubjects(): Promise<Subject[]> {
   const res = await apiClient.get<Subject[]>(API_ENDPOINTS.subjects.list);

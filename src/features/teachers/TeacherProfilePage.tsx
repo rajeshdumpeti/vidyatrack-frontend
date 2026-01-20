@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { ErrorState } from "../../components/feedback/ErrorState";
-import { LoadingState } from "../../components/feedback/LoadingState";
-import { logger } from "../../utils/logger";
-import { useTeacherById } from "../../hooks/useTeacherById";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { logger } from "@/utils/logger";
+import { useTeacherById } from "@/hooks/useTeacherById";
 
 export function TeacherProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);

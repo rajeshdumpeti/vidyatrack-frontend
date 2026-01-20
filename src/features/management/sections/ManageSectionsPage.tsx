@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { useClasses } from "../../../hooks/useClasses";
-import { useSections } from "../../../hooks/useSections";
-import { logger } from "../../../utils/logger";
-import type { ClassDto } from "../../../types/class.types";
-import type { SectionDto } from "../../../types/section.types";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { useClasses } from "@/hooks/useClasses";
+import { useSections } from "@/hooks/useSections";
+import { logger } from "@/utils/logger";
+import type { ClassDto } from "@/types/class.types";
+import type { SectionDto } from "@/types/section.types";
 
 type FormValues = {
   class_id: string; // keep as string for <select>
@@ -20,6 +20,13 @@ export function ManageSectionsPage() {
 
   const classes = useClasses();
   const sections = useSections();
+  const classLabelById = useMemo(() => {
+    const map = new Map<number, string>();
+    (classes.list.data ?? []).forEach((c: ClassDto) => {
+      map.set(c.id, c.name);
+    });
+    return map;
+  }, [classes.list.data]);
 
   const {
     register,
@@ -66,7 +73,7 @@ export function ManageSectionsPage() {
             Sections Setup
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-600">
-            Management-only: create sections and view existing sections.
+            Create sections under each class (e.g., 10th - A).
           </p>
         </div>
       </header>
@@ -117,7 +124,7 @@ export function ManageSectionsPage() {
                   <option value="">Select a class</option>
                   {(classes.list.data as ClassDto[] | undefined)?.map((c) => (
                     <option key={c.id} value={String(c.id)}>
-                      {c.name}
+                      {c.name} (ID: {c.id})
                     </option>
                   ))}
                 </select>
@@ -214,7 +221,9 @@ export function ManageSectionsPage() {
                       <div className="mt-1 text-xs font-medium text-gray-500">
                         Class:{" "}
                         <span className="text-gray-900">
-                          {s.class_name ? s.class_name : `#${s.class_id}`}
+                          {s.class_name ??
+                            classLabelById.get(s.class_id) ??
+                            `Class #${s.class_id}`}
                         </span>
                       </div>
                     </div>

@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { recordMark, submitMarks } from "..//api/marks.api";
+import { recordMark, submitMarks } from "@/api/marks.api";
 import type {
   MarksExamTypeDto,
   RecordMarkRequest,
-} from "../types/marks-submit.types";
+} from "@/types/marks-submit.types";
 import axios from "axios";
 type SubmitArgs = {
   sectionId: number;

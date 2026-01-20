@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getTeachers } from "../api/teachers.api";
-import type { TeacherDto } from "../types/teacher.types";
+import { getTeachers } from "@/api/teachers.api";
+import type { TeacherDto } from "@/types/teacher.types";
 
 function normalize(v: string) {
   return v.trim().toLowerCase();
@@ -16,11 +16,19 @@ function filterTeachers(list: TeacherDto[], search: string) {
     const phone = normalize(String(t.phone ?? ""));
     const email = normalize(String(t.email ?? ""));
     const section = normalize(String(t.assigned_section_label ?? ""));
+    const employeeId = normalize(String(t.employee_id ?? ""));
+    const status = normalize(String(t.status ?? ""));
+    const assignmentLabels = (t.assignments ?? [])
+      .map((a) => normalize(String(a.label ?? "")))
+      .join(" ");
     return (
       name.includes(q) ||
       phone.includes(q) ||
       email.includes(q) ||
-      section.includes(q)
+      section.includes(q) ||
+      employeeId.includes(q) ||
+      status.includes(q) ||
+      assignmentLabels.includes(q)
     );
   });
 }

@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { EmptyState } from "../../../components/feedback/EmptyState";
-import { logger } from "../../../utils/logger";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
 import {
   useTeachingAssignments,
   useCreateTeachingAssignment,
-} from "../../../hooks/useTeachingAssignments";
-import { apiClient } from "../../../api/apiClient";
-import { API_ENDPOINTS } from "../../../api/endpoints";
-import type { TeachingAssignmentCreatePayload } from "../../../types/teachingAssignment.types";
+} from "@/hooks/useTeachingAssignments";
+import { apiClient } from "@/api/apiClient";
+import { API_ENDPOINTS } from "@/api/endpoints";
+import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
 
 type ClassDto = { id: number; name: string };
 type SectionDto = { id: number; name: string; class_id: number };
@@ -20,6 +20,7 @@ type TeacherDto = { id: number; name?: string | null; phone?: string | null };
 function getFriendlyAssignError(err: unknown): string {
   // Keep it simple and deterministic; no raw stack traces
   // Axios errors usually have response?.status / response?.data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anyErr = err as any;
   const status = anyErr?.response?.status;
   const detail = anyErr?.response?.data?.detail;
@@ -91,7 +92,6 @@ export function AssignSubjectsPage() {
     data: assignments,
     isLoading: assignmentsLoading,
     error: assignmentsError,
-    refetch: refetchAssignments,
   } = useTeachingAssignments(sectionId);
 
   const createMutation = useCreateTeachingAssignment();
@@ -100,6 +100,13 @@ export function AssignSubjectsPage() {
   const sections = sectionsQuery.data ?? [];
   const subjects = subjectsQuery.data ?? [];
   const teachers = teachersQuery.data ?? [];
+  const classLabelById = useMemo(() => {
+    const map = new Map<number, string>();
+    classes.forEach((c) => {
+      map.set(c.id, c.name);
+    });
+    return map;
+  }, [classes]);
 
   const prereqLoading =
     classesQuery.isLoading ||
@@ -222,7 +229,7 @@ export function AssignSubjectsPage() {
             Assign Subjects
           </div>
           <p className="mt-1 text-sm text-gray-600">
-            Assign a teacher to each subject for a selected section.
+            Pick class + section, then assign a teacher for each subject.
           </p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -238,7 +245,7 @@ export function AssignSubjectsPage() {
                 <option value="">Select class</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {c.name} (ID: {c.id})
                   </option>
                 ))}
               </select>
@@ -259,7 +266,9 @@ export function AssignSubjectsPage() {
                 </option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.name}
+                    {(classLabelById.get(s.class_id) ?? `Class #${s.class_id}`) +
+                      " - " +
+                      s.name}
                   </option>
                 ))}
               </select>
@@ -320,6 +329,7 @@ export function AssignSubjectsPage() {
 
                 const isRowSubmitting =
                   createMutation.isPending &&
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   (createMutation.variables as any)?.subject_id === subj.id;
 
                 return (

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createClass, getClasses } from "../api/classes.api";
+import { createClass, getClasses } from "@/api/classes.api";
 
 export function useClasses() {
   const qc = useQueryClient();

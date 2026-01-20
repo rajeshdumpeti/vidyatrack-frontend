@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { logger } from "../../../utils/logger";
-import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
-import { useStudentsBySection } from "../../../hooks/useStudentsBySection";
-import { useMarksSubmit } from "../../../hooks/useMarksSubmit";
-import type { MarksExamTypeDto } from "../../../types/marks-submit.types";
+import { logger } from "@/utils/logger";
+import { useStudentsBySection } from "@/hooks/useStudentsBySection";
+import { useMarksSubmit } from "@/hooks/useMarksSubmit";
+import type { MarksExamTypeDto } from "@/types/marks-submit.types";
 import { useNavigate } from "react-router-dom";
+import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
 
 type ExamType =
   | "Unit Test"
@@ -14,22 +14,12 @@ type ExamType =
   | "Half Yearly"
   | "Annual";
 
-type StudentRow = {
-  id: number;
-  rollNo: string;
-  name: string;
-};
 
 type FormValues = {
   examType: ExamType;
-  subjectId: string;
+  assignmentId: string;
   // marks keyed by student id
   marks: Record<string, string>;
-};
-const SUBJECT_ID_MAP: Record<string, number> = {
-  math: 1,
-  eng: 2,
-  sci: 3,
 };
 
 const MOCK_EXAM_TYPES: ExamType[] = [
@@ -40,11 +30,6 @@ const MOCK_EXAM_TYPES: ExamType[] = [
   "Annual",
 ];
 
-const MOCK_SUBJECTS = [
-  { id: "math", label: "Mathematics" },
-  { id: "eng", label: "English" },
-  { id: "sci", label: "Science" },
-];
 function mapExamTypeToDto(exam: ExamType): MarksExamTypeDto {
   switch (exam) {
     case "Unit Test":
@@ -59,11 +44,6 @@ function mapExamTypeToDto(exam: ExamType): MarksExamTypeDto {
       return "ANNUAL";
   }
 }
-const MOCK_STUDENTS: StudentRow[] = Array.from({ length: 20 }).map((_, i) => ({
-  id: i + 1,
-  rollNo: String(i + 1).padStart(2, "0"),
-  name: `Student ${i + 1}`,
-}));
 
 function isValidMark(value: string) {
   if (value.trim() === "") return true; // allow empty as placeholder
@@ -76,9 +56,7 @@ function isValidMark(value: string) {
 
 export function EnterMarks() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const sectionQuery = useTeacherAttendanceSection();
-  const sectionId = sectionQuery.data?.section_id;
-  const studentsQuery = useStudentsBySection(sectionId);
+  const assignmentsQuery = useMyTeachingAssignments();
   const navigate = useNavigate();
 
   const {
@@ -96,18 +74,26 @@ export function EnterMarks() {
   } = useForm<FormValues>({
     defaultValues: {
       examType: "Unit Test",
-      subjectId: "",
+      assignmentId: "",
       marks: {},
     },
     mode: "onBlur",
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
-  const subjectId = watch("subjectId");
+  const watchAssignmentId = watch("assignmentId");
   const examType = watch("examType");
 
+  const selectedAssignment = useMemo(() => {
+    const list = assignmentsQuery.data ?? [];
+    return list.find(
+      (a) => `${a.section_id}-${a.subject_id}` === watchAssignmentId
+    );
+  }, [assignmentsQuery.data, watchAssignmentId]);
+  const studentsQuery = useStudentsBySection(selectedAssignment?.section_id);
+
   const onSubmit = (values: FormValues) => {
-    if (!sectionId) return;
+    if (!selectedAssignment) return;
 
     setSubmitSuccess(false);
 
@@ -124,17 +110,17 @@ export function EnterMarks() {
         return { studentId: s.id, marks: n };
       })
       .filter(Boolean) as Array<{ studentId: number; marks: number }>;
-    if (!SUBJECT_ID_MAP[values.subjectId]) {
-      logger.warn("[teacher][marks] invalid subject mapping", {
-        subjectId: values.subjectId,
+    if (!selectedAssignment.subject_id) {
+      logger.warn("[teacher][marks] missing subject_id", {
+        assignmentId: values.assignmentId,
       });
       return;
     }
 
     submit(
       {
-        sectionId,
-        subjectId: SUBJECT_ID_MAP[values.subjectId],
+        sectionId: selectedAssignment.section_id,
+        subjectId: selectedAssignment.subject_id,
         examType: examTypeDto,
         students: entries,
         concurrency: 8,
@@ -192,33 +178,36 @@ export function EnterMarks() {
             {/* Subject */}
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <label className="block text-sm font-semibold text-gray-900">
-                Subject
+                Class & Subject
               </label>
               <select
                 className={[
                   "mt-3 h-12 w-full rounded-xl border bg-white px-3 text-sm font-medium outline-none",
                   "focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                  errors.subjectId ? "border-red-300" : "border-gray-200",
+                  errors.assignmentId ? "border-red-300" : "border-gray-200",
                 ].join(" ")}
-                {...register("subjectId", {
-                  required: "Subject is required",
+                {...register("assignmentId", {
+                  required: "Class & subject is required",
                 })}
               >
-                <option value="">Select subject</option>
-                {MOCK_SUBJECTS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
+                <option value="">Select class & subject</option>
+                {(assignmentsQuery.data ?? []).map((a) => (
+                  <option
+                    key={`${a.section_id}-${a.subject_id}`}
+                    value={`${a.section_id}-${a.subject_id}`}
+                  >
+                    {a.class_name} - {a.subject_name}
                   </option>
                 ))}
               </select>
 
-              {errors.subjectId ? (
+              {errors.assignmentId ? (
                 <p className="mt-2 text-sm text-red-600">
-                  {errors.subjectId.message}
+                  {errors.assignmentId.message}
                 </p>
               ) : (
                 <p className="mt-2 text-xs text-gray-500">
-                  Subject list is mocked; backend wiring comes later.
+                  Choose a class and subject from your assignments.
                 </p>
               )}
             </div>
@@ -236,7 +225,7 @@ export function EnterMarks() {
                     Exam: <span className="text-gray-900">{examType}</span> •
                     Subject:{" "}
                     <span className="text-gray-900">
-                      {subjectId ? subjectId : "Not selected"}
+                      {selectedAssignment?.subject_name ?? "Not selected"}
                     </span>
                   </div>
                 </div>
@@ -247,13 +236,15 @@ export function EnterMarks() {
             </div>
 
             <ul className="divide-y divide-gray-100">
-              {MOCK_STUDENTS.map((s) => {
+              {(studentsQuery.data ?? []).map((s, idx) => {
                 const key = String(s.id);
+                const rollNo =
+                  s.roll_no != null ? String(s.roll_no) : String(idx + 1);
                 return (
                   <li key={s.id} className="bg-white">
                     <div className="grid grid-cols-12 items-center gap-3 px-4 py-4">
                       <div className="col-span-2 text-sm font-semibold text-gray-700">
-                        {s.rollNo}
+                        {rollNo}
                       </div>
 
                       <div className="col-span-7 min-w-0">
@@ -296,7 +287,7 @@ export function EnterMarks() {
             </ul>
 
             <div className="px-4 py-3 text-center text-sm text-gray-500">
-              Showing {MOCK_STUDENTS.length} Students
+              Showing {(studentsQuery.data ?? []).length} Students
             </div>
           </div>
 

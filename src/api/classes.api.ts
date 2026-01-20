@@ -1,6 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
-import type { ClassDto } from "../types/class.types";
+import type { ClassDto } from "@/types/class.types";
 
 export async function getClasses(): Promise<ClassDto[]> {
   const res = await apiClient.get<ClassDto[]>(API_ENDPOINTS.classes.list);

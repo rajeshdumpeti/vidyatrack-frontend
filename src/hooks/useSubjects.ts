@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSubject, listSubjects } from "../api/subjects.api";
-import type { SubjectCreateInput } from "../types/subject.types";
+import { createSubject, listSubjects } from "@/api/subjects.api";
+import type { SubjectCreateInput } from "@/types/subject.types";
 
 export function useSubjects() {
   const q = useQuery({

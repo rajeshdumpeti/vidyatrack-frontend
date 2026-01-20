@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPrincipalAttendance } from "../api/principalAttendance.api";
+import { getPrincipalAttendance } from "@/api/principalAttendance.api";
 
 export function usePrincipalAttendanceHistory(
   date: string,

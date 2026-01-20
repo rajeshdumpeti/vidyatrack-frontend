@@ -1,18 +1,19 @@
-import { useEffect, useMemo, useRef, useMemo as _useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiHelpCircle } from "react-icons/fi";
 import { HiAcademicCap, HiLockClosed } from "react-icons/hi2";
 
-import { useAuthStore } from "../../store/auth.store";
-import { ErrorState } from "../../components/feedback/ErrorState";
+import { useAuthStore } from "@/store/auth.store";
+import { ErrorState } from "@/components/feedback/ErrorState";
 import { getOtpVerifyErrorMessage } from "./auth.errors";
-import type { AuthLocationState, OtpCodeDigits } from "../../types/auth.types";
+import type { AuthLocationState, OtpCodeDigits } from "@/types/auth.types";
 import { buildOtpCode, digitsFromInput, maskPhoneDigits } from "./otp.utils";
+import { getAuthMe } from "@/api/auth.api";
 
-import { useOtpVerify } from "../../hooks/useOtpVerify";
-import { useOtpResend } from "../../hooks/useOtpResend";
-import { logger } from "../../utils/logger";
+import { useOtpVerify } from "@/hooks/useOtpVerify";
+import { useOtpResend } from "@/hooks/useOtpResend";
+import { logger } from "@/utils/logger";
 
 type FormValues = {
   d1: string;
@@ -33,6 +34,7 @@ export function OtpVerifyPage() {
   const trace = useMemo(() => logger.traceId(), []);
 
   const setToken = useAuthStore((s) => s.setToken);
+  const setAuthMeta = useAuthStore((s) => s.setAuthMeta);
   const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
@@ -128,11 +130,20 @@ export function OtpVerifyPage() {
     verifyOtp(
       { phoneE164, otp: code },
       {
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
           try {
             setToken(data.access_token);
 
-            const { role } = useAuthStore.getState();
+            let { role } = useAuthStore.getState();
+            if (!role) {
+              const me = await getAuthMe();
+              setAuthMeta({
+                role: me.role ?? null,
+                schoolId: me.school_id ?? null,
+              });
+              role = useAuthStore.getState().role;
+            }
+
             if (!role) {
               clearAuth();
               throw new Error("invalid_token_claims");

@@ -5,11 +5,11 @@ import { FiPhone, FiHelpCircle, FiArrowRight } from "react-icons/fi";
 import { HiAcademicCap } from "react-icons/hi2";
 import { MdWifi } from "react-icons/md";
 
-import { digitsOnly } from "../../utils/phone";
-import { ErrorState } from "../../components/feedback/ErrorState";
-import { getUserFriendlyErrorMessage } from "../../components/feedback/errorMessage";
-import { useOtpRequest } from "../../hooks/useOtpRequest";
-import { logger } from "../../utils/logger";
+import { digitsOnly } from "@/utils/phone";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
+import { useOtpRequest } from "@/hooks/useOtpRequest";
+import { logger } from "@/utils/logger";
 
 type FormValues = {
   phone: string;
@@ -177,7 +177,7 @@ export function OtpRequestPage() {
                   onClick={() =>
                     logger.info(
                       "[auth][otp-request] trouble logging in clicked",
-                      { trace }
+                      { trace },
                     )
                   }
                 >

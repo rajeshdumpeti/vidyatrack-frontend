@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { listTeachers } from "../api/teachers.api";
+import { listTeachers } from "@/api/teachers.api";
 
 export function useTeachers() {
   const q = useQuery({

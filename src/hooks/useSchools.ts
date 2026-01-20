@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchool, getSchools } from "../api/schools.api";
+import { createSchool, getSchools } from "@/api/schools.api";
 
 export function useSchools() {
   const qc = useQueryClient();

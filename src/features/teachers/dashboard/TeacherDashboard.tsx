@@ -5,16 +5,18 @@ import { FiCheckCircle } from "react-icons/fi";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
 import { IoTimeOutline } from "react-icons/io5";
 
-import { LoadingState } from "../../../components/feedback/LoadingState";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { useTeacherAttendanceSection } from "../../../hooks/useTeacherAttendanceSection";
-import { logger } from "../../../utils/logger";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
+import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
+import { logger } from "@/utils/logger";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
 
   const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
+  const assignmentsQuery = useMyTeachingAssignments();
   const location = useLocation();
   const [toast, setToast] = useState<string | null>(null);
 
@@ -111,12 +113,8 @@ export function TeacherDashboard() {
     );
   }
 
-  // Replace only placeholder section with API-backed value (no other UX/copy changes)
   const sectionLabel = `${data.class_name} - ${data.section_name}`;
-
-  // Still not backed by API (do not guess contracts)
-  const subjectLabel = "Current Session";
-  const timeLabel = "Today";
+  const assignments = assignmentsQuery.data ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,53 +134,100 @@ export function TeacherDashboard() {
       ) : null}
 
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
-        <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-gray-900">
-          Current Session
-        </h1>
-        <p className="mt-2 text-base font-medium text-gray-600">
-          Your next action is waiting below.
-        </p>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
+            <HiOutlineAcademicCap className="h-5 w-5" />
+            Welcome back
+          </div>
+          <h1 className="mt-2 text-3xl font-extrabold text-gray-900">
+            Have a great day of teaching!
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Your next actions are ready below.
+          </p>
+        </div>
 
-        <div className="mt-10 overflow-hidden rounded-2xl shadow-lg">
-          <div className="relative bg-linear-to-br from-slate-700 via-slate-700 to-slate-900 px-6 py-8">
-            <div className="absolute inset-0 opacity-20" />
-
-            <div className="relative">
-              <div className="flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-200">
-                <div className="inline-flex items-center gap-2">
-                  <IoTimeOutline className="h-5 w-5" />
-                  {timeLabel}
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="text-4xl font-extrabold tracking-tight text-white">
-                    {subjectLabel} <span className="text-white/70">|</span>{" "}
-                    {sectionLabel}
-                  </div>
-
-                  <div className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-slate-200">
-                    <HiOutlineAcademicCap className="h-5 w-5 text-slate-200" />
-                    Your Attendance Section is already set for today.
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => navigate("/teacher/attendance")}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15">
-                    <FiCheckCircle className="h-4 w-4" />
-                  </span>
-                  Mark Attendance
-                </button>
-              </div>
+        <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <IoTimeOutline className="h-4 w-4" />
+              Today's Schedule
             </div>
           </div>
+          <div className="divide-y divide-gray-100">
+            {assignmentsQuery.isLoading ? (
+              <div className="px-6 py-6">
+                <LoadingState label="Loading schedule..." />
+              </div>
+            ) : assignmentsQuery.error ? (
+              <div className="px-6 py-6">
+                <ErrorState
+                  title="Unable to load schedule"
+                  message="Please try again."
+                />
+              </div>
+            ) : assignments.length === 0 ? (
+              <div className="px-6 py-6 text-sm text-gray-600">
+                No teaching assignments found yet.
+              </div>
+            ) : (
+              assignments.map((a) => (
+                <div
+                  key={`${a.section_id}-${a.subject_id}`}
+                  className="px-6 py-4"
+                >
+                  <div className="text-sm font-semibold text-gray-900">
+                    {a.class_name} - {a.subject_name}
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Section {a.section_name}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
 
-          <div className="h-1 w-full bg-blue-600" />
+        <div className="mt-8 space-y-3">
+          <button
+            type="button"
+            onClick={() => navigate("/teacher/attendance")}
+            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                <FiCheckCircle className="h-4 w-4" />
+              </span>
+              Mark Attendance
+            </span>
+            <span>→</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/teacher/marks")}
+            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                <HiOutlineAcademicCap className="h-4 w-4" />
+              </span>
+              Enter Marks
+            </span>
+            <span>→</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/teacher/notes")}
+            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                <HiOutlineAcademicCap className="h-4 w-4" />
+              </span>
+              Write Student Note
+            </span>
+            <span>→</span>
+          </button>
         </div>
       </main>
     </div>

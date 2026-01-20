@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ErrorState } from "../../../components/feedback/ErrorState";
-import { useSchools } from "../../../hooks/useSchools";
-import { logger } from "../../../utils/logger";
-import type { SchoolDto } from "../../../types/school.types";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { useSchools } from "@/hooks/useSchools";
+import { logger } from "@/utils/logger";
+import type { SchoolDto } from "@/types/school.types";
 
 type FormValues = {
   name: string;

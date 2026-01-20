@@ -1,80 +1,80 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ErrorState } from "../../components/feedback/ErrorState";
-import { LoadingState } from "../../components/feedback/LoadingState";
-import { EmptyState } from "../../components/feedback/EmptyState";
-import { apiClient } from "../../api/apiClient";
-import { API_ENDPOINTS } from "../../api/endpoints";
-import { logger } from "../../utils/logger";
-import type { StudentDto } from "../../types/student.types";
-import {
-  useStudentNotes,
-  useCreateStudentNote,
-} from "../../hooks/useStudentNotes";
+import { ErrorState } from "@/components/feedback/ErrorState";
+import { LoadingState } from "@/components/feedback/LoadingState";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { logger } from "@/utils/logger";
+import { getStudentProfile } from "@/api/students.api";
+import { useStudentNotes } from "@/hooks/useStudentNotes";
+import type {
+  StudentAttendanceSummary,
+  StudentGuardian,
+  StudentPersonalDetails,
+  StudentProfileDto,
+  StudentRecentResult,
+} from "@/types/student.types";
+import type { StudentNoteDto } from "@/types/studentNotes.types";
 
-function buildClassSectionLabel(s: StudentDto): string {
-  const classPart =
-    s.class_name ?? (s.class_id ? `Class #${s.class_id}` : null);
-  const sectionPart =
-    s.section_name ?? (s.section_id ? `Section #${s.section_id}` : null);
+function humanizeDate(iso: string): string {
+  const input = new Date(iso);
+  if (Number.isNaN(input.getTime())) return "—";
+  const diffMs = Date.now() - input.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  const diffDay = Math.round(diffHr / 24);
+  if (diffDay < 30) return `${diffDay} days ago`;
+  return input.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-  if (classPart && sectionPart) return `${classPart} - ${sectionPart}`;
-  if (sectionPart) return sectionPart;
-  return "—";
+function formatValue(value?: string | number | null): string {
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+}
+
+function formatDob(value?: string | null): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatPercent(value?: number | null): string {
+  if (typeof value !== "number" || Number.isNaN(value)) return "—";
+  return `${Math.round(value)}%`;
+}
+
+function getStatusClasses(status?: string | null): string {
+  const normalized = (status ?? "").toLowerCase();
+  if (normalized === "active") return "bg-green-50 text-green-700";
+  if (normalized === "inactive") return "bg-gray-100 text-gray-600";
+  return "bg-blue-50 text-blue-700";
 }
 
 export function StudentProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);
   const params = useParams();
   const studentId = Number(params.studentId);
-  const [noteText, setNoteText] = useState("");
-  const [noteSuccess, setNoteSuccess] = useState<string | null>(null);
 
   const studentQuery = useQuery({
     queryKey: ["student", studentId],
     enabled: Number.isFinite(studentId) && studentId > 0,
     retry: 1,
-    queryFn: async () => {
-      // Backend only provides list API; fetch all and find.
-      // Keep minimal: no joins; just pick the matching record.
-      const res = await apiClient.get<StudentDto[]>(
-        API_ENDPOINTS.students.list
-      );
-      const found = res.data.find((s) => s.id === studentId);
-      if (!found) {
-        const err = new Error("student_not_found");
-        (err as any).code = "student_not_found";
-        throw err;
-      }
-      return found;
-    },
+    queryFn: () => getStudentProfile(studentId),
   });
 
-  const notes = useStudentNotes(studentId);
-  const createNote = useCreateStudentNote(studentId);
-
-  const onAddNote = () => {
-    setNoteSuccess(null);
-
-    const text = noteText.trim();
-    if (!text) return;
-
-    createNote.mutate({ note_text: text }, {
-      onSuccess: () => {
-        setNoteText("");
-        setNoteSuccess("Note added.");
-        logger.info("[student-profile] note_created", { trace, studentId });
-      },
-      onError: (err: unknown) => {
-        logger.error("[student-profile] note_create_failed", {
-          trace,
-          studentId,
-          err,
-        });
-      },
-    } as any);
-  };
+  const notesQuery = useStudentNotes(studentId);
 
   if (!Number.isFinite(studentId) || studentId <= 0) {
     return (
@@ -84,142 +84,243 @@ export function StudentProfilePage() {
     );
   }
 
+  if (studentQuery.isLoading) {
+    return <LoadingState label="Loading student information..." />;
+  }
+
+  if (studentQuery.error || !studentQuery.data) {
+    return (
+      <div className="px-4 py-6">
+        <ErrorState
+          title="Student not found"
+          message="Unable to load student profile. Please check the student ID."
+        />
+      </div>
+    );
+  }
+
+  const student = studentQuery.data as StudentProfileDto;
+  const personal = student.personal_details as StudentPersonalDetails | null;
+  const guardians = (student.guardians ?? []) as StudentGuardian[];
+  const attendance = student.attendance as StudentAttendanceSummary | null;
+  const recentResults = (student.recent_results ?? []) as StudentRecentResult[];
+  const notes = (notesQuery.data ?? []) as StudentNoteDto[];
+
+  const headerClassSection =
+    student.class_name && student.section_name
+      ? `${student.class_name} - ${student.section_name}`
+      : student.class_name || student.section_name || "—";
+
+  logger.info("[student-profile] loaded", { trace, studentId });
+
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-5">
-        {/* Header card */}
-        {studentQuery.isLoading ? (
-          <LoadingState label="Loading student..." />
-        ) : studentQuery.error ? (
-          <ErrorState
-            title="Student not found"
-            message="Unable to load student profile."
-          />
-        ) : (
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="text-2xl font-extrabold tracking-tight text-gray-900">
-              {studentQuery.data!.name}
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-gray-50 p-3">
-                <div className="text-xs font-semibold text-gray-500">
-                  Roll No
-                </div>
-                <div className="mt-1 text-sm font-semibold text-gray-900">
-                  {studentQuery.data!.roll_no ?? "—"}
-                </div>
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-xl font-bold text-blue-600">
+                {student.name?.slice(0, 1) ?? "S"}
               </div>
-
-              <div className="rounded-xl bg-gray-50 p-3">
-                <div className="text-xs font-semibold text-gray-500">
-                  Class / Section
+              <div>
+                <div className="text-2xl font-extrabold text-gray-900">
+                  {formatValue(student.name)}
                 </div>
-                <div className="mt-1 text-sm font-semibold text-gray-900">
-                  {buildClassSectionLabel(studentQuery.data!)}
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-gray-50 p-3">
-                <div className="text-xs font-semibold text-gray-500">
-                  Parent Phone
-                </div>
-                <div className="mt-1 text-sm font-semibold text-gray-900">
-                  {studentQuery.data!.parent_phone ?? "—"}
-                </div>
-              </div>
-
-              <div className="rounded-xl bg-gray-50 p-3">
-                <div className="text-xs font-semibold text-gray-500">
-                  Student ID
-                </div>
-                <div className="mt-1 text-sm font-semibold text-gray-900">
-                  {studentQuery.data!.id}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Notes card (notes area only has states) */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-lg font-extrabold tracking-tight text-gray-900">
-            Notes
-          </div>
-          <div className="mt-1 text-sm font-medium text-gray-600">
-            Append-only timeline.
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {notes.isLoading ? (
-              <LoadingState label="Loading notes..." />
-            ) : notes.error ? (
-              <ErrorState
-                title="Unable to load notes"
-                message="Please try again."
-              />
-            ) : (notes.data?.length ?? 0) === 0 ? (
-              <EmptyState message="Add the first note below." />
-            ) : (
-              <ul className="space-y-3">
-                {notes.data!.map((n) => (
-                  <li
-                    key={n.id}
-                    className="rounded-xl border border-gray-200 bg-gray-50 p-3"
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                  <span>Student Code: {formatValue(student.student_code)}</span>
+                  <span>•</span>
+                  <span>{headerClassSection}</span>
+                  <span>•</span>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
+                      student.status
+                    )}`}
                   >
-                    <div className="text-sm font-semibold text-gray-900 whitespace-pre-wrap">
+                    {formatValue(student.status)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-bold text-gray-900">
+              Personal Details
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-700">
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Date of Birth
+                </div>
+                <div className="mt-1 font-semibold text-gray-900">
+                  {formatDob(personal?.date_of_birth ?? null)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Gender
+                </div>
+                <div className="mt-1 font-semibold text-gray-900">
+                  {formatValue(personal?.gender)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Blood Group
+                </div>
+                <div className="mt-1 font-semibold text-gray-900">
+                  {formatValue(personal?.blood_group)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Religion
+                </div>
+                <div className="mt-1 font-semibold text-gray-900">
+                  {formatValue(personal?.religion)}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Address
+                </div>
+                <div className="mt-1 font-semibold text-gray-900">
+                  {formatValue(personal?.address)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-bold text-gray-900">Attendance</div>
+              <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                {formatPercent(attendance?.percentage)}
+              </span>
+            </div>
+            <div className="mt-4 text-3xl font-extrabold text-gray-900">
+              {formatPercent(attendance?.percentage)}
+            </div>
+            <div className="mt-1 text-sm text-gray-500">Year to Date</div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl bg-gray-50 p-3">
+                <div className="text-xs font-semibold text-gray-500">
+                  Present Days
+                </div>
+                <div className="mt-1 text-base font-semibold text-gray-900">
+                  {formatValue(attendance?.present_days)}
+                </div>
+              </div>
+              <div className="rounded-xl bg-gray-50 p-3">
+                <div className="text-xs font-semibold text-gray-500">
+                  Absent Days
+                </div>
+                <div className="mt-1 text-base font-semibold text-gray-900">
+                  {formatValue(attendance?.absent_days)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-bold text-gray-900">
+              Recent Results
+            </div>
+            <div className="mt-4 space-y-3">
+              {recentResults.length === 0 ? (
+                <EmptyState message="No recent results." />
+              ) : (
+                recentResults.map((r, idx) => (
+                  <div
+                    key={`${r.subject_name ?? "subject"}-${idx}`}
+                    className="rounded-xl border border-gray-100 bg-gray-50 p-3"
+                  >
+                    <div className="text-sm font-semibold text-gray-900">
+                      {formatValue(r.subject_name)}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {formatValue(r.exam_type)}
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-blue-600">
+                      {formatValue(r.marks_obtained)}/
+                      {formatValue(r.max_marks)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_2fr]">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-bold text-gray-900">
+              Guardian Contact
+            </div>
+            <div className="mt-4 space-y-3">
+              {guardians.length === 0 ? (
+                <EmptyState message="No guardians listed." />
+              ) : (
+                guardians.map((g, idx) => (
+                  <div
+                    key={`${g.name ?? "guardian"}-${idx}`}
+                    className="rounded-xl border border-gray-100 bg-gray-50 p-3"
+                  >
+                    <div className="text-sm font-semibold text-gray-900">
+                      {formatValue(g.name)}
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {formatValue(g.relation)}
+                    </div>
+                    <div className="mt-2 text-sm font-semibold text-gray-900">
+                      {formatValue(g.phone)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="text-sm font-bold text-gray-900">Teacher Notes</div>
+            <div className="mt-4 space-y-4">
+              {notesQuery.isLoading ? (
+                <LoadingState label="Loading notes..." />
+              ) : notesQuery.error ? (
+                <ErrorState
+                  title="Unable to load notes"
+                  message="Please try again later."
+                />
+              ) : notes.length === 0 ? (
+                <EmptyState message="No notes yet." />
+              ) : (
+                notes.map((n) => (
+                  <div
+                    key={n.id}
+                    className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {formatValue(n.author_name)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatValue(n.author_role)}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {humanizeDate(n.created_at)}
+                      </div>
+                    </div>
+                    <div className="mt-3 text-sm text-gray-800">
                       {n.note_text}
                     </div>
-                    <div className="mt-2 text-xs font-medium text-gray-500">
-                      {new Date(n.created_at).toLocaleString()}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Add note */}
-          <div className="mt-6">
-            <label className="block text-sm font-semibold text-gray-900">
-              Add Note
-            </label>
-
-            <textarea
-              className="mt-2 w-full rounded-xl border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              rows={4}
-              placeholder="Write a note..."
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              disabled={createNote.isPending}
-            />
-
-            {createNote.isError ? (
-              <div className="mt-3">
-                <ErrorState
-                  title="Unable to add note"
-                  message="Please try again."
-                />
-              </div>
-            ) : null}
-
-            {noteSuccess ? (
-              <div className="mt-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
-                {noteSuccess}
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={onAddNote}
-              disabled={createNote.isPending || noteText.trim().length === 0}
-              className={[
-                "mt-4 h-12 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white",
-                "hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
-              ].join(" ")}
-            >
-              {createNote.isPending ? "Saving..." : "Add Note"}
-            </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

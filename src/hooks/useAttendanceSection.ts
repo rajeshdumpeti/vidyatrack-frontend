@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyAttendanceSection } from "../api/teachers.api";
+import { getMyAttendanceSection } from "@/api/teachers.api";
 
 /**
  * Single source of truth for teacher's primary attendance section context.
