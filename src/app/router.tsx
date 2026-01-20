@@ -9,6 +9,7 @@ import { RoleGuard } from "@/hooks/useRoleGuard";
 import { TeacherDashboard } from "@/features/teachers/dashboard/TeacherDashboard";
 import { MarkAttendance } from "@/features/teachers/attendance/MarkAttendance";
 import { EnterMarks } from "@/features/teachers/marks/EnterMarks";
+import { TeacherNotesPage } from "@/features/teachers/TeacherNotesPage";
 import { AttendanceHistoryPage } from "@/features/principal/attendance/AttendanceHistoryPage";
 import { MarksHistoryPage } from "@/features/principal/marks/MarksHistoryPage";
 import { StudentsListPage } from "@/features/students/StudentsListPage";
@@ -21,7 +22,6 @@ import { TeacherProfilePage } from "@/features/teachers/TeacherProfilePage";
 import { AssignSubjectsPage } from "@/features/management/setup/AssignSubjectsPage";
 import { SubjectsPage } from "@/features/management/setup/SubjectsPage";
 import { TeachersPage } from "@/features/management/setup/TeachersPage";
-import { StudentsSetupPage } from "@/features/management/setup/StudentsSetupPage";
 import { ManagementSetupStudentsPage } from "@/features/management/setup/StudentsPage";
 
 export const router = createBrowserRouter([
@@ -50,6 +50,7 @@ export const router = createBrowserRouter([
       { index: true, element: <TeacherDashboard /> },
       { path: "attendance", element: <MarkAttendance /> },
       { path: "marks", element: <EnterMarks /> },
+      { path: "notes", element: <TeacherNotesPage /> },
       { path: "students", element: <StudentsListPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
     ],
@@ -87,14 +88,11 @@ export const router = createBrowserRouter([
       { path: "setup/schools", element: <ManageSchoolsPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
-      { path: "students", element: <StudentsSetupPage /> },
+      { path: "students", element: <ManagementSetupStudentsPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/classes", element: <ManageClassesPage /> },
       { path: "setup/sections", element: <ManageSectionsPage /> },
-      {
-        path: "setup/students",
-        element: <ManagementSetupStudentsPage />,
-      },
+      { path: "setup/students", element: <ManagementSetupStudentsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
       { path: "setup/assign-subjects", element: <AssignSubjectsPage /> },

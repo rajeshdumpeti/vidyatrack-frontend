@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTeachers } from "@/hooks/useTeachers";
+import { useSections } from "@/hooks/useSections";
 import { useCreateManagementTeacher } from "@/hooks/useCreateManagementTeacher";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { logger } from "@/utils/logger";
+import { digitsOnly } from "@/utils/phone";
 import type { CreateTeacherInput, Teacher } from "@/types/teacher.types";
+import type { SectionDto } from "@/types/section.types";
 
 function normalize(s: string) {
   return s.trim().toLowerCase();
@@ -23,11 +26,13 @@ type FormValues = {
   name: string;
   phone: string;
   email?: string;
+  section_id: number | "";
 };
 
 export function TeachersPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const { data, isLoading, error, refetch } = useTeachers();
+  const sectionsQuery = useSections();
   const createMutation = useCreateManagementTeacher();
 
   const [search, setSearch] = useState("");
@@ -47,14 +52,14 @@ export function TeachersPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { name: "", phone: "", email: "" },
+    defaultValues: { name: "", phone: "", email: "", section_id: "" },
     mode: "onBlur",
   });
 
   const openAdd = () => {
     setSuccessMsg(null);
     setInlineError(null);
-    reset({ name: "", phone: "", email: "" });
+    reset({ name: "", phone: "", email: "", section_id: "" });
     setIsAdding(true);
     logger.info("[mgmt][teachers] add opened", { trace });
   };
@@ -65,10 +70,16 @@ export function TeachersPage() {
   };
 
   const onSubmit = (values: FormValues) => {
+    if (!values.section_id) {
+      setInlineError("Please select a section.");
+      return;
+    }
+
     const payload: CreateTeacherInput = {
       name: values.name.trim(),
-      phone: values.phone.trim(),
+      phone: digitsOnly(values.phone),
       email: values.email?.trim() || undefined,
+      section_id: Number(values.section_id),
     };
 
     setInlineError(null);
@@ -123,8 +134,7 @@ export function TeachersPage() {
                 Teachers
               </div>
               <div className="mt-1 text-sm text-gray-600">
-                Manage teachers (list + create). Edit/delete is disabled in
-                pilot.
+                Onboard teachers and set their attendance section.
               </div>
             </div>
 
@@ -200,13 +210,54 @@ export function TeachersPage() {
                     disabled={createMutation.isPending}
                     {...register("phone", {
                       required: "Phone is required",
-                      validate: (v) =>
-                        v.trim().length >= 10 || "Enter at least 10 digits",
+                      validate: (v) => {
+                        const d = digitsOnly(v);
+                        return d.length === 10 || "Enter a valid 10-digit phone";
+                      },
                     })}
                   />
                   {errors.phone ? (
                     <div className="mt-1 text-sm font-semibold text-red-600">
                       {errors.phone.message}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900">
+                    Section
+                  </label>
+                  <select
+                    className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 disabled:opacity-60"
+                    disabled={
+                      createMutation.isPending ||
+                      sectionsQuery.list.isLoading ||
+                      !!sectionsQuery.list.error
+                    }
+                    {...register("section_id", {
+                      required: "Section is required",
+                    })}
+                  >
+                    <option value="">Select section</option>
+                    {(sectionsQuery.list.data ?? []).map((s: SectionDto) => {
+                      const label = s.class_name
+                        ? `${s.class_name} - ${s.name}`
+                        : s.name;
+                      return (
+                        <option key={s.id} value={s.id}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {errors.section_id ? (
+                    <div className="mt-1 text-sm font-semibold text-red-600">
+                      {errors.section_id.message}
+                    </div>
+                  ) : null}
+                  {sectionsQuery.list.error ? (
+                    <div className="mt-1 text-sm font-semibold text-red-600">
+                      Unable to load sections. Please retry.
                     </div>
                   ) : null}
                 </div>

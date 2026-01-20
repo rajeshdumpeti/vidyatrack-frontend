@@ -101,7 +101,7 @@ export function SubjectsPage() {
                 Subjects
               </div>
               <div className="mt-1 text-sm text-gray-600">
-                Manage school subjects (read-only list + create).
+                Create subjects, then assign them to teachers by section.
               </div>
             </div>
 

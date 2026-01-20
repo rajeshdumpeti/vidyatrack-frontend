@@ -177,7 +177,7 @@ export function OtpRequestPage() {
                   onClick={() =>
                     logger.info(
                       "[auth][otp-request] trouble logging in clicked",
-                      { trace }
+                      { trace },
                     )
                   }
                 >

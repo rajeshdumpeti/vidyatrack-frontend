@@ -5,17 +5,17 @@
 
 export const API_ENDPOINTS = {
   auth: {
+    me: "/api/v1/auth/me",
     otpRequest: "/api/v1/auth/otp/request",
     otpVerify: "/api/v1/auth/otp/verify",
-  },
-  teacher: {
-    meAttendanceSection: "/api/v1/teacher/me/attendance-section",
   },
   students: {
     create: "/api/v1/students",
     list: "/api/v1/students",
+    detail: (studentId: number) => `/api/v1/students/${studentId}`,
   },
   attendance: {
+    list: "/api/v1/attendance",
     create: "/api/v1/attendance",
     submit: "/api/v1/attendance/submit",
   },
@@ -25,6 +25,10 @@ export const API_ENDPOINTS = {
   },
   teachers: {
     list: "/api/v1/teachers",
+    create: "/api/v1/teachers",
+    me: "/api/v1/teachers/me",
+    meTeachingAssignments: "/api/v1/teachers/me/teaching-assignments",
+    meAttendanceSection: "/api/v1/teachers/me/attendance-section",
   },
   schools: {
     list: "/api/v1/schools",

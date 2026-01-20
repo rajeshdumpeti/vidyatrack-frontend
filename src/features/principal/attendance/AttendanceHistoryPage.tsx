@@ -5,30 +5,9 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { formatIsoDate } from "@/utils/date";
 import { logger } from "@/utils/logger";
 import { usePrincipalAttendanceHistory } from "@/hooks/usePrincipalAttendanceHistory";
+import { useSections } from "@/hooks/useSections";
 import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
-
-type AttendanceStatus = "PRESENT" | "ABSENT";
-
-type AttendanceRow = {
-  studentId: number;
-  rollNo: string;
-  studentName: string;
-  status: AttendanceStatus;
-};
-
-const MOCK_SECTIONS = [
-  { id: 1, label: "Class 5 - Section A" },
-  { id: 2, label: "Class 5 - Section B" },
-  { id: 3, label: "Class 6 - Section A" },
-];
-
-const MOCK_RESULTS: AttendanceRow[] = [
-  { studentId: 1, rollNo: "01", studentName: "Student 1", status: "PRESENT" },
-  { studentId: 2, rollNo: "02", studentName: "Student 2", status: "ABSENT" },
-  { studentId: 3, rollNo: "03", studentName: "Student 3", status: "PRESENT" },
-];
-
-type UiState = "data" | "loading" | "empty" | "error";
+import type { SectionDto } from "@/types/section.types";
 
 export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
@@ -38,11 +17,16 @@ export function AttendanceHistoryPage() {
     dateIso,
     sectionId === "" ? undefined : sectionId
   );
+  const sections = useSections().list;
 
-  // UI-only state toggles (for skeleton validation)
-  const [uiState, setUiState] = useState<UiState>("data");
-
-  const results = uiState === "data" ? MOCK_RESULTS : [];
+  const sectionLabelById = useMemo(() => {
+    const map = new Map<number, string>();
+    (sections.data ?? []).forEach((s: SectionDto) => {
+      const classLabel = s.class_name ?? `Class #${s.class_id}`;
+      map.set(s.id, `${classLabel} - ${s.name}`);
+    });
+    return map;
+  }, [sections.data]);
 
   const onFilterChange = (
     next: Partial<{ sectionId: number | ""; dateIso: string }>
@@ -57,15 +41,60 @@ export function AttendanceHistoryPage() {
     });
   };
 
+  const rows = (q.data ?? []) as PrincipalAttendanceRowDto[];
+
+  const totals = useMemo(() => {
+    const total = rows.length;
+    const present = rows.filter((r) =>
+      String(r.status).toUpperCase().includes("PRESENT")
+    ).length;
+    const absent = total - present;
+    const presentPct = total ? Math.round((present / total) * 100) : 0;
+    const absentPct = total ? Math.round((absent / total) * 100) : 0;
+    return { total, present, absent, presentPct, absentPct };
+  }, [rows]);
+
+  const breakdown = useMemo(() => {
+    const map = new Map<number, { total: number; present: number }>();
+    rows.forEach((r) => {
+      const key = r.section_id ?? 0;
+      const entry = map.get(key) ?? { total: 0, present: 0 };
+      entry.total += 1;
+      if (String(r.status).toUpperCase().includes("PRESENT")) {
+        entry.present += 1;
+      }
+      map.set(key, entry);
+    });
+
+    return Array.from(map.entries()).map(([key, entry]) => {
+      const label =
+        key === 0
+          ? "Unassigned Section"
+          : sectionLabelById.get(key) ?? `Section #${key}`;
+      const absent = entry.total - entry.present;
+      const pct = entry.total
+        ? Math.round((entry.present / entry.total) * 100)
+        : 0;
+      return {
+        key,
+        label,
+        total: entry.total,
+        present: entry.present,
+        absent,
+        pct,
+      };
+    });
+  }, [rows, sectionLabelById]);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
       <header className="px-4 pt-6">
         <div className="mx-auto w-full max-w-6xl">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Attendance History
+            Attendance Overview
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-600">
-            Read-only view for Principal. Filters are UI-only in this step.
+            Read-only view of daily attendance metrics across classes.
           </p>
         </div>
       </header>
@@ -73,7 +102,7 @@ export function AttendanceHistoryPage() {
       <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
         {/* Filters */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <label className="block text-sm font-semibold text-gray-900">
                 Section
@@ -85,17 +114,22 @@ export function AttendanceHistoryPage() {
                   const v = e.target.value;
                   onFilterChange({ sectionId: v === "" ? "" : Number(v) });
                 }}
+                disabled={sections.isLoading}
               >
                 <option value="">All Sections</option>
-                {MOCK_SECTIONS.map((s) => (
-                  <option key={s.id} value={String(s.id)}>
-                    {s.label}
-                  </option>
-                ))}
+                {(sections.data ?? []).map((s: SectionDto) => {
+                  const label =
+                    sectionLabelById.get(s.id) ?? `Section #${s.id}`;
+                  return (
+                    <option key={s.id} value={String(s.id)}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
-            <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <label className="block text-sm font-semibold text-gray-900">
                 Date
               </label>
@@ -105,32 +139,14 @@ export function AttendanceHistoryPage() {
                 value={dateIso}
                 onChange={(e) => onFilterChange({ dateIso: e.target.value })}
               />
-            </div>
-          </div>
-
-          {/* Dev-only UI state toggles (no dependency, optional) */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(["data", "loading", "empty", "error"] as UiState[]).map((s) => (
               <button
-                key={s}
                 type="button"
-                onClick={() => setUiState(s)}
-                className={[
-                  "h-11 rounded-xl px-4 text-sm font-semibold",
-                  uiState === s
-                    ? "bg-blue-600 text-white"
-                    : "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
-                ].join(" ")}
+                className="h-12 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                disabled
               >
-                {s === "data"
-                  ? "Data"
-                  : s === "loading"
-                    ? "Loading"
-                    : s === "empty"
-                      ? "Empty"
-                      : "Error"}
+                Export
               </button>
-            ))}
+            </div>
           </div>
         </div>
 
@@ -144,64 +160,108 @@ export function AttendanceHistoryPage() {
           />
         ) : null}
 
-        {!q.isLoading && !q.error && (q.data?.length ?? 0) === 0 ? (
+        {!q.isLoading && !q.error && rows.length === 0 ? (
           <EmptyState message="No records for the selected date/section." />
         ) : null}
 
-        {!q.isLoading && !q.error && (q.data?.length ?? 0) > 0 ? (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="text-sm font-semibold text-gray-900">Results</div>
-              <div className="mt-1 text-xs font-medium text-gray-500">
-                Date: <span className="text-gray-900">{dateIso}</span>
-                {sectionId !== "" ? (
-                  <>
-                    {" "}
-                    • Section:{" "}
-                    <span className="text-gray-900">{sectionId}</span>
-                  </>
-                ) : null}
+        {!q.isLoading && !q.error && rows.length > 0 ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="text-xs font-semibold text-gray-500">
+                  Total Present
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-blue-600">
+                  {totals.presentPct}%
+                </div>
+                <div className="text-xs text-gray-500">
+                  {totals.present}/{totals.total}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="text-xs font-semibold text-gray-500">
+                  Total Absent
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-red-600">
+                  {totals.absentPct}%
+                </div>
+                <div className="text-xs text-gray-500">
+                  {totals.absent}/{totals.total}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="text-xs font-semibold text-gray-500">
+                  Late Arrivals
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-orange-500">
+                  0%
+                </div>
+                <div className="text-xs text-gray-500">0/{totals.total}</div>
+              </div>
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="text-xs font-semibold text-gray-500">
+                  On Leave
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-700">
+                  0%
+                </div>
+                <div className="text-xs text-gray-500">0/{totals.total}</div>
               </div>
             </div>
 
-            <ul className="divide-y divide-gray-100">
-              {(q.data as PrincipalAttendanceRowDto[]).map((r) => {
-                // No client-side joins. If backend doesn't provide name/roll, show safe fallbacks.
-                const roll = r.roll_no ?? String(r.student_id);
-                const name = r.student_name ?? `Student #${r.student_id}`;
-
-                return (
-                  <li key={r.id} className="px-4 py-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
-                            {roll}
-                          </span>
-                          <div className="truncate text-sm font-semibold text-gray-900">
-                            {name}
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="border-b border-gray-200 px-4 py-3">
+                <div className="text-sm font-semibold text-gray-900">
+                  Class-wise Breakdown
+                </div>
+              </div>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    <tr>
+                      <th className="px-4 py-3">Class Name</th>
+                      <th className="px-4 py-3">Total Strength</th>
+                      <th className="px-4 py-3">Present</th>
+                      <th className="px-4 py-3">Absent</th>
+                      <th className="px-4 py-3">Attendance Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {breakdown.map((row) => (
+                      <tr key={row.key}>
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {row.label}
                           </div>
-                        </div>
-                      </div>
-
-                      <span
-                        className={[
-                          "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold",
-                          r.status === "PRESENT"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-red-50 text-red-700",
-                        ].join(" ")}
-                      >
-                        {r.status === "PRESENT" ? "Present" : "Absent"}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="px-4 py-3 text-center text-sm text-gray-500">
-              Showing {q.data?.length ?? 0} Records
+                        </td>
+                        <td className="px-4 py-3">{row.total}</td>
+                        <td className="px-4 py-3 text-green-600">
+                          {row.present}
+                        </td>
+                        <td className="px-4 py-3 text-red-600">
+                          {row.absent}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-2 w-full max-w-[160px] rounded-full bg-gray-100">
+                              <div
+                                className="h-2 rounded-full bg-blue-500"
+                                style={{ width: `${row.pct}%` }}
+                              />
+                            </div>
+                            <div className="text-xs font-semibold text-gray-600">
+                              {row.pct}%
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-4 py-3 text-xs text-gray-500">
+                Showing {breakdown.length} classes
+              </div>
             </div>
           </div>
         ) : null}

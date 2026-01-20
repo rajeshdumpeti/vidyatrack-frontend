@@ -2,6 +2,7 @@ import type {
   StudentCreateInput,
   StudentDto,
   StudentListItem,
+  StudentProfileDto,
 } from "@/types/student.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
@@ -52,6 +53,15 @@ export async function createStudent(
   const res = await apiClient.post<StudentDto>(
     API_ENDPOINTS.students.create,
     payload
+  );
+  return res.data;
+}
+
+export async function getStudentProfile(
+  studentId: number
+): Promise<StudentProfileDto> {
+  const res = await apiClient.get<StudentProfileDto>(
+    API_ENDPOINTS.students.detail(studentId)
   );
   return res.data;
 }

@@ -1,4 +1,4 @@
-export type AttendanceStatusDto = "PRESENT" | "ABSENT";
+export type AttendanceStatusDto = "PRESENT" | "ABSENT" | "present" | "absent";
 
 export type PrincipalAttendanceRowDto = {
   id: number;

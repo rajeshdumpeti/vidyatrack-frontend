@@ -30,23 +30,29 @@ export function Sidebar({ role, items, onClose }: SidebarProps) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-2 p-3">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              [
-                linkBase,
-                isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-800 hover:bg-gray-50",
-              ].join(" ")
-            }
-          >
-            {item.label}
-          </NavLink>
-        ))}
+        {items.map((item) => {
+          const isRoot =
+            item.to === "/" || (role && item.to === `/${role}`);
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={isRoot}
+              onClick={onClose}
+              className={({ isActive }) =>
+                [
+                  linkBase,
+                  isActive
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-800 hover:bg-gray-50",
+                ].join(" ")
+              }
+            >
+              {item.label}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <div className="border-t border-gray-200 p-3 text-xs text-gray-500">

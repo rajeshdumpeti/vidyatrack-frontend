@@ -17,7 +17,7 @@ export function AppShell() {
   const role = useAuthStore((s) => s.role) as NavRole | null;
 
   const navItems = useMemo(() => {
-    if (role === "teacher" || role === "principal" || role === "management") {
+    if (role === "principal" || role === "management") {
       return { role, items: NAV_ITEMS[role] };
     }
 
@@ -42,9 +42,11 @@ export function AppShell() {
 
       <div className="mx-auto flex w-full ">
         {/* Desktop sidebar */}
-        <div className="hidden md:block">
-          <Sidebar role={navItems.role} items={navItems.items} />{" "}
-        </div>
+        {role !== "teacher" && (
+          <div className="hidden md:block sm:block">
+            <Sidebar role={navItems.role} items={navItems.items} />{" "}
+          </div>
+        )}
 
         {/* Main content */}
         <div className="flex min-h-[calc(100vh-3.5rem)] flex-1 flex-col">
@@ -71,13 +73,15 @@ export function AppShell() {
           />
 
           {/* Drawer panel */}
-          <div className="absolute left-0 top-0 h-full w-72 shadow-xl">
-            <Sidebar
-              role={navItems.role}
-              items={navItems.items}
-              onClose={closeDrawer}
-            />{" "}
-          </div>
+          {role !== "teacher" && (
+            <div className="absolute left-0 top-0 h-full w-72 shadow-xl">
+              <Sidebar
+                role={navItems.role}
+                items={navItems.items}
+                onClose={closeDrawer}
+              />{" "}
+            </div>
+          )}
         </div>
       ) : null}
     </div>

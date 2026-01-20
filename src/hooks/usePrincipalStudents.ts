@@ -13,9 +13,8 @@ function filterStudents(list: StudentDto[], search: string) {
 
   return list.filter((s) => {
     const name = normalize(s.name ?? "");
-    const roll = normalize(String(s.roll_no ?? ""));
-    const phone = normalize(String(s.parent_phone ?? ""));
-    return name.includes(q) || roll.includes(q) || phone.includes(q);
+    const code = normalize(String(s.student_code ?? ""));
+    return name.includes(q) || code.includes(q);
   });
 }
 

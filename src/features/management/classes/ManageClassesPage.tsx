@@ -53,7 +53,7 @@ export function ManageClassesPage() {
             Classes Setup
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-600">
-            Management-only: create classes and view existing classes.
+            Define grades (e.g., 10th, 9th). Create sections next.
           </p>
         </div>
       </header>

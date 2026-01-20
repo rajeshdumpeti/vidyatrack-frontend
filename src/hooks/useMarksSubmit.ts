@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { recordMark, submitMarks } from "@//api/marks.api";
+import { recordMark, submitMarks } from "@/api/marks.api";
 import type {
   MarksExamTypeDto,
   RecordMarkRequest,

@@ -16,11 +16,19 @@ function filterTeachers(list: TeacherDto[], search: string) {
     const phone = normalize(String(t.phone ?? ""));
     const email = normalize(String(t.email ?? ""));
     const section = normalize(String(t.assigned_section_label ?? ""));
+    const employeeId = normalize(String(t.employee_id ?? ""));
+    const status = normalize(String(t.status ?? ""));
+    const assignmentLabels = (t.assignments ?? [])
+      .map((a) => normalize(String(a.label ?? "")))
+      .join(" ");
     return (
       name.includes(q) ||
       phone.includes(q) ||
       email.includes(q) ||
-      section.includes(q)
+      section.includes(q) ||
+      employeeId.includes(q) ||
+      status.includes(q) ||
+      assignmentLabels.includes(q)
     );
   });
 }
