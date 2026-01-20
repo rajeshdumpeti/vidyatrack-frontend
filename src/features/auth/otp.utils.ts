@@ -1,4 +1,4 @@
-import type { OtpCodeDigits } from "./auth.types";
+import type { OtpCodeDigits } from "@/types/auth.types";
 
 export function isSingleDigit(value: string): boolean {
   return /^[0-9]$/.test(value);

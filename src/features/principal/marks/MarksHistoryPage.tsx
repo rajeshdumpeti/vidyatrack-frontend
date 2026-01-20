@@ -6,14 +6,6 @@ import { logger } from "@/utils/logger";
 import { usePrincipalMarksHistory } from "@/hooks/usePrincipalMarksHistory";
 import type { PrincipalMarksRowDto } from "@/types/principalMarks.types";
 
-type MarksRow = {
-  studentId: number;
-  rollNo: string;
-  studentName: string;
-  marks: number;
-  maxMarks: number;
-};
-
 const MOCK_SECTIONS = [
   { id: "1", label: "Class 5 - Section A" },
   { id: "2", label: "Class 5 - Section B" },
@@ -32,30 +24,6 @@ const MOCK_EXAMS = [
   { id: "QUARTERLY", label: "Quarterly" },
 ];
 
-const MOCK_RESULTS: MarksRow[] = [
-  {
-    studentId: 1,
-    rollNo: "01",
-    studentName: "Student 1",
-    marks: 28,
-    maxMarks: 30,
-  },
-  {
-    studentId: 2,
-    rollNo: "02",
-    studentName: "Student 2",
-    marks: 19,
-    maxMarks: 30,
-  },
-  {
-    studentId: 3,
-    rollNo: "03",
-    studentName: "Student 3",
-    marks: 30,
-    maxMarks: 30,
-  },
-];
-
 type UiState = "data" | "loading" | "empty" | "error";
 
 export function MarksHistoryPage() {
@@ -72,10 +40,8 @@ export function MarksHistoryPage() {
     examType,
   });
 
-  const results = uiState === "data" ? MOCK_RESULTS : [];
-
   const onFilterChange = (
-    next: Partial<{ sectionId: string; subjectId: string; examType: string }>
+    next: Partial<{ sectionId: string; subjectId: string; examType: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.subjectId !== undefined) setSubjectId(next.subjectId);

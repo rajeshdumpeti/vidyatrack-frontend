@@ -55,7 +55,7 @@ export function AssignSubjectsPage() {
     queryKey: ["subjects"],
     queryFn: async () => {
       const res = await apiClient.get<SubjectDto[]>(
-        API_ENDPOINTS.subjects.list
+        API_ENDPOINTS.subjects.list,
       );
       return res.data;
     },
@@ -66,7 +66,7 @@ export function AssignSubjectsPage() {
     queryKey: ["teachers"],
     queryFn: async () => {
       const res = await apiClient.get<TeacherDto[]>(
-        API_ENDPOINTS.teachers.list
+        API_ENDPOINTS.teachers.list,
       );
       return res.data;
     },
@@ -80,7 +80,7 @@ export function AssignSubjectsPage() {
         API_ENDPOINTS.sections.list,
         {
           params: { class_id: classId },
-        }
+        },
       );
       return res.data;
     },
@@ -96,6 +96,7 @@ export function AssignSubjectsPage() {
 
   const createMutation = useCreateTeachingAssignment();
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const classes = classesQuery.data ?? [];
   const sections = sectionsQuery.data ?? [];
   const subjects = subjectsQuery.data ?? [];
@@ -148,7 +149,7 @@ export function AssignSubjectsPage() {
 
   const onSelectTeacherForSubject = (
     subjectId: number,
-    teacherIdStr: string
+    teacherIdStr: string,
   ) => {
     const next: number | "" = teacherIdStr ? Number(teacherIdStr) : "";
     setSelectedTeacherBySubject((prev) => ({ ...prev, [subjectId]: next }));
@@ -266,7 +267,8 @@ export function AssignSubjectsPage() {
                 </option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {(classLabelById.get(s.class_id) ?? `Class #${s.class_id}`) +
+                    {(classLabelById.get(s.class_id) ??
+                      `Class #${s.class_id}`) +
                       " - " +
                       s.name}
                   </option>

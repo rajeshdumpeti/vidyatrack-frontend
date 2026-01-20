@@ -10,7 +10,7 @@ export function TeacherProfilePage() {
   const params = useParams();
   const teacherId = Number(params.teacherId);
 
-  const { teacher, isLoading, error, refetch } = useTeacherById(teacherId);
+  const { teacher, isLoading, error } = useTeacherById(teacherId);
 
   if (!Number.isFinite(teacherId) || teacherId <= 0) {
     return (

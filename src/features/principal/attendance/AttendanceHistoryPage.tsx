@@ -15,7 +15,7 @@ export function AttendanceHistoryPage() {
   const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
   const q = usePrincipalAttendanceHistory(
     dateIso,
-    sectionId === "" ? undefined : sectionId
+    sectionId === "" ? undefined : sectionId,
   );
   const sections = useSections().list;
 
@@ -29,7 +29,7 @@ export function AttendanceHistoryPage() {
   }, [sections.data]);
 
   const onFilterChange = (
-    next: Partial<{ sectionId: number | ""; dateIso: string }>
+    next: Partial<{ sectionId: number | ""; dateIso: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.dateIso !== undefined) setDateIso(next.dateIso);
@@ -41,12 +41,13 @@ export function AttendanceHistoryPage() {
     });
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = (q.data ?? []) as PrincipalAttendanceRowDto[];
 
   const totals = useMemo(() => {
     const total = rows.length;
     const present = rows.filter((r) =>
-      String(r.status).toUpperCase().includes("PRESENT")
+      String(r.status).toUpperCase().includes("PRESENT"),
     ).length;
     const absent = total - present;
     const presentPct = total ? Math.round((present / total) * 100) : 0;
@@ -70,7 +71,7 @@ export function AttendanceHistoryPage() {
       const label =
         key === 0
           ? "Unassigned Section"
-          : sectionLabelById.get(key) ?? `Section #${key}`;
+          : (sectionLabelById.get(key) ?? `Section #${key}`);
       const absent = entry.total - entry.present;
       const pct = entry.total
         ? Math.round((entry.present / entry.total) * 100)
@@ -238,9 +239,7 @@ export function AttendanceHistoryPage() {
                         <td className="px-4 py-3 text-green-600">
                           {row.present}
                         </td>
-                        <td className="px-4 py-3 text-red-600">
-                          {row.absent}
-                        </td>
+                        <td className="px-4 py-3 text-red-600">{row.absent}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-2 w-full max-w-[160px] rounded-full bg-gray-100">

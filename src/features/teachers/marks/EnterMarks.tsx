@@ -14,7 +14,6 @@ type ExamType =
   | "Half Yearly"
   | "Annual";
 
-
 type FormValues = {
   examType: ExamType;
   assignmentId: string;
@@ -59,11 +58,7 @@ export function EnterMarks() {
   const assignmentsQuery = useMyTeachingAssignments();
   const navigate = useNavigate();
 
-  const {
-    submit,
-    isLoading: isSubmitting,
-    error: submitError,
-  } = useMarksSubmit();
+  const { submit, isLoading: isSubmitting } = useMarksSubmit();
 
   const {
     register,
@@ -87,7 +82,7 @@ export function EnterMarks() {
   const selectedAssignment = useMemo(() => {
     const list = assignmentsQuery.data ?? [];
     return list.find(
-      (a) => `${a.section_id}-${a.subject_id}` === watchAssignmentId
+      (a) => `${a.section_id}-${a.subject_id}` === watchAssignmentId,
     );
   }, [assignmentsQuery.data, watchAssignmentId]);
   const studentsQuery = useStudentsBySection(selectedAssignment?.section_id);
@@ -133,7 +128,7 @@ export function EnterMarks() {
             state: { toast: "Marks submitted" },
           });
         },
-      }
+      },
     );
   };
 

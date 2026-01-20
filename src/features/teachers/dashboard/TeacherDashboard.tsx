@@ -113,7 +113,6 @@ export function TeacherDashboard() {
     );
   }
 
-  const sectionLabel = `${data.class_name} - ${data.section_name}`;
   const assignments = assignmentsQuery.data ?? [];
 
   return (

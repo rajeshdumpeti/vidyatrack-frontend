@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { getHeaderTitle } from "./headerTitles";
+import { useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -9,11 +8,8 @@ type HeaderProps = {
 };
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { pathname } = useLocation();
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
-
-  const title = useMemo(() => getHeaderTitle(pathname), [pathname]);
 
   const today = useMemo(() => {
     // Local date, minimal formatting (pilot-safe)
