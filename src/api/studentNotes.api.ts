@@ -6,21 +6,21 @@ import type {
 } from "@/types/studentNotes.types";
 
 export async function getStudentNotes(
-  studentId: number
+  studentId: number,
 ): Promise<StudentNoteDto[]> {
   const res = await apiClient.get<StudentNoteDto[]>(
-    API_ENDPOINTS.studentNotes.list(studentId)
+    API_ENDPOINTS.students.notes(studentId),
   );
   return res.data;
 }
 
 export async function createStudentNote(
   studentId: number,
-  payload: CreateStudentNotePayload
+  payload: CreateStudentNotePayload,
 ): Promise<StudentNoteDto> {
   const res = await apiClient.post<StudentNoteDto>(
-    API_ENDPOINTS.studentNotes.create(studentId),
-    payload
+    API_ENDPOINTS.students.notes(studentId),
+    payload,
   );
   return res.data;
 }
