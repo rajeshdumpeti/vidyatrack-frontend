@@ -29,12 +29,12 @@ export function Header({ onMenuClick }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-14 w-full items-center justify-between px-4">
-        <div className="flex min-w-0 items-center gap-3 hidden sm:block">
+        <div className="min-w-0 items-center gap-3 hidden sm:block">
           {/* Mobile menu button */}
           <button
             type="button"
             onClick={onMenuClick}
-            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 text-white hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 md:hidden shadow-lg hover:shadow-xl"
+            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-linear-to-br from-blue-500 via-indigo-500 to-purple-500 text-white hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 md:hidden shadow-lg hover:shadow-xl"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />

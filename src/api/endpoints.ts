@@ -13,15 +13,18 @@ export const API_ENDPOINTS = {
     create: "/api/v1/students",
     list: "/api/v1/students",
     detail: (studentId: number) => `/api/v1/students/${studentId}`,
+    notes: (studentId: number) => `/api/v1/students/${studentId}/notes`,
   },
   attendance: {
-    list: "/api/v1/attendance",
     create: "/api/v1/attendance",
     submit: "/api/v1/attendance/submit",
+    list: "/api/v1/attendance",
+    update: "/api/v1/attendance",
   },
   marks: {
     record: "/api/v1/marks/record",
     submit: "/api/v1/marks/submit",
+    list: "/api/v1/marks", // Add this line
   },
   teachers: {
     list: "/api/v1/teachers",
