@@ -6,7 +6,7 @@ import { useMarksSubmit } from "@/hooks/useMarksSubmit";
 import type { MarksExamTypeDto } from "@/types/marks-submit.types";
 import { useNavigate } from "react-router-dom";
 import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
-import { CheckCircle, Save, AlertCircle, Loader2, History } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, History } from "lucide-react";
 import { useExistingMarks } from "@/hooks/useExistingMarks"; // Add this import
 
 type ExamType =
@@ -58,11 +58,9 @@ function isValidMark(value: string) {
 }
 
 export function EnterMarks() {
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [, setSubmitSuccess] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<
-    "idle" | "saving" | "saved"
-  >("idle");
+  const [, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formData, setFormData] = useState<FormValues | null>(null);
   const [hasLoadedExistingMarks, setHasLoadedExistingMarks] = useState(false);
@@ -77,7 +75,6 @@ export function EnterMarks() {
     handleSubmit,
     setValue,
     watch,
-    reset,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     defaultValues: {
