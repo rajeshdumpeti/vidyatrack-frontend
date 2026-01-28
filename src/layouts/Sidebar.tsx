@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { X } from "lucide-react";
 import type { NavItem, NavRole } from "@/navigation/navConfig";
 
 type SidebarProps = {
@@ -7,56 +8,45 @@ type SidebarProps = {
   onClose?: () => void;
 };
 
-const linkBase = "flex h-11 items-center rounded-xl px-3 text-sm font-semibold";
-
-export function Sidebar({ role, items, onClose }: SidebarProps) {
+export function Sidebar({ items, onClose }: SidebarProps) {
   return (
-    <aside className="flex h-full w-72 flex-col border-r border-gray-200 bg-white">
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-        <div className="text-sm font-extrabold tracking-tight text-gray-900">
-          {role ? `${role[0].toUpperCase()}${role.slice(1)} Menu` : "Menu"}
-        </div>
-
-        {onClose ? (
+    <aside className="flex h-full flex-col bg-white">
+      {/* Sidebar Header */}
+      <div>
+        {onClose && (
           <button
-            type="button"
             onClick={onClose}
-            className="h-11 rounded-xl px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-            aria-label="Close menu"
+            className="rounded-lg p-2 hover:bg-gray-100 md:hidden"
           >
-            Close
+            <X className="h-5 w-5 text-gray-500" />
           </button>
-        ) : null}
+        )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-2 p-3">
-        {items.map((item) => {
-          const isRoot =
-            item.to === "/" || (role && item.to === `/${role}`);
-
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={isRoot}
-              onClick={onClose}
-              className={({ isActive }) =>
-                [
-                  linkBase,
-                  isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-800 hover:bg-gray-50",
-                ].join(" ")
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1 px-3 py-4">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            onClick={onClose}
+            className={({ isActive }) => `
+              flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all
+              ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }
-            >
-              {item.label}
-            </NavLink>
-          );
-        })}
+            `}
+          >
+            {item.icon && <item.icon className="h-5 w-5" />}
+            {item.label}
+          </NavLink>
+        ))}
       </nav>
 
-      <div className="border-t border-gray-200 p-3 text-xs text-gray-500">
-        Pilot navigation
+      <div className="border-t border-gray-100 p-4 px-6 text-[10px] font-medium uppercase tracking-widest text-gray-400">
+        v0.1.0-pilot
       </div>
     </aside>
   );

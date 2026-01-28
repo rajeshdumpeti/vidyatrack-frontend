@@ -1,89 +1,76 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { Footer } from "./Footer";
-import { useMemo } from "react";
-import type { NavRole } from "@/navigation/navConfig";
-import { NAV_ITEMS } from "@/navigation/navConfig";
+import { NAV_ITEMS, type NavRole } from "@/navigation/navConfig";
 import { useAuthStore } from "@/store/auth.store";
-import { logger } from "@/utils/logger";
+
 export function AppShell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const role = useAuthStore((s) => s.role) as NavRole | null;
 
   const openDrawer = () => setIsDrawerOpen(true);
   const closeDrawer = () => setIsDrawerOpen(false);
-  const trace = useMemo(() => logger.traceId(), []);
-  const role = useAuthStore((s) => s.role) as NavRole | null;
 
-  const navItems = useMemo(() => {
-    if (role === "principal" || role === "management") {
+  // Simplified navigation logic
+  const navConfig = useMemo(() => {
+    if (role && NAV_ITEMS[role]) {
       return { role, items: NAV_ITEMS[role] };
     }
+    return { role: undefined, items: [] };
+  }, [role]);
 
-    logger.warn("[layout][nav] missing_or_unknown_role", { trace, role });
-    return { role: undefined, items: [{ label: "Dashboard", to: "/" }] };
-  }, [role, trace]);
-  // Escape closes drawer (mobile)
+  // Global "Esc" listener for better UX
   useEffect(() => {
-    if (!isDrawerOpen) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDrawer();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    const handleEsc = (e: KeyboardEvent) => e.key === "Escape" && closeDrawer();
+    if (isDrawerOpen) window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [isDrawerOpen]);
 
+  // Shared Sidebar Component to avoid repeating props
+  const renderSidebar = (isMobile = false) => (
+    <Sidebar
+      role={navConfig.role}
+      items={navConfig.items}
+      onClose={isMobile ? closeDrawer : undefined}
+    />
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       <Header onMenuClick={openDrawer} />
 
-      <div className="mx-auto flex w-full ">
-        {/* Desktop sidebar */}
-        {role !== "teacher" && (
-          <div className="hidden md:block sm:block">
-            <Sidebar role={navItems.role} items={navItems.items} />{" "}
-          </div>
+      <div className="flex flex-1">
+        {/* Desktop Sidebar - Hidden for teachers based on your logic */}
+        {role && role !== "teacher" && (
+          <aside className="hidden border-r border-gray-200 bg-white sm:block md:w-64 lg:w-72">
+            {renderSidebar()}
+          </aside>
         )}
 
-        {/* Main content */}
-        <div className="flex min-h-[calc(100vh-3.5rem)] flex-1 flex-col">
-          <main className="flex-1 px-0">
+        <div className="flex flex-1 flex-col">
+          <main className="flex-1">
             <Outlet />
           </main>
           <Footer />
         </div>
       </div>
 
-      {/* Mobile drawer */}
-      {isDrawerOpen ? (
-        <div
-          className="fixed inset-0 z-40 md:hidden"
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* Overlay */}
-          <button
-            type="button"
-            className="absolute inset-0 h-full w-full bg-black/30"
+      {/* Mobile Drawer */}
+      {isDrawerOpen && role && role !== "teacher" && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
             onClick={closeDrawer}
-            aria-label="Close menu overlay"
           />
-
-          {/* Drawer panel */}
-          {role !== "teacher" && (
-            <div className="absolute left-0 top-0 h-full w-72 shadow-xl">
-              <Sidebar
-                role={navItems.role}
-                items={navItems.items}
-                onClose={closeDrawer}
-              />{" "}
-            </div>
-          )}
+          {/* Panel */}
+          <div className="absolute inset-y-0 left-0 w-full max-w-xs bg-white shadow-2xl transition-transform">
+            {renderSidebar(true)}
+          </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

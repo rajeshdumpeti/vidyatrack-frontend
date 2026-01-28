@@ -1,167 +1,236 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { LoadingState } from "@/components/feedback/LoadingState";
-import { ErrorState } from "@/components/feedback/ErrorState";
-import { EmptyState } from "@/components/feedback/EmptyState";
+import {
+  Plus,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  X,
+  BookOpen,
+} from "lucide-react";
 import { useClasses } from "@/hooks/useClasses";
-import { logger } from "@/utils/logger";
-import type { ClassDto } from "@/types/class.types";
+import { useSections } from "@/hooks/useSections";
+import { useSubjects } from "@/hooks/useSubjects";
 
-type FormValues = {
-  name: string;
-};
+const CLASS_TEMPLATES = [
+  "Nursery",
+  "LKG",
+  "UKG",
+  "1st Grade",
+  "2nd Grade",
+  "3rd Grade",
+  "4th Grade",
+  "5th Grade",
+  "6th Grade",
+  "7th Grade",
+  "8th Grade",
+  "9th Grade",
+  "10th Grade",
+  "11th Grade",
+  "12th Grade",
+];
+const SECTION_OPTIONS = ["A", "B", "C", "D", "E", "F"];
 
 export function ManageClassesPage() {
-  const trace = useMemo(() => logger.traceId(), []);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const { list, create } = useClasses();
-
   const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    defaultValues: { name: "" },
-    mode: "onBlur",
-  });
+    classes: classListData = [],
+    createClass: createClassFn,
+    isCreating: isClassCreating,
+    isLoading: isClassLoading,
+  } = useClasses();
+  const {
+    sections = [],
+    createSection,
+    isCreating: isSecCreating,
+  } = useSections();
+  const { subjects = [] } = useSubjects();
 
-  const onSubmit = (values: FormValues) => {
-    setToast(null);
+  const [expandedClassId, setExpandedClassId] = useState<number | null>(null);
+  const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
 
-    create.mutate(
-      { name: values.name.trim() },
+  const { register, handleSubmit, reset } = useForm<{ name: string }>();
+
+  const onAddClass = (values: { name: string }) => {
+    createClassFn(
+      { name: values.name },
       {
         onSuccess: () => {
-          setToast("Class created successfully.");
-          reset({ name: "" });
-          logger.info("[management][classes] create_success", { trace });
+          reset();
+          setIsAddClassModalOpen(false);
         },
-        onError: (err) => {
-          logger.error("[management][classes] create_failed", { trace, err });
-        },
-      }
+      },
     );
   };
 
+  if (isClassLoading)
+    return (
+      <div className="p-10 text-center font-bold">
+        Loading School Structure...
+      </div>
+    );
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <header className="px-4 pt-6">
-        <div className="mx-auto w-full max-w-6xl">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Classes Setup
-          </h1>
-          <p className="mt-2 text-sm font-medium text-gray-600">
-            Define grades (e.g., 10th, 9th). Create sections next.
-          </p>
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
-        {toast ? (
-          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-            {toast}
+    <div className="min-h-screen bg-[#F8F9FB] p-8">
+      <div className="mx-auto max-w-5xl space-y-8">
+        <header className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-black text-gray-900">
+              School Structure
+            </h1>
+            <p className="text-gray-500 font-medium">
+              Manage your Grades and Sections
+            </p>
           </div>
-        ) : null}
+          <button
+            onClick={() => setIsAddClassModalOpen(true)}
+            className="bg-gray-900 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2"
+          >
+            <Plus size={18} /> Add Class
+          </button>
+        </header>
 
-        {/* Create form */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm font-semibold text-gray-900">
-            Create Class
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-900">
-                Class Name
-              </label>
-              <input
-                className={[
-                  "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
-                  "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                  errors.name ? "border-red-500" : "border-gray-200",
-                ].join(" ")}
-                placeholder="Enter class name (e.g., Class 5)"
-                {...register("name", {
-                  required: "Class name is required",
-                  validate: (v) =>
-                    v.trim().length > 1 ? true : "Enter a valid class name",
-                })}
-              />
-              {errors.name ? (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.name.message}
-                </p>
-              ) : null}
-            </div>
-
-            {create.isError ? (
-              <ErrorState
-                title="Create failed"
-                message="Unable to create class. Please try again."
-              />
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={isSubmitting || create.isPending}
-              className={[
-                "h-12 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white",
-                "hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
-              ].join(" ")}
-            >
-              {create.isPending ? "Creating..." : "Create Class"}
-            </button>
-          </form>
+        <div className="space-y-4">
+          {classListData.map((cls) => (
+            <ClassAccordionItem
+              key={cls.id}
+              cls={cls}
+              isExpanded={expandedClassId === cls.id}
+              onToggle={() =>
+                setExpandedClassId(expandedClassId === cls.id ? null : cls.id)
+              }
+              sections={sections.filter((s) => s.class_id === cls.id)}
+              onCreateSection={(name: string) =>
+                createSection({ class_id: cls.id, name })
+              }
+              isSecCreating={isSecCreating}
+            />
+          ))}
         </div>
+      </div>
 
-        {/* List */}
-        {list.isLoading ? <LoadingState label="Loading classes..." /> : null}
+      {/* ADD CLASS MODAL WITH DROPDOWN */}
+      {isAddClassModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl">
+            <h2 className="text-2xl font-black text-gray-900 mb-6">
+              Add New Class
+            </h2>
+            <form onSubmit={handleSubmit(onAddClass)} className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">
+                  Select Grade
+                </label>
+                <select
+                  {...register("name", { required: true })}
+                  className="w-full h-14 rounded-2xl bg-gray-50 border-none px-5 text-sm font-bold outline-none ring-1 ring-gray-100 focus:ring-2 focus:ring-blue-500 mt-2"
+                >
+                  <option value="">-- Choose Class --</option>
+                  {CLASS_TEMPLATES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={isClassCreating}
+                className="w-full bg-blue-600 text-white h-14 rounded-2xl font-black shadow-lg shadow-blue-100 disabled:opacity-50"
+              >
+                {isClassCreating ? "Saving..." : "Establish Class"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-        {list.error ? (
-          <ErrorState
-            title="Unable to load classes"
-            message="Please try again."
-          />
-        ) : null}
+function ClassAccordionItem({
+  cls,
+  isExpanded,
+  onToggle,
+  sections,
+  onCreateSection,
+  isSecCreating,
+}: any) {
+  const [selectedLetter, setSelectedLetter] = useState("");
 
-        {!list.isLoading && !list.error && (list.data?.length ?? 0) === 0 ? (
-          <EmptyState message="Create your first class to get started." />
-        ) : null}
+  const handleAdd = () => {
+    if (!selectedLetter) return;
+    onCreateSection(selectedLetter);
+    setSelectedLetter("");
+  };
 
-        {!list.isLoading && !list.error && (list.data?.length ?? 0) > 0 ? (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="text-sm font-semibold text-gray-900">Classes</div>
-              <div className="mt-1 text-xs font-medium text-gray-500">
-                Showing {list.data!.length} Classes
+  return (
+    <div
+      className={`rounded-[2rem] border bg-white transition-all ${isExpanded ? "border-blue-200" : "border-gray-100"}`}
+    >
+      <div
+        className="p-6 flex justify-between items-center cursor-pointer"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+            {cls.name[0]}
+          </div>
+          <h3 className="text-lg font-black text-gray-900">{cls.name}</h3>
+        </div>
+        <ChevronDown
+          className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
+        />
+      </div>
+
+      {isExpanded && (
+        <div className="px-8 pb-8 space-y-6 border-t border-gray-50 pt-6 animate-in slide-in-from-top-2">
+          <div>
+            <h4 className="text-[10px] font-black uppercase text-gray-400 mb-4 tracking-widest">
+              Active Sections
+            </h4>
+            <div className="flex flex-wrap gap-3">
+              {sections.map((s: any) => (
+                <div
+                  key={s.id}
+                  className="bg-gray-100 px-4 py-2 rounded-xl font-black text-gray-700 text-sm"
+                >
+                  Section {s.name}
+                </div>
+              ))}
+
+              {/* SECTION DROPDOWN ADDER */}
+              <div className="flex gap-2">
+                <select
+                  value={selectedLetter}
+                  onChange={(e) => setSelectedLetter(e.target.value)}
+                  className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl px-3 py-1 text-xs font-black outline-none focus:border-blue-500"
+                >
+                  <option value="">+ Add Section</option>
+                  {SECTION_OPTIONS.map((opt) => (
+                    <option
+                      key={opt}
+                      value={opt}
+                      disabled={sections.some((s: any) => s.name === opt)}
+                    >
+                      Section {opt}
+                    </option>
+                  ))}
+                </select>
+                {selectedLetter && (
+                  <button
+                    onClick={handleAdd}
+                    disabled={isSecCreating}
+                    className="bg-blue-600 text-white px-4 rounded-xl text-[10px] font-black"
+                  >
+                    {isSecCreating ? "..." : "CONFIRM"}
+                  </button>
+                )}
               </div>
             </div>
-
-            <ul className="divide-y divide-gray-100">
-              {(list.data as ClassDto[]).map((c) => (
-                <li key={c.id} className="px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-gray-900">
-                        {c.name}
-                      </div>
-                      <div className="mt-1 text-xs font-medium text-gray-500">
-                        ID: <span className="text-gray-900">{c.id}</span>
-                      </div>
-                    </div>
-
-                    <span className="inline-flex h-9 items-center rounded-full bg-gray-900 px-4 text-sm font-semibold text-white">
-                      View
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
           </div>
-        ) : null}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
