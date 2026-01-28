@@ -1,42 +1,29 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./useAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { getHomeRouteForRole } from "@/utils/auth";
+import type { NavRole } from "@/navigation/navConfig";
 
-type AllowedRole = "teacher" | "principal" | "management";
-
-function homeForRole(role: AllowedRole) {
-  if (role === "teacher") return "/teacher";
-  if (role === "principal") return "/principal";
-  return "/management";
+interface RoleGuardProps {
+  allowed: NavRole;
+  children: ReactNode;
 }
 
-export function RoleGuard({
-  allowed,
-  children,
-}: {
-  allowed: AllowedRole;
-  children: ReactNode;
-}) {
+export function RoleGuard({ allowed, children }: RoleGuardProps) {
   const { isAuthed, role } = useAuth();
   const location = useLocation();
 
-  // No token => force login
   if (!isAuthed) {
     return (
       <Navigate to="/auth/login" replace state={{ from: location.pathname }} />
     );
   }
 
-  // Token exists but role missing/invalid => safest behavior is login
-  if (!role) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
-  // Wrong role => redirect to correct home
+  // If user is in the wrong place, send them to their specific home
   if (role !== allowed) {
-    return <Navigate to={homeForRole(role)} replace />;
+    const home = getHomeRouteForRole(role);
+    return <Navigate to={home} replace />;
   }
 
-  // OK
   return <>{children}</>;
 }

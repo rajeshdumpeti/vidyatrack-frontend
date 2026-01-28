@@ -1,25 +1,16 @@
-import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Menu, LogOut, GraduationCap } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { getHeaderTitle } from "./headerTitles";
+import { useMemo } from "react";
 
-type HeaderProps = {
-  onMenuClick: () => void;
-};
-
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
-
-  const today = useMemo(() => {
-    // Local date, minimal formatting (pilot-safe)
-    return new Date().toLocaleDateString(undefined, {
-      weekday: "short",
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-    });
-  }, []);
+  const role = useAuthStore((s) => s.role);
+  const isTeacher = role === "teacher";
+  const title = useMemo(() => getHeaderTitle(pathname), [pathname]);
 
   const onLogout = () => {
     clearAuth();
@@ -27,38 +18,49 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-      <div className="mx-auto flex h-14 w-full items-center justify-between px-4">
-        <div className="min-w-0 items-center gap-3 hidden sm:block">
-          {/* Mobile menu button */}
-          <button
-            type="button"
-            onClick={onMenuClick}
-            className="inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-linear-to-br from-blue-500 via-indigo-500 to-purple-500 text-white hover:from-blue-600 hover:via-indigo-600 hover:to-purple-600 transition-all duration-300 md:hidden shadow-lg hover:shadow-xl"
-            aria-label="Open menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          {/* 
-          <div className="min-w-0">
-            <div className="truncate text-base font-extrabold tracking-tight text-gray-900">
+    <header className="sticky top-0 z-30 h-16 border-b border-gray-100 bg-white/80 backdrop-blur-md">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          {/* Toggle button ONLY for Management/Principal */}
+          {!isTeacher ? (
+            <button
+              onClick={onMenuClick}
+              className="rounded-xl bg-gray-50 p-2 text-gray-600 hover:bg-gray-100 md:hidden"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          ) : (
+            /* Logo for Teachers since they have no Sidebar */
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
+              <GraduationCap className="h-6 w-6 text-white" />
+            </div>
+          )}
+
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 leading-none">
               {title}
-            </div>
-            <div className="truncate text-xs font-medium text-gray-500">
-              VidyaTrack
-            </div>
-          </div> */}
+            </h1>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-tight">
+              {isTeacher ? "Teacher Portal" : "VidyaTrack"}
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-none items-center gap-3 text-xs font-semibold text-gray-600">
-          <span className="hidden sm:inline">{today}</span>
-          <span className="sm:hidden">{today}</span>
+        {/* Right Side Actions stay consistent */}
+        <div className="flex items-center gap-4">
+          <span className="hidden text-xs font-semibold text-gray-400 lg:block">
+            {new Date().toLocaleDateString(undefined, {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
           <button
-            type="button"
             onClick={onLogout}
-            className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-100"
           >
-            Logout
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </div>
