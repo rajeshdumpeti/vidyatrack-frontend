@@ -9,10 +9,22 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) {
+  const { accessToken, schoolId } = useAuthStore.getState();
+
+  // 1. Attach Bearer Token
+  if (accessToken) {
     config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
+
+  // 2. Automatically attach active school_id to all requests
+  // This ensures backend security checks pass without manual work in components
+  if (schoolId) {
+    config.params = {
+      ...config.params,
+      school_id: schoolId,
+    };
+  }
+
   return config;
 });

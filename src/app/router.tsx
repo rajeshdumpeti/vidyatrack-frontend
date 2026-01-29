@@ -15,7 +15,6 @@ import { MarksHistoryPage } from "@/features/principal/marks/MarksHistoryPage";
 import { StudentsListPage } from "@/features/students/StudentsListPage";
 import { TeachersListPage } from "@/features/teachers/TeachersListPage";
 import { ManageSchoolsPage } from "@/features/management/schools/ManageSchoolsPage";
-import { ManageClassesPage } from "@/features/management/classes/ManageClassesPage";
 import { ManageSectionsPage } from "@/features/management/sections/ManageSectionsPage";
 import { StudentProfilePage } from "@/features/students/StudentProfilePage";
 import { TeacherProfilePage } from "@/features/teachers/TeacherProfilePage";
@@ -23,7 +22,12 @@ import { AssignSubjectsPage } from "@/features/management/setup/AssignSubjectsPa
 import { SubjectsPage } from "@/features/management/setup/SubjectsPage";
 import { TeachersPage } from "@/features/management/setup/TeachersPage";
 import { ManagementSetupStudentsPage } from "@/features/management/setup/StudentsPage";
-
+import { PlatformLayout } from "@/layouts/PlatformLayout";
+import { PlatformDashboardPage } from "@/features/platform/PlatformDashboardPage";
+import { PlatformSchoolsListPage } from "@/features/platform/PlatformSchoolsListPage";
+import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateSchoolPage";
+import { ManagementDashboardPage } from "@/features/management/ManagementDashboardPage";
+import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
 
@@ -36,6 +40,21 @@ export const router = createBrowserRouter([
         element: <OtpRequestPage />,
       },
       { path: "verify", element: <OtpVerifyPage /> },
+      // New Route for Multi-School Selection
+      { path: "select-school", element: <SelectSchoolPage /> },
+    ],
+  },
+  {
+    path: "/platform",
+    element: (
+      <RoleGuard allowed="super_admin">
+        <PlatformLayout />
+      </RoleGuard>
+    ),
+    children: [
+      { index: true, element: <PlatformDashboardPage /> },
+      { path: "schools", element: <PlatformSchoolsListPage /> },
+      { path: "schools/new", element: <PlatformCreateSchoolPage /> },
     ],
   },
 
@@ -84,14 +103,13 @@ export const router = createBrowserRouter([
     ),
 
     children: [
-      { index: true, element: <div>Management Home (UI TBD)</div> },
+      { index: true, element: <ManagementDashboardPage /> },
       { path: "setup/schools", element: <ManageSchoolsPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
       { path: "students", element: <ManagementSetupStudentsPage /> },
       { path: "teachers", element: <TeachersListPage /> },
-      { path: "setup/classes", element: <ManageClassesPage /> },
-      { path: "setup/sections", element: <ManageSectionsPage /> },
+      { path: "setup/academic", element: <ManageSectionsPage /> },
       { path: "setup/students", element: <ManagementSetupStudentsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },

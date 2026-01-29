@@ -36,6 +36,7 @@ export function OtpVerifyPage() {
   const setToken = useAuthStore((s) => s.setToken);
   const setAuthMeta = useAuthStore((s) => s.setAuthMeta);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const setSchools = useAuthStore((s) => s.setSchools);
 
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phoneDigits = state.phoneDigits ?? "";
@@ -53,7 +54,7 @@ export function OtpVerifyPage() {
 
   const maskedPhone = useMemo(
     () => maskPhoneDigits(state.phoneDigits),
-    [state.phoneDigits]
+    [state.phoneDigits],
   );
 
   const {
@@ -116,7 +117,7 @@ export function OtpVerifyPage() {
     if (!hasPhone) {
       logger.warn(
         "[auth][otp-verify] missing phoneDigits in navigation state",
-        { trace }
+        { trace },
       );
       return;
     }
@@ -132,29 +133,43 @@ export function OtpVerifyPage() {
       {
         onSuccess: async (data) => {
           try {
+            // 1. Save the token
             setToken(data.access_token);
 
-            let { role } = useAuthStore.getState();
-            if (!role) {
-              const me = await getAuthMe();
-              setAuthMeta({
-                role: me.role ?? null,
-                schoolId: me.school_id ?? null,
-              });
-              role = useAuthStore.getState().role;
-            }
+            // 2. Fetch the full profile & schools mapping
+            const me = await getAuthMe();
+            console.log("DEBUG: Full User Object:", me); // Check your console for this!
+
+            setSchools(Array.isArray(me.schools) ? me.schools : []);
+
+            // Force the role to lowercase to ensure the checks below work
+            const role = me.role?.toLowerCase().trim();
+
+            setAuthMeta({
+              role: role ?? null,
+              schoolId: me.school_id ?? null,
+            });
 
             if (!role) {
+              console.error("DEBUG: Role is missing from /me response");
               clearAuth();
               throw new Error("invalid_token_claims");
             }
 
-            if (role === "teacher") navigate("/teacher", { replace: true });
-            else if (role === "principal")
+            // Now the comparisons are safe
+            if (role === "super_admin") {
+              navigate("/platform", { replace: true });
+            } else if (role === "management") {
+              if (Array.isArray(me.schools) && me.schools.length > 1) {
+                navigate("/auth/select-school", { replace: true });
+              } else {
+                navigate("/management", { replace: true });
+              }
+            } else if (role === "teacher") {
+              navigate("/teacher", { replace: true });
+            } else if (role === "principal") {
               navigate("/principal", { replace: true });
-            else if (role === "management")
-              navigate("/management", { replace: true });
-            else {
+            } else {
               clearAuth();
               throw new Error("unknown_role");
             }
@@ -163,12 +178,13 @@ export function OtpVerifyPage() {
               trace,
               e,
             });
+            clearAuth();
           }
         },
         onError: (err) => {
           logger.warn("[auth][otp-verify] verify failed", { trace, err });
         },
-      }
+      },
     );
   };
 

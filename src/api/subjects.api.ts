@@ -8,11 +8,11 @@ export async function listSubjects(): Promise<Subject[]> {
 }
 
 export async function createSubject(
-  payload: SubjectCreateInput
+  payload: SubjectCreateInput,
 ): Promise<Subject> {
   const res = await apiClient.post<Subject>(
     API_ENDPOINTS.subjects.create,
-    payload
+    payload,
   );
   return res.data;
 }

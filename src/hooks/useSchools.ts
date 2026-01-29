@@ -11,7 +11,8 @@ export function useSchools() {
   });
 
   const create = useMutation({
-    mutationFn: (payload: { name: string }) => createSchool(payload),
+    mutationFn: (payload: { name: string; admin_phone: string }) =>
+      createSchool(payload),
     onSuccess: async () => {
       // safest: refetch to reflect server truth
       await qc.invalidateQueries({ queryKey: ["schools"] });

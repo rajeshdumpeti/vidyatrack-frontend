@@ -1,11 +1,15 @@
-export type NavRole = "teacher" | "principal" | "management";
-
+export type NavRole = "teacher" | "principal" | "management" | "super_admin";
 export type NavItem = {
   label: string;
   to: string;
 };
 
 export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
+  super_admin: [
+    { label: "Dashboard", to: "/platform" },
+    { label: "Schools", to: "/platform/schools" },
+    { label: "Create School", to: "/platform/schools/new" },
+  ],
   teacher: [
     { label: "Dashboard", to: "/teacher" },
     { label: "Mark Attendance", to: "/teacher/attendance" },
@@ -22,9 +26,8 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
   ],
   management: [
     { label: "Dashboard", to: "/management" },
-    { label: "Setup Schools", to: "/management/setup/schools" },
-    { label: "Setup Classes", to: "/management/setup/classes" },
-    { label: "Setup Sections", to: "/management/setup/sections" },
+    // { label: "Setup Schools", to: "/management/setup/schools" },
+    { label: "Academic Setup", to: "/management/setup/academic" },
     { label: "Subjects", to: "/management/setup/subjects" },
     { label: "Assign Subjects", to: "/management/setup/assign-subjects" },
     { label: "Onboard Teachers", to: "/management/setup/teachers" },
