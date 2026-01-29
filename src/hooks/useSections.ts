@@ -1,22 +1,20 @@
+// src/hooks/useSections.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSection, getSections } from "@/api/sections.api";
+import { getSections, createSection } from "@/api/sections.api";
 
 export function useSections() {
   const qc = useQueryClient();
-
-  const list = useQuery({
-    queryKey: ["sections"],
-    queryFn: getSections,
-    retry: 1,
-  });
+  const query = useQuery({ queryKey: ["sections"], queryFn: getSections });
 
   const create = useMutation({
-    mutationFn: (payload: { class_id: number; name: string }) =>
-      createSection(payload),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["sections"] });
-    },
+    mutationFn: createSection,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["sections"] }),
   });
 
-  return { list, create };
+  return {
+    sections: query.data ?? [],
+    isLoading: query.isLoading,
+    createSection: create.mutate,
+    isCreating: create.isPending,
+  };
 }

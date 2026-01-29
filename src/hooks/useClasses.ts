@@ -1,21 +1,25 @@
+// src/hooks/useClasses.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClass, getClasses } from "@/api/classes.api";
 
 export function useClasses() {
   const qc = useQueryClient();
 
-  const list = useQuery({
+  const query = useQuery({
     queryKey: ["classes"],
     queryFn: getClasses,
-    retry: 1,
   });
 
-  const create = useMutation({
-    mutationFn: (payload: { name: string }) => createClass(payload),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["classes"] });
-    },
+  const createMutation = useMutation({
+    mutationFn: createClass,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["classes"] }),
   });
 
-  return { list, create };
+  return {
+    classes: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    createClass: createMutation.mutate,
+    isCreating: createMutation.isPending,
+  };
 }

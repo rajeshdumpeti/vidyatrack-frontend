@@ -208,7 +208,10 @@ export function EnterMarks() {
           refetchExistingMarks();
           navigate("/teacher", {
             replace: true,
-            state: { toast: "Marks submitted successfully" },
+            state: {
+              toast:
+                "Marks saved. Results will be sent to parents after all subjects are completed.",
+            },
           });
         },
       },

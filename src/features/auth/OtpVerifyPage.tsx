@@ -53,7 +53,7 @@ export function OtpVerifyPage() {
 
   const maskedPhone = useMemo(
     () => maskPhoneDigits(state.phoneDigits),
-    [state.phoneDigits]
+    [state.phoneDigits],
   );
 
   const {
@@ -116,7 +116,7 @@ export function OtpVerifyPage() {
     if (!hasPhone) {
       logger.warn(
         "[auth][otp-verify] missing phoneDigits in navigation state",
-        { trace }
+        { trace },
       );
       return;
     }
@@ -168,7 +168,7 @@ export function OtpVerifyPage() {
         onError: (err) => {
           logger.warn("[auth][otp-verify] verify failed", { trace, err });
         },
-      }
+      },
     );
   };
 

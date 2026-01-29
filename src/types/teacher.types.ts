@@ -22,6 +22,7 @@ export type TeacherMeDto = TeacherDto & {
 };
 
 export type Teacher = {
+  assigned_section_label: string;
   id: number;
   name: string;
   phone?: string;
