@@ -1,22 +1,19 @@
-// src/hooks/useSubjects.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { listSubjects, createSubject } from "@/api/subjects.api";
+import { createSubject, listSubjects } from "@/api/subjects.api";
 import type { SubjectCreateInput } from "@/types/subject.types";
 
 export function useSubjects() {
-  const qc = useQueryClient();
-  const query = useQuery({ queryKey: ["subjects"], queryFn: listSubjects });
-
-  const create = useMutation({
-    mutationFn: createSubject,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["subjects"] }),
+  const q = useQuery({
+    queryKey: ["subjects"],
+    queryFn: listSubjects,
+    retry: 1,
   });
 
   return {
-    subjects: query.data ?? [],
-    isLoading: query.isLoading,
-    createSubject: create.mutate,
-    isCreating: create.isPending,
+    data: q.data ?? [],
+    isLoading: q.isLoading,
+    error: q.error,
+    refetch: q.refetch,
   };
 }
 

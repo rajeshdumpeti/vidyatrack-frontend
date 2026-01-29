@@ -1,30 +1,25 @@
-import { createSchool, getSchools } from "@/api/schools.api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createSchool, getSchools } from "@/api/schools.api";
 
-// src/hooks/useSchools.ts
 export function useSchools() {
   const qc = useQueryClient();
 
-  const query = useQuery({
+  const list = useQuery({
     queryKey: ["schools"],
     queryFn: getSchools,
-    staleTime: 5 * 60 * 1000, // 5 minutes of fresh data
+    retry: 1,
   });
 
-  const createMutation = useMutation({
-    mutationFn: createSchool,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schools"] });
+  const create = useMutation({
+    mutationFn: (payload: { name: string }) => createSchool(payload),
+    onSuccess: async () => {
+      // safest: refetch to reflect server truth
+      await qc.invalidateQueries({ queryKey: ["schools"] });
     },
   });
 
   return {
-    schools: query.data ?? [],
-    isLoading: query.isLoading,
-    isError: query.isError,
-    refetch: query.refetch,
-    createSchool: createMutation.mutate,
-    isCreating: createMutation.isPending,
-    createError: createMutation.error,
+    list,
+    create,
   };
 }
