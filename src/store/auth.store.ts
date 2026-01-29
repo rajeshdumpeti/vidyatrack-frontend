@@ -1,20 +1,33 @@
 import { create } from "zustand";
 
-type UserRole = "management" | "principal" | "teacher";
+type UserRole = "management" | "principal" | "teacher" | "super_admin";
+
+type School = {
+  id: number;
+  name: string;
+  role: string;
+};
 
 type JwtPayload = {
+  sub?: string;
   role?: unknown;
-  school_id?: unknown;
-  // other claims allowed but ignored
+  is_super_admin?: unknown;
+  exp?: number;
 };
 
 type AuthState = {
   accessToken: string | null;
   role: UserRole | null;
-  schoolId: number | null;
+  schoolId: number | null; // This represents the currently "active" school
+  schools: School[]; // List of schools returned from /auth/me
 
   setToken: (token: string) => void;
-  setAuthMeta: (meta: { role?: UserRole | string | null; schoolId?: number | string | null }) => void;
+  setSchools: (schools: School[]) => void;
+  setActiveSchool: (id: number) => void;
+  setAuthMeta: (meta: {
+    role?: UserRole | string | null;
+    schoolId?: number | string | null;
+  }) => void;
   clearAuth: () => void;
 };
 
@@ -22,13 +35,9 @@ const STORAGE_KEY = "vidyatrack_access_token";
 const STORAGE_META_KEY = "vidyatrack_auth_meta";
 
 function base64UrlDecode(input: string): string {
-  // base64url -> base64
   const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
-  // pad
   const padLen = (4 - (base64.length % 4)) % 4;
   const padded = base64 + "=".repeat(padLen);
-
-  // decode
   const binary = atob(padded);
   const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
   return new TextDecoder().decode(bytes);
@@ -43,11 +52,10 @@ function parseJwtPayload(token: string): JwtPayload {
 
 function coerceRole(value: unknown): UserRole | null {
   if (typeof value !== "string") return null;
-
-  const v = value.toLowerCase().trim();
+  const v = value.trim().toLowerCase();
   if (v === "management" || v === "principal" || v === "teacher")
     return v as UserRole;
-
+  if (v === "super_admin") return "super_admin";
   return null;
 }
 
@@ -62,163 +70,69 @@ function coerceSchoolId(value: unknown): number | null {
   return null;
 }
 
-function deriveClaims(token: string): {
-  role: UserRole | null;
-  schoolId: number | null;
-} {
+function deriveClaims(token: string): { role: UserRole | null } {
   const payload = parseJwtPayload(token);
-  const role = coerceRole(payload.role);
-  if (payload.role != null && !role) throw new Error("invalid_role_claim");
-  const schoolId = coerceSchoolId(payload.school_id);
-  return { role, schoolId };
+  let role = coerceRole(payload.role);
+  const isSuper =
+    typeof payload.is_super_admin === "boolean"
+      ? payload.is_super_admin
+      : false;
+  if (!role && isSuper) role = "super_admin";
+  return { role };
 }
 
-function loadTokenFromStorage(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
+// Helper to persist/load state
+const loadToken = () => localStorage.getItem(STORAGE_KEY);
+const loadActiveSchool = () => {
+  const val = localStorage.getItem("active_school_id");
+  return val ? Number(val) : null;
+};
 
-function loadAuthMetaFromStorage(token: string): {
-  role: UserRole | null;
-  schoolId: number | null;
-} | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_META_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      token: string;
-      role: UserRole | null;
-      schoolId: number | null;
-    };
-    if (parsed.token !== token) return null;
-    return { role: parsed.role ?? null, schoolId: parsed.schoolId ?? null };
-  } catch {
-    return null;
-  }
-}
+export const useAuthStore = create<AuthState>((set, get) => ({
+  accessToken: loadToken(),
+  role: null, // Populated via setToken or /auth/me
+  schoolId: loadActiveSchool(),
+  schools: [],
 
-function saveTokenToStorage(token: string | null): void {
-  try {
-    if (!token) localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, token);
-  } catch {
-    // ignore storage errors (private browsing / locked storage)
-  }
-}
-
-function saveAuthMetaToStorage(
-  token: string | null,
-  meta?: { role: UserRole | null; schoolId: number | null } | null
-): void {
-  try {
-    if (!token || !meta) localStorage.removeItem(STORAGE_META_KEY);
-    else
-      localStorage.setItem(
-        STORAGE_META_KEY,
-        JSON.stringify({ token, role: meta.role, schoolId: meta.schoolId })
-      );
-  } catch {
-    // ignore storage errors (private browsing / locked storage)
-  }
-}
-
-export const useAuthStore = create<AuthState>((set, get) => {
-  // Hydrate on store creation
-  const stored = loadTokenFromStorage();
-  if (stored) {
+  setToken: (token: string) => {
     try {
-      const { role, schoolId } = deriveClaims(stored);
-      const storedMeta = loadAuthMetaFromStorage(stored);
-      const resolvedRole = role ?? storedMeta?.role ?? null;
-      const resolvedSchoolId = schoolId ?? storedMeta?.schoolId ?? null;
-      return {
-        accessToken: stored,
-        role: resolvedRole,
-        schoolId: resolvedSchoolId,
-        setToken: (token: string) => {
-          try {
-            const claims = deriveClaims(token);
-            saveTokenToStorage(token);
-            saveAuthMetaToStorage(token, {
-              role: claims.role,
-              schoolId: claims.schoolId,
-            });
-            set({
-              accessToken: token,
-              role: claims.role,
-              schoolId: claims.schoolId,
-            });
-          } catch {
-            saveTokenToStorage(null);
-            saveAuthMetaToStorage(null);
-            set({ accessToken: null, role: null, schoolId: null });
-          }
-        },
-        setAuthMeta: (meta) => {
-          const token = get().accessToken;
-          if (!token) return;
-          const nextRole = coerceRole(meta.role);
-          const nextSchoolId = coerceSchoolId(meta.schoolId);
-          saveAuthMetaToStorage(token, {
-            role: nextRole,
-            schoolId: nextSchoolId,
-          });
-          set({ role: nextRole, schoolId: nextSchoolId });
-        },
-        clearAuth: () => {
-          saveTokenToStorage(null);
-          saveAuthMetaToStorage(null);
-          set({ accessToken: null, role: null, schoolId: null });
-        },
-      };
-    } catch {
-      saveTokenToStorage(null);
-      saveAuthMetaToStorage(null);
-    }
-  }
-
-  // Default empty state
-  return {
-    accessToken: null,
-    role: null,
-    schoolId: null,
-    setToken: (token: string) => {
-      try {
-        const claims = deriveClaims(token);
-        saveTokenToStorage(token);
-        saveAuthMetaToStorage(token, {
-          role: claims.role,
-          schoolId: claims.schoolId,
-        });
-        set({
-          accessToken: token,
-          role: claims.role,
-          schoolId: claims.schoolId,
-        });
-      } catch {
-        saveTokenToStorage(null);
-        saveAuthMetaToStorage(null);
-        set({ accessToken: null, role: null, schoolId: null });
-      }
-    },
-    setAuthMeta: (meta) => {
-      const token = get().accessToken;
-      if (!token) return;
-      const nextRole = coerceRole(meta.role);
-      const nextSchoolId = coerceSchoolId(meta.schoolId);
-      saveAuthMetaToStorage(token, {
-        role: nextRole,
-        schoolId: nextSchoolId,
+      const { role } = deriveClaims(token);
+      localStorage.setItem(STORAGE_KEY, token);
+      set({
+        accessToken: token,
+        role: role,
+        // When logging in, we clear context until /auth/me or school selection happens
+        schools: [],
       });
-      set({ role: nextRole, schoolId: nextSchoolId });
-    },
-    clearAuth: () => {
-      saveTokenToStorage(null);
-      saveAuthMetaToStorage(null);
-      set({ accessToken: null, role: null, schoolId: null });
-    },
-  };
-});
+    } catch {
+      get().clearAuth();
+    }
+  },
+
+  setSchools: (schools: School[]) => {
+    set({ schools });
+    // If only one school, make it active immediately
+    if (schools.length === 1) {
+      get().setActiveSchool(schools[0].id);
+    }
+  },
+
+  setActiveSchool: (id: number) => {
+    localStorage.setItem("active_school_id", id.toString());
+    set({ schoolId: id });
+  },
+
+  setAuthMeta: (meta) => {
+    const nextRole = coerceRole(meta.role);
+    const nextSchoolId = coerceSchoolId(meta.schoolId);
+    if (nextRole) set({ role: nextRole });
+    if (nextSchoolId) get().setActiveSchool(nextSchoolId);
+  },
+
+  clearAuth: () => {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_META_KEY);
+    localStorage.removeItem("active_school_id");
+    set({ accessToken: null, role: null, schoolId: null, schools: [] });
+  },
+}));

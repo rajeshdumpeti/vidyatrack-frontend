@@ -30,20 +30,6 @@ const MOCK_STUDENTS: StudentDto[] = [
     parent_phone: "9876543211",
     school_id: 1,
   },
-  {
-    id: 103,
-    name: "Ishaan Verma",
-    section_id: 3,
-    parent_phone: "9876543212",
-    school_id: 1,
-  },
-  {
-    id: 104,
-    name: "Anaya Singh",
-    section_id: 1,
-    parent_phone: "9876543213",
-    school_id: 1,
-  },
 ];
 
 export function StudentsSetupPage() {
@@ -57,7 +43,7 @@ export function StudentsSetupPage() {
   const navigateRole = role ?? "teacher";
 
   const onFilterChange = (
-    next: Partial<{ sectionId: string; search: string }>
+    next: Partial<{ sectionId: string; search: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.search !== undefined) setSearch(next.search);
@@ -72,7 +58,7 @@ export function StudentsSetupPage() {
   const filteredMock = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = MOCK_STUDENTS.filter((s) =>
-      sectionIdNumber ? s.section_id === sectionIdNumber : true
+      sectionIdNumber ? s.section_id === sectionIdNumber : true,
     );
 
     if (!q) return list;

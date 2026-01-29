@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 
-type AllowedRole = "teacher" | "principal" | "management";
+type AllowedRole = "teacher" | "principal" | "management" | "super_admin";
 
 function homeForRole(role: AllowedRole) {
+  if (role === "super_admin") return "/platform";
   if (role === "teacher") return "/teacher";
   if (role === "principal") return "/principal";
   return "/management";

@@ -21,8 +21,9 @@ export const ROUTES = {
  * Keep this as the single source of truth for redirects.
  */
 export function roleHomeRoute(
-  role: "teacher" | "principal" | "management"
+  role: "teacher" | "principal" | "management" | "super_admin",
 ): string {
+  if (role === "super_admin") return "/platform";
   if (role === "teacher") return ROUTES.teacher.root;
   if (role === "principal") return ROUTES.principal.root;
   return ROUTES.management.root;

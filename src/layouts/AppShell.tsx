@@ -17,7 +17,11 @@ export function AppShell() {
   const role = useAuthStore((s) => s.role) as NavRole | null;
 
   const navItems = useMemo(() => {
-    if (role === "principal" || role === "management") {
+    if (
+      role === "principal" ||
+      role === "management" ||
+      role === "super_admin"
+    ) {
       return { role, items: NAV_ITEMS[role] };
     }
 

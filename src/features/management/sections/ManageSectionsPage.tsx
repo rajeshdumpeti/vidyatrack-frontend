@@ -1,243 +1,275 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { LoadingState } from "@/components/feedback/LoadingState";
-import { ErrorState } from "@/components/feedback/ErrorState";
-import { EmptyState } from "@/components/feedback/EmptyState";
+import {
+  HiOutlineViewGridAdd,
+  HiOutlineCollection,
+  HiOutlineHashtag,
+  HiOutlineChevronRight,
+  HiOutlineAcademicCap,
+  HiOutlineCog,
+  HiOutlinePlus,
+  HiOutlineTrash,
+} from "react-icons/hi";
+
+import { useAuthStore } from "@/store/auth.store";
 import { useClasses } from "@/hooks/useClasses";
 import { useSections } from "@/hooks/useSections";
 import { logger } from "@/utils/logger";
-import type { ClassDto } from "@/types/class.types";
-import type { SectionDto } from "@/types/section.types";
 
 type FormValues = {
-  class_id: string; // keep as string for <select>
+  class_id: string;
   name: string;
 };
 
 export function ManageSectionsPage() {
   const trace = useMemo(() => logger.traceId(), []);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const classes = useClasses();
+  const { schoolId } = useAuthStore();
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  // These hooks now use schoolId internally for isolation
+  // Add this near your other state declarations
+  const [newClassName, setNewClassName] = useState("");
+  const classes = useClasses(); // Ensure you have access to the classes hook
   const sections = useSections();
-  const classLabelById = useMemo(() => {
-    const map = new Map<number, string>();
-    (classes.list.data ?? []).forEach((c: ClassDto) => {
-      map.set(c.id, c.name);
-    });
-    return map;
-  }, [classes.list.data]);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<FormValues>({
     defaultValues: { class_id: "", name: "" },
-    mode: "onBlur",
   });
 
-  const onSubmit = (values: FormValues) => {
-    setToast(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedClassId(null);
+  }, [schoolId]);
 
-    const classIdNum = Number(values.class_id);
-    if (!Number.isFinite(classIdNum) || classIdNum <= 0) return;
+  // Filter sections based on the selected class in the UI
+  const filteredSections = useMemo(() => {
+    return (sections.list.data ?? []).filter(
+      (s: any) => s.class_id === selectedClassId,
+    );
+  }, [sections.list.data, selectedClassId]);
+
+  // Reset selection when switching schools to prevent cross-school data leaks
+
+  const onSubmit = (values: FormValues) => {
+    // Use selectedClassId from state since that's what the user clicked in the sidebar
+    if (!selectedClassId || !schoolId) {
+      logger.error("Missing selection", { selectedClassId, schoolId });
+      return;
+    }
 
     sections.create.mutate(
-      { class_id: classIdNum, name: values.name.trim() },
+      {
+        class_id: selectedClassId,
+        name: values.name.trim(),
+        school_id: schoolId,
+      },
       {
         onSuccess: () => {
-          setToast("Section created successfully.");
           reset({ class_id: values.class_id, name: "" });
-          logger.info("[management][sections] create_success", {
-            trace,
-            class_id: classIdNum,
-          });
+          logger.info("[management][sections] create_success", { trace });
         },
-        onError: (err) => {
-          logger.error("[management][sections] create_failed", { trace, err });
-        },
-      }
+      },
     );
   };
 
-  const isLoading = classes.list.isLoading || sections.list.isLoading;
-  const hasError = Boolean(classes.list.error || sections.list.error);
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <header className="px-4 pt-6">
-        <div className="mx-auto w-full max-w-6xl">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Sections Setup
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#f8fafc] min-h-screen">
+      {/* Header with Title & Subtitle */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+          <HiOutlineViewGridAdd size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#1e293b]">
+            Academic Setup
           </h1>
-          <p className="mt-2 text-sm font-medium text-gray-600">
-            Create sections under each class (e.g., 10th - A).
+          <p className="text-sm text-slate-500 font-medium">
+            Manage your school's classes and sections.
           </p>
         </div>
-      </header>
+      </div>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
-        {toast ? (
-          <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-            {toast}
+      {/* Quick Add Class Bar - Refined per Screenshot */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          Quick Add: New Class/Grade
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <HiOutlineAcademicCap className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
+            <input
+              value={newClassName}
+              onChange={(e) => setNewClassName(e.target.value)}
+              placeholder="e.g. Grade 11"
+              className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-100 bg-slate-50/50 text-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-400"
+            />
           </div>
-        ) : null}
+          <button
+            onClick={() => {
+              if (!newClassName.trim() || !schoolId) return;
+              classes.create.mutate(
+                { name: newClassName.trim(), school_id: schoolId },
+                { onSuccess: () => setNewClassName("") },
+              );
+            }}
+            disabled={classes.create.isPending}
+            className="h-14 px-10 bg-[#0f172a] hover:bg-black text-white rounded-2xl text-sm font-bold transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
+          >
+            {classes.create.isPending ? "Creating..." : "Create Class"}
+          </button>
+        </div>
+      </div>
 
-        {/* Create form */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-sm font-semibold text-gray-900">
-            Create Section
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-900">
-                Class
-              </label>
-
-              {classes.list.isLoading ? (
-                <div className="mt-2">
-                  <LoadingState label="Loading classes..." />
-                </div>
-              ) : classes.list.error ? (
-                <div className="mt-2">
-                  <ErrorState
-                    title="Unable to load classes"
-                    message="Please try again."
-                  />
-                </div>
-              ) : (
-                <select
-                  className={[
-                    "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
-                    "focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                    errors.class_id ? "border-red-500" : "border-gray-200",
-                  ].join(" ")}
-                  {...register("class_id", {
-                    required: "Class is required",
-                    validate: (v) =>
-                      Number(v) > 0 ? true : "Select a valid class",
-                  })}
+      <div className="grid grid-cols-12 gap-8 mt-8">
+        {/* Left: Class Selection Sidebar */}
+        <div className="col-span-12 lg:col-span-4">
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="px-6 py-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Select Class
+              </span>
+              <span className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[10px] font-bold">
+                {classes.list.data?.length || 0} TOTAL
+              </span>
+            </div>
+            <div className="max-h-[600px] overflow-y-auto p-3 space-y-2">
+              {classes.list.data?.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedClassId(c.id)}
+                  className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${
+                    selectedClassId === c.id
+                      ? "bg-blue-50 ring-1 ring-blue-100"
+                      : "hover:bg-slate-50"
+                  }`}
                 >
-                  <option value="">Select a class</option>
-                  {(classes.list.data as ClassDto[] | undefined)?.map((c) => (
-                    <option key={c.id} value={String(c.id)}>
-                      {c.name} (ID: {c.id})
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {errors.class_id ? (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.class_id.message}
-                </p>
-              ) : null}
+                  <div className="flex items-center gap-4 text-left">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        selectedClassId === c.id
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                          : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      <HiOutlineCollection size={20} />
+                    </div>
+                    <div>
+                      <h4
+                        className={`text-sm font-bold ${selectedClassId === c.id ? "text-blue-900" : "text-slate-700"}`}
+                      >
+                        {c.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        3 Sections • 120 Students
+                      </p>
+                    </div>
+                  </div>
+                  <HiOutlineChevronRight
+                    className={
+                      selectedClassId === c.id
+                        ? "text-blue-400"
+                        : "text-slate-300"
+                    }
+                  />
+                </button>
+              ))}
             </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900">
-                Section Name
-              </label>
-              <input
-                className={[
-                  "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
-                  "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                  errors.name ? "border-red-500" : "border-gray-200",
-                ].join(" ")}
-                placeholder="Enter section name (e.g., A)"
-                {...register("name", {
-                  required: "Section name is required",
-                  validate: (v) =>
-                    v.trim().length >= 1 ? true : "Enter a valid section name",
-                })}
-              />
-              {errors.name ? (
-                <p className="mt-2 text-sm text-red-600">
-                  {errors.name.message}
-                </p>
-              ) : null}
-            </div>
-
-            {sections.create.isError ? (
-              <ErrorState
-                title="Create failed"
-                message="Unable to create section. Please try again."
-              />
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={
-                isSubmitting ||
-                sections.create.isPending ||
-                classes.list.isLoading
-              }
-              className={[
-                "h-12 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white",
-                "hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
-              ].join(" ")}
-            >
-              {sections.create.isPending ? "Creating..." : "Create Section"}
-            </button>
-          </form>
+          </div>
         </div>
 
-        {/* List */}
-        {isLoading ? <LoadingState label="Loading sections..." /> : null}
-
-        {hasError ? (
-          <ErrorState
-            title="Unable to load sections"
-            message="Please try again."
-          />
-        ) : null}
-
-        {!isLoading && !hasError && (sections.list.data?.length ?? 0) === 0 ? (
-          <EmptyState message="Create your first section to get started." />
-        ) : null}
-
-        {!isLoading && !hasError && (sections.list.data?.length ?? 0) > 0 ? (
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-4 py-3">
-              <div className="text-sm font-semibold text-gray-900">
-                Sections
+        {/* Right: Section Panel */}
+        <div className="col-span-12 lg:col-span-8">
+          {selectedClassId ? (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-8">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  Add Section to{" "}
+                  {
+                    classes.list.data?.find((c) => c.id === selectedClassId)
+                      ?.name
+                  }
+                </h3>
+                <HiOutlineCog className="text-slate-300 cursor-pointer hover:text-slate-500" />
               </div>
-              <div className="mt-1 text-xs font-medium text-gray-500">
-                Showing {sections.list.data!.length} Sections
-              </div>
-            </div>
 
-            <ul className="divide-y divide-gray-100">
-              {(sections.list.data as SectionDto[]).map((s) => (
-                <li key={s.id} className="px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-gray-900">
-                        {s.name}
-                      </div>
-                      <div className="mt-1 text-xs font-medium text-gray-500">
-                        Class:{" "}
-                        <span className="text-gray-900">
-                          {s.class_name ??
-                            classLabelById.get(s.class_id) ??
-                            `Class #${s.class_id}`}
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="flex items-center gap-4"
+              >
+                <div className="relative flex-1">
+                  <HiOutlineHashtag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
+                  <input
+                    {...register("name", { required: true })}
+                    placeholder="e.g. Section Blue"
+                    className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-100 bg-slate-50/50 text-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <button
+                  disabled={isSubmitting}
+                  className="h-14 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-bold transition-all shadow-xl shadow-blue-100 flex items-center gap-2"
+                >
+                  <HiOutlinePlus /> Add Section
+                </button>
+              </form>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest px-1">
+                  Current Sections{" "}
+                  <span className="bg-slate-100 px-2 rounded">
+                    {filteredSections.length} TOTAL
+                  </span>
+                </div>
+
+                {filteredSections.length > 0 ? (
+                  filteredSections.map((s: any) => (
+                    <div
+                      key={s.id}
+                      className="group p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-200 hover:shadow-md transition-all flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-3 h-3 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+                        <span className="font-bold text-slate-700">
+                          {s.name}
                         </span>
                       </div>
+                      <span className="text-xs font-medium text-slate-400">
+                        40 Students
+                      </span>
                     </div>
-
-                    <span className="inline-flex h-9 items-center rounded-full bg-gray-900 px-4 text-sm font-semibold text-white">
-                      View
-                    </span>
+                  ))
+                ) : (
+                  /* Industrial Empty State for No Sections */
+                  <div className="p-10 border-2 border-dashed border-slate-100 rounded-3xl flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3">
+                      <HiOutlineHashtag size={24} />
+                    </div>
+                    <p className="text-sm text-slate-400 font-medium">
+                      No sections created for this class yet.
+                    </p>
+                    <p className="text-[10px] text-slate-300">
+                      Use the form above to add your first section (e.g., A, B,
+                      or Blue).
+                    </p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </main>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-200 p-20 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-slate-200 mb-6">
+                <HiOutlineCollection size={40} />
+              </div>
+              <p className="text-slate-400 font-semibold max-w-[200px]">
+                Select a class from the left to manage details.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
