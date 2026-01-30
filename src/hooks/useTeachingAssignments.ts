@@ -4,12 +4,16 @@ import {
   getTeachingAssignmentsBySection,
 } from "@/api/teachingAssignments.api";
 import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useTeachingAssignments(sectionId: number | null) {
+  const { schoolId } = useAuthStore(); // Ensure school context is available
+
   const query = useQuery({
-    queryKey: ["teaching-assignments", { sectionId }],
-    queryFn: () => getTeachingAssignmentsBySection(sectionId as number),
-    enabled: typeof sectionId === "number" && sectionId > 0,
+    queryKey: ["teaching-assignments", schoolId, { sectionId }],
+    queryFn: () =>
+      getTeachingAssignmentsBySection(schoolId!, sectionId as number),
+    enabled: !!schoolId && typeof sectionId === "number" && sectionId > 0,
     retry: 1,
   });
 
@@ -23,14 +27,19 @@ export function useTeachingAssignments(sectionId: number | null) {
 
 export function useCreateTeachingAssignment() {
   const qc = useQueryClient();
+  const { schoolId } = useAuthStore();
 
   const mutation = useMutation({
     mutationFn: (payload: TeachingAssignmentCreatePayload) =>
-      createTeachingAssignment(payload),
+      createTeachingAssignment({ ...payload, school_id: schoolId! }),
     onSuccess: (_data, variables) => {
-      // Safe: refetch the section's assignments after a successful create
+      // Invalidate with the specific schoolId key to keep cache clean
       qc.invalidateQueries({
-        queryKey: ["teaching-assignments", { sectionId: variables.section_id }],
+        queryKey: [
+          "teaching-assignments",
+          schoolId,
+          { sectionId: variables.section_id },
+        ],
       });
     },
   });

@@ -2,11 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getStudents } from "@/api/students.api";
 import type { StudentCreateInput } from "@/types/student.types";
 import { createStudent } from "@/api/students.api";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useStudents() {
+  const schoolId = useAuthStore((s) => s.schoolId);
   const query = useQuery({
-    queryKey: ["students"],
-    queryFn: getStudents,
+    queryKey: ["students", schoolId ?? null],
+    queryFn: () => getStudents(schoolId!),
+    enabled: !!schoolId,
   });
 
   return {
@@ -19,9 +22,15 @@ export function useStudents() {
 
 export function useCreateStudent() {
   const qc = useQueryClient();
+  const schoolId = useAuthStore((s) => s.schoolId);
 
   const mutation = useMutation({
-    mutationFn: (payload: StudentCreateInput) => createStudent(payload),
+    mutationFn: (payload: StudentCreateInput) => {
+      if (!schoolId) {
+        throw new Error("Missing school context. Please log in again.");
+      }
+      return createStudent(payload, schoolId);
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["students"] });
     },

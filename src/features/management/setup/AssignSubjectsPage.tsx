@@ -1,397 +1,353 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  HiOutlineUserGroup,
+  HiOutlineAcademicCap,
+  HiOutlineClipboardCheck,
+  HiOutlineInformationCircle,
+} from "react-icons/hi";
+
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
-import { EmptyState } from "@/components/feedback/EmptyState";
-import { logger } from "@/utils/logger";
 import {
   useTeachingAssignments,
   useCreateTeachingAssignment,
 } from "@/hooks/useTeachingAssignments";
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
+import { logger } from "@/utils/logger";
 import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
+import { useAuthStore } from "@/store/auth.store";
 
+// Types
 type ClassDto = { id: number; name: string };
 type SectionDto = { id: number; name: string; class_id: number };
 type SubjectDto = { id: number; name: string };
 type TeacherDto = { id: number; name?: string | null; phone?: string | null };
 
 function getFriendlyAssignError(err: unknown): string {
-  // Keep it simple and deterministic; no raw stack traces
-  // Axios errors usually have response?.status / response?.data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const anyErr = err as any;
   const status = anyErr?.response?.status;
   const detail = anyErr?.response?.data?.detail;
 
   if (status === 409 && detail === "assignment_conflict") {
-    return "Already assigned to another teacher. Change not allowed.";
+    return "Subject is already assigned to a different teacher.";
   }
-  return "Unable to assign teacher. Please try again.";
+  return "Connection error. Please try again.";
 }
 
 export function AssignSubjectsPage() {
   const trace = useMemo(() => logger.traceId(), []);
+  const { schoolId } = useAuthStore();
+
   const [classId, setClassId] = useState<number | null>(null);
   const [sectionId, setSectionId] = useState<number | null>(null);
 
-  // Row UI state (per subject)
+  // Row UI state
   const [selectedTeacherBySubject, setSelectedTeacherBySubject] = useState<
     Record<number, number | "">
   >({});
-  const [rowMessage, setRowMessage] = useState<Record<number, string>>({});
+  const [rowMessage, setRowMessage] = useState<
+    Record<number, { text: string; type: "success" | "error" }>
+  >({});
 
+  // 1. Data Fetching with School Isolation
   const classesQuery = useQuery({
-    queryKey: ["classes"],
+    queryKey: ["classes", schoolId],
     queryFn: async () => {
-      const res = await apiClient.get<ClassDto[]>(API_ENDPOINTS.classes.list);
+      const res = await apiClient.get<ClassDto[]>(API_ENDPOINTS.classes.list, {
+        params: { school_id: schoolId },
+      });
       return res.data;
     },
-    retry: 1,
+    enabled: !!schoolId,
   });
 
   const subjectsQuery = useQuery({
-    queryKey: ["subjects"],
+    queryKey: ["subjects", schoolId],
     queryFn: async () => {
       const res = await apiClient.get<SubjectDto[]>(
         API_ENDPOINTS.subjects.list,
+        { params: { school_id: schoolId } },
       );
       return res.data;
     },
-    retry: 1,
+    enabled: !!schoolId,
   });
 
   const teachersQuery = useQuery({
-    queryKey: ["teachers"],
+    queryKey: ["teachers", schoolId],
     queryFn: async () => {
       const res = await apiClient.get<TeacherDto[]>(
         API_ENDPOINTS.teachers.list,
+        { params: { school_id: schoolId } },
       );
       return res.data;
     },
-    retry: 1,
+    enabled: !!schoolId,
   });
 
   const sectionsQuery = useQuery({
-    queryKey: ["sections", { classId }],
+    queryKey: ["sections", schoolId, { classId }],
     queryFn: async () => {
       const res = await apiClient.get<SectionDto[]>(
         API_ENDPOINTS.sections.list,
-        {
-          params: { class_id: classId },
-        },
+        { params: { school_id: schoolId, class_id: classId } },
       );
       return res.data;
     },
-    enabled: typeof classId === "number" && classId > 0,
-    retry: 1,
+    enabled: !!schoolId && !!classId,
   });
 
-  const {
-    data: assignments,
-    isLoading: assignmentsLoading,
-    error: assignmentsError,
-  } = useTeachingAssignments(sectionId);
-
+  const { data: assignments, isLoading: assignmentsLoading } =
+    useTeachingAssignments(sectionId);
   const createMutation = useCreateTeachingAssignment();
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // 2. Computed Logic
   const classes = classesQuery.data ?? [];
   const sections = sectionsQuery.data ?? [];
   const subjects = subjectsQuery.data ?? [];
   const teachers = teachersQuery.data ?? [];
-  const classLabelById = useMemo(() => {
-    const map = new Map<number, string>();
-    classes.forEach((c) => {
-      map.set(c.id, c.name);
-    });
-    return map;
-  }, [classes]);
-
-  const prereqLoading =
-    classesQuery.isLoading ||
-    subjectsQuery.isLoading ||
-    teachersQuery.isLoading;
-
-  const prereqError =
-    classesQuery.error || subjectsQuery.error || teachersQuery.error;
-
-  const teacherName = (t: TeacherDto) =>
-    t.name?.trim() || t.phone?.trim() || `Teacher ${t.id}`;
 
   const assignedTeacherIdBySubject = useMemo(() => {
     const map: Record<number, number> = {};
-    for (const a of assignments) map[a.subject_id] = a.teacher_id;
+    assignments.forEach((a) => {
+      map[a.subject_id] = a.teacher_id;
+    });
     return map;
   }, [assignments]);
 
-  const onChangeClass = (idStr: string) => {
-    const next = idStr ? Number(idStr) : null;
-    setClassId(next && next > 0 ? next : null);
+  const teacherName = (t: TeacherDto) =>
+    t.name?.trim() || t.phone?.trim() || `ID: ${t.id}`;
 
-    // Reset downstream selections
-    setSectionId(null);
-    setRowMessage({});
-    setSelectedTeacherBySubject({});
-  };
-
-  const onChangeSection = (idStr: string) => {
-    const next = idStr ? Number(idStr) : null;
-    setSectionId(next && next > 0 ? next : null);
-    setRowMessage({});
-    setSelectedTeacherBySubject({});
-    logger.info("[assign-subjects] section selected", {
-      trace,
-      sectionId: next,
-    });
-  };
-
-  const onSelectTeacherForSubject = (
-    subjectId: number,
-    teacherIdStr: string,
-  ) => {
-    const next: number | "" = teacherIdStr ? Number(teacherIdStr) : "";
-    setSelectedTeacherBySubject((prev) => ({ ...prev, [subjectId]: next }));
-  };
-
-  const assignForSubject = async (subjectId: number) => {
+  // 3. Handlers
+  const assignForSubject = (subjectId: number) => {
     if (!sectionId) return;
-
     const teacherId = selectedTeacherBySubject[subjectId];
+
     if (!teacherId || typeof teacherId !== "number") {
-      setRowMessage((prev) => ({
-        ...prev,
-        [subjectId]: "Select a teacher first.",
+      setRowMessage((p) => ({
+        ...p,
+        [subjectId]: { text: "Select a teacher", type: "error" },
       }));
       return;
     }
 
-    setRowMessage((prev) => ({ ...prev, [subjectId]: "" }));
-
-    const payload: TeachingAssignmentCreatePayload = {
-      section_id: sectionId,
-      subject_id: subjectId,
-      teacher_id: teacherId,
-    };
-
-    createMutation.mutate(payload, {
-      onSuccess: (_data, _vars, _ctx) => {
-        // Backend may return 201 or 200; Axios still treats both as success
-        // We infer "Already assigned" only if chosen teacher matches current assignment
-        const current = assignedTeacherIdBySubject[subjectId];
-        const msg =
-          current === teacherId
-            ? "Already assigned."
-            : "Assigned successfully.";
-        setRowMessage((prev) => ({ ...prev, [subjectId]: msg }));
-        logger.info("[assign-subjects] assigned", {
-          trace,
-          sectionId,
-          subjectId,
-          teacherId,
-        });
+    createMutation.mutate(
+      { section_id: sectionId, subject_id: subjectId, teacher_id: teacherId },
+      {
+        onSuccess: () => {
+          setRowMessage((p) => ({
+            ...p,
+            [subjectId]: { text: "Assigned successfully", type: "success" },
+          }));
+          logger.info("[assign] success", { trace, subjectId, teacherId });
+        },
+        onError: (err) => {
+          setRowMessage((p) => ({
+            ...p,
+            [subjectId]: { text: getFriendlyAssignError(err), type: "error" },
+          }));
+        },
       },
-      onError: (err) => {
-        setRowMessage((prev) => ({
-          ...prev,
-          [subjectId]: getFriendlyAssignError(err),
-        }));
-        logger.warn("[assign-subjects] assign failed", {
-          trace,
-          subjectId,
-          err,
-        });
-      },
-    });
+    );
   };
 
-  if (prereqLoading) {
+  if (classesQuery.isLoading || subjectsQuery.isLoading) {
     return (
-      <div className="px-4 py-6">
-        <LoadingState label="Loading setup data..." />
-      </div>
-    );
-  }
-
-  if (prereqError) {
-    return (
-      <div className="px-4 py-6">
-        <ErrorState title="Unable to load setup data" message="Please retry." />
+      <div className="p-20">
+        <LoadingState label="Preparing assignment matrix..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-5">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-xl font-extrabold tracking-tight text-gray-900">
-            Assign Subjects
-          </div>
-          <p className="mt-1 text-sm text-gray-600">
-            Pick class + section, then assign a teacher for each subject.
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#f8fafc] min-h-screen">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+          <HiOutlineUserGroup size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#1e293b]">
+            Teacher Assignments
+          </h1>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
+            Allocate teachers to subjects for specific sections.
           </p>
+        </div>
+      </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-12 gap-8">
+        {/* Left Sidebar: Select Context */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-900">
-                Class
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+                Target Class
               </label>
               <select
-                className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900"
+                className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all"
                 value={classId ?? ""}
-                onChange={(e) => onChangeClass(e.target.value)}
+                onChange={(e) => {
+                  setClassId(Number(e.target.value));
+                  setSectionId(null);
+                }}
               >
-                <option value="">Select class</option>
+                <option value="">Choose Class...</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} (ID: {c.id})
+                    {c.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-900">
-                Section
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block mb-3">
+                Target Section
               </label>
               <select
-                className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 disabled:opacity-60"
+                className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all disabled:opacity-50"
                 value={sectionId ?? ""}
-                onChange={(e) => onChangeSection(e.target.value)}
-                disabled={!classId || sectionsQuery.isLoading}
+                onChange={(e) => setSectionId(Number(e.target.value))}
+                disabled={!classId}
               >
                 <option value="">
-                  {!classId ? "Select class first" : "Select section"}
+                  {sectionsQuery.isLoading ? "Loading..." : "Choose Section..."}
                 </option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {(classLabelById.get(s.class_id) ??
-                      `Class #${s.class_id}`) +
-                      " - " +
-                      s.name}
+                    {s.name}
                   </option>
                 ))}
               </select>
-              {sectionsQuery.isError ? (
-                <div className="mt-2">
-                  <ErrorState
-                    title="Unable to load sections"
-                    message="Please retry."
-                  />
-                </div>
-              ) : null}
             </div>
+
+            {!sectionId && (
+              <div className="flex items-start gap-2 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <HiOutlineInformationCircle
+                  className="text-blue-500 mt-0.5 shrink-0"
+                  size={18}
+                />
+                <p className="text-[11px] text-blue-600 font-medium leading-relaxed">
+                  Select both class and section to view current subject
+                  assignments.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Assignments */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="text-lg font-extrabold tracking-tight text-gray-900">
-            Subjects
-          </div>
-
+        {/* Right Panel: Assignment List */}
+        <div className="col-span-12 lg:col-span-8">
           {!sectionId ? (
-            <div className="mt-3 text-sm text-gray-600">
-              Select a class and section to view assignments.
+            <div className="bg-white/50 rounded-[40px] border-2 border-dashed border-slate-200 p-20 flex flex-col items-center justify-center text-center">
+              <HiOutlineAcademicCap className="text-slate-200 size-16 mb-4" />
+              <p className="text-slate-400 font-semibold italic">
+                Awaiting section selection...
+              </p>
             </div>
-          ) : null}
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="px-8 py-5 border-b border-slate-50 bg-slate-50/30 flex justify-between items-center">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Subject Load Matrix
+                </span>
+                <span className="bg-blue-600 text-white px-3 py-1 rounded-lg text-[10px] font-extrabold shadow-sm shadow-blue-100 uppercase tracking-tighter">
+                  Active Section:{" "}
+                  {sections.find((s) => s.id === sectionId)?.name}
+                </span>
+              </div>
 
-          {sectionId && assignmentsLoading ? (
-            <div className="mt-4">
-              <LoadingState label="Loading assignments..." />
-            </div>
-          ) : null}
+              <div className="p-6 space-y-3">
+                {subjects.length === 0 ? (
+                  <p className="p-10 text-center text-slate-400 text-sm font-medium">
+                    No subjects found for this school.
+                  </p>
+                ) : (
+                  subjects.map((subj) => {
+                    const assignedId = assignedTeacherIdBySubject[subj.id];
+                    const assignedTeacher = teachers.find(
+                      (t) => t.id === assignedId,
+                    );
+                    const isRowSubmitting =
+                      createMutation.isPending &&
+                      (createMutation.variables as any)?.subject_id === subj.id;
+                    const message = rowMessage[subj.id];
 
-          {sectionId && assignmentsError ? (
-            <div className="mt-4">
-              <ErrorState
-                title="Unable to load assignments"
-                message="Please retry."
-              />
-            </div>
-          ) : null}
+                    return (
+                      <div
+                        key={subj.id}
+                        className="p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-200 transition-all"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center font-bold text-[10px] border border-slate-100">
+                              {subj.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-700 text-sm">
+                                {subj.name}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {assignedTeacher ? (
+                                  <>
+                                    <HiOutlineClipboardCheck className="text-green-500" />
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
+                                      Assigned: {teacherName(assignedTeacher)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-[10px] text-red-400 font-bold uppercase tracking-tight">
+                                    Unassigned
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
 
-          {sectionId && !assignmentsLoading && subjects.length === 0 ? (
-            <div className="mt-4">
-              <EmptyState message="Add subjects first." />
-            </div>
-          ) : null}
-
-          {sectionId && !assignmentsLoading && subjects.length > 0 ? (
-            <div className="mt-4 space-y-3">
-              {subjects.map((subj) => {
-                const assignedId = assignedTeacherIdBySubject[subj.id];
-                const assignedTeacher = assignedId
-                  ? teachers.find((t) => t.id === assignedId)
-                  : null;
-
-                const selected = selectedTeacherBySubject[subj.id] ?? "";
-
-                const isRowSubmitting =
-                  createMutation.isPending &&
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (createMutation.variables as any)?.subject_id === subj.id;
-
-                return (
-                  <div
-                    key={subj.id}
-                    className="rounded-2xl border border-gray-200 p-4"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <div className="text-sm font-extrabold text-gray-900">
-                          {subj.name}
+                          <div className="flex items-center gap-3">
+                            <select
+                              className="h-11 px-4 rounded-xl border border-slate-100 bg-slate-50 text-xs font-bold focus:ring-2 focus:ring-blue-100 outline-none w-full md:w-48"
+                              value={selectedTeacherBySubject[subj.id] ?? ""}
+                              onChange={(e) =>
+                                setSelectedTeacherBySubject((p) => ({
+                                  ...p,
+                                  [subj.id]: Number(e.target.value),
+                                }))
+                              }
+                            >
+                              <option value="">Select Teacher...</option>
+                              {teachers.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {teacherName(t)}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => assignForSubject(subj.id)}
+                              disabled={isRowSubmitting}
+                              className="h-11 px-6 bg-[#0f172a] hover:bg-black text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 shadow-lg shadow-slate-100"
+                            >
+                              {isRowSubmitting ? "..." : "Assign"}
+                            </button>
+                          </div>
                         </div>
-                        <div className="mt-1 text-sm text-gray-600">
-                          Current:{" "}
-                          <span className="font-semibold text-gray-900">
-                            {assignedTeacher
-                              ? teacherName(assignedTeacher)
-                              : "—"}
-                          </span>
-                        </div>
+                        {message && (
+                          <div
+                            className={`mt-3 text-[10px] font-bold px-3 py-1.5 rounded-lg inline-block ${message.type === "success" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
+                          >
+                            {message.text}
+                          </div>
+                        )}
                       </div>
-
-                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        <select
-                          className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 sm:w-64"
-                          value={selected}
-                          onChange={(e) =>
-                            onSelectTeacherForSubject(subj.id, e.target.value)
-                          }
-                          disabled={isRowSubmitting}
-                        >
-                          <option value="">Select teacher</option>
-                          {teachers.map((t) => (
-                            <option key={t.id} value={t.id}>
-                              {teacherName(t)}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          className="h-11 w-full rounded-xl bg-blue-600 px-4 text-sm font-extrabold text-white disabled:opacity-60 sm:w-auto"
-                          onClick={() => assignForSubject(subj.id)}
-                          disabled={isRowSubmitting}
-                        >
-                          {isRowSubmitting ? "Assigning..." : "Assign"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {rowMessage[subj.id] ? (
-                      <div className="mt-3 text-sm font-semibold text-gray-700">
-                        {rowMessage[subj.id]}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

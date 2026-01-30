@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
+import {
+  HiOutlineBookOpen,
+  HiOutlinePlusCircle,
+  HiOutlineSearch,
+  HiOutlineTrash,
+  HiOutlinePlus,
+} from "react-icons/hi";
+
 import { useSubjects, useCreateSubject } from "@/hooks/useSubjects";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
-import { EmptyState } from "@/components/feedback/EmptyState";
 import { logger } from "@/utils/logger";
 
 function normalize(s: string) {
@@ -11,11 +18,10 @@ function normalize(s: string) {
 
 export function SubjectsPage() {
   const trace = useMemo(() => logger.traceId(), []);
-  const { data, isLoading, error, refetch } = useSubjects();
+  const { data, isLoading, error, refetch, schoolId } = useSubjects();
   const createMutation = useCreateSubject();
 
   const [search, setSearch] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
   const [inlineError, setInlineError] = useState<string | null>(null);
 
@@ -25,20 +31,8 @@ export function SubjectsPage() {
     return data.filter((s) => normalize(s.name).includes(q));
   }, [data, search]);
 
-  const openAdd = () => {
-    setInlineError(null);
-    setIsAdding(true);
-    setName("");
-    logger.info("[subjects] add opened", { trace });
-  };
-
-  const cancelAdd = () => {
-    setInlineError(null);
-    setIsAdding(false);
-    setName("");
-  };
-
-  const submit = () => {
+  const submit = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const trimmed = name.trim();
 
     if (!trimmed) {
@@ -56,7 +50,6 @@ export function SubjectsPage() {
       { name: trimmed },
       {
         onSuccess: () => {
-          setIsAdding(false);
           setName("");
           logger.info("[subjects] create success", { trace, name: trimmed });
         },
@@ -64,132 +57,159 @@ export function SubjectsPage() {
           logger.warn("[subjects] create failed", { trace, err });
           setInlineError("Unable to create subject. Please try again.");
         },
-      }
+      },
     );
   };
 
   if (isLoading) {
     return (
-      <div className="px-4 py-6">
-        <LoadingState label="Loading subjects..." />
+      <div className="flex items-center justify-center min-h-screen bg-[#f8fafc]">
+        <LoadingState label="Loading subject repository..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="px-4 py-6 space-y-3">
-        <ErrorState title="Unable to load subjects" message="Please retry." />
+      <div className="max-w-xl mx-auto mt-20 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center">
+        <ErrorState
+          title="Connection Error"
+          message="Unable to load subjects from the server."
+        />
         <button
           type="button"
-          className="h-11 w-full rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white"
+          className="mt-6 h-12 px-8 rounded-2xl bg-[#0f172a] text-sm font-bold text-white transition-all hover:bg-black"
           onClick={() => refetch()}
         >
-          Retry
+          Retry Connection
         </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-xl font-extrabold tracking-tight text-gray-900">
-                Subjects
-              </div>
-              <div className="mt-1 text-sm text-gray-600">
-                Create subjects, then assign them to teachers by section.
-              </div>
-            </div>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#f8fafc] min-h-screen">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+          <HiOutlineBookOpen size={24} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#1e293b]">
+            Subject Repository
+          </h1>
+          <p className="text-sm text-slate-500 font-medium">
+            Manage the master list of subjects for School ID:{" "}
+            <span className="text-indigo-600 font-bold">{schoolId}</span>
+          </p>
+        </div>
+      </div>
 
-            <button
-              type="button"
-              className="h-11 rounded-xl bg-blue-600 px-4 text-sm font-extrabold text-white disabled:opacity-60"
-              onClick={openAdd}
-              disabled={isAdding}
-            >
-              Add Subject
-            </button>
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-semibold text-gray-900">
-              Search
-            </label>
+      {/* Horizontal Quick Add Bar */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm transition-all hover:border-slate-300">
+        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+          Quick Add: New Subject
+        </div>
+        <form
+          onSubmit={submit}
+          className="flex flex-col md:flex-row items-center gap-4"
+        >
+          <div className="relative flex-1 w-full">
+            <HiOutlinePlusCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
             <input
-              className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by subject name"
-              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (inlineError) setInlineError(null);
+              }}
+              placeholder="e.g. Advanced Mathematics"
+              className={`w-full h-14 pl-12 pr-4 rounded-2xl border ${
+                inlineError
+                  ? "border-red-200 bg-red-50"
+                  : "border-slate-100 bg-slate-50/50"
+              } text-sm font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400`}
+              disabled={createMutation.isPending}
             />
           </div>
+          <button
+            type="submit"
+            disabled={createMutation.isPending || !name.trim()}
+            className="w-full md:w-auto h-14 px-10 bg-[#0f172a] hover:bg-black text-white rounded-2xl text-sm font-bold transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {createMutation.isPending ? (
+              "Saving..."
+            ) : (
+              <>
+                <HiOutlinePlus /> Add Subject
+              </>
+            )}
+          </button>
+        </form>
+        {inlineError && (
+          <p className="text-xs text-red-500 mt-2 font-bold px-1">
+            {inlineError}
+          </p>
+        )}
+      </div>
 
-          {isAdding ? (
-            <div className="mt-4 rounded-2xl border border-gray-200 p-4">
-              <div className="text-sm font-extrabold text-gray-900">
-                New subject
-              </div>
-
-              <label className="mt-3 block text-sm font-semibold text-gray-900">
-                Subject name
-              </label>
-              <input
-                className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 disabled:opacity-60"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Mathematics"
-                type="text"
-                disabled={createMutation.isPending}
-              />
-
-              {inlineError ? (
-                <div className="mt-3">
-                  <ErrorState title="Unable to save" message={inlineError} />
-                </div>
-              ) : null}
-
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  className="h-11 w-full rounded-xl bg-blue-600 px-4 text-sm font-extrabold text-white disabled:opacity-60"
-                  onClick={submit}
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending ? "Saving…" : "Save"}
-                </button>
-
-                <button
-                  type="button"
-                  className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-extrabold text-gray-900 disabled:opacity-60"
-                  onClick={cancelAdd}
-                  disabled={createMutation.isPending}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : null}
+      {/* Main List Section */}
+      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        {/* List Filtering Header */}
+        <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/30">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+            Registered Subjects ({filtered.length})
+          </span>
+          <div className="relative w-full md:w-80">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter subjects by name..."
+              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+            />
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        {/* Content Area */}
+        <div className="p-6">
           {filtered.length === 0 ? (
-            <EmptyState message="Create a subject to get started." />
+            <div className="py-24 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-6">
+                <HiOutlineBookOpen size={40} />
+              </div>
+              <h3 className="text-slate-800 font-bold mb-1">
+                No subjects found
+              </h3>
+              <p className="text-slate-400 text-sm max-w-[250px]">
+                {search
+                  ? "Try adjusting your search filters."
+                  : "Start by adding your first school subject above."}
+              </p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3"
+                  className="group p-5 rounded-2xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50/40 transition-all flex items-center justify-between"
                 >
-                  <div className="text-sm font-extrabold text-gray-900">
-                    {s.name}
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                      {s.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-700 text-sm">
+                        {s.name}
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-medium tracking-wide">
+                        Ref ID: VT-{s.id}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-xs font-semibold text-gray-500">
-                    ID: {s.id}
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all rounded-lg hover:bg-red-50">
+                      <HiOutlineTrash size={18} />
+                    </button>
                   </div>
                 </div>
               ))}

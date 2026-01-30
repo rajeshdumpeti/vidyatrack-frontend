@@ -13,10 +13,12 @@ import { useAttendanceBySectionDate } from "@/hooks/useAttendanceBySectionDate";
 import { useAttendanceSubmit } from "@/hooks/useAttendanceSubmit";
 import { useCreateAttendanceRecord } from "@/hooks/useCreateAttendanceRecord";
 import { useUpdateAttendance } from "@/hooks/useUpdateAttendance";
+import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
 import { logger } from "@/utils/logger";
 import { formatToday, formatIsoDate } from "@/utils/date";
 import type { AttendanceStatusDto } from "@/types/attendance-submit.types";
 import type { AttendanceRecordDto } from "@/types/attendance.types";
+import { useAuthStore } from "@/store/auth.store";
 
 type StudentUi = {
   id: string;
@@ -41,9 +43,10 @@ function formatDateLabel(dateIso: string): string {
 
 export function MarkAttendance() {
   const [presentById, setPresentById] = useState<Record<string, boolean>>({});
+  // FIX: Rename isPending to isSubmitting in the destructuring
   const {
     submit,
-    isLoading: isSubmitting,
+    isPending: isSubmitting, // Use isPending, NOT isLoading
     error: submitError,
     reset: resetSubmitError,
   } = useAttendanceSubmit();
@@ -52,6 +55,8 @@ export function MarkAttendance() {
   const todayIso = useMemo(() => formatIsoDate(new Date()), []);
   const [selectedDateIso] = useState(todayIso);
   const [editError, setEditError] = useState<string | null>(null);
+  const schoolId = useAuthStore((s) => s.schoolId);
+  const setSchoolId = useAuthStore((s) => s.setSchoolId);
 
   const trace = useMemo(() => logger.traceId(), []);
   const dateLabel = useMemo(
@@ -67,7 +72,9 @@ export function MarkAttendance() {
   const attendanceQuery = useAttendanceBySectionDate(
     sectionId,
     selectedDateIso,
+    schoolId,
   );
+  const assignmentsQuery = useMyTeachingAssignments();
   const updateAttendance = useUpdateAttendance();
   const createAttendance = useCreateAttendanceRecord();
   const qc = useQueryClient();
@@ -89,6 +96,20 @@ export function MarkAttendance() {
       });
     }
   }, [section.data, trace]);
+
+  useEffect(() => {
+    if (!schoolId && typeof section.data?.school_id === "number") {
+      setSchoolId(section.data.school_id);
+    }
+  }, [schoolId, section.data?.school_id, setSchoolId]);
+
+  useEffect(() => {
+    if (schoolId) return;
+    const assignmentSchoolId = assignmentsQuery.data?.[0]?.school_id;
+    if (typeof assignmentSchoolId === "number") {
+      setSchoolId(assignmentSchoolId);
+    }
+  }, [schoolId, assignmentsQuery.data, setSchoolId]);
 
   useEffect(() => {
     if (studentsQuery.data) {
@@ -117,6 +138,10 @@ export function MarkAttendance() {
       window.clearTimeout(timeout);
     };
   }, [submitSuccess, navigate]);
+
+  if (!schoolId) {
+    return <LoadingState label="Loading school context..." />;
+  }
 
   const sectionLabel = section.data
     ? `${section.data.class_name} - ${section.data.section_name}`
@@ -184,7 +209,7 @@ export function MarkAttendance() {
   };
 
   const toggleStatus = (studentId: string) => {
-    if (isReadOnly || !sectionId) return;
+    if (isReadOnly || !sectionId || !schoolId) return;
 
     setEditError(null);
 
@@ -215,7 +240,13 @@ export function MarkAttendance() {
 
     if (existing) {
       updateAttendance.mutate(
-        { attendance_id: existing.attendance_id, status: nextStatus },
+        {
+          attendance_id: existing.attendance_id,
+          status: nextStatus,
+          student_id: studentIdNum,
+          school_id: schoolId,
+          date: selectedDateIso,
+        },
         {
           onSuccess: (data) => {
             updateAttendanceCache(data);
@@ -255,14 +286,11 @@ export function MarkAttendance() {
     const studentsForApi = (studentsQuery.data ?? []).map((s) => {
       const key = String(s.id);
       const isPresent = presentById[key] !== false;
-
-      const status: AttendanceStatusDto = isPresent ? "PRESENT" : "ABSENT";
-      return { studentId: s.id, status };
+      return {
+        studentId: s.id,
+        status: isPresent ? "PRESENT" : ("ABSENT" as AttendanceStatusDto),
+      };
     });
-
-    const studentsToCreate = studentsForApi.filter(
-      (s) => !attendanceMap.has(s.studentId),
-    );
 
     logger.info("[teacher][attendance] submit clicked", {
       trace,
@@ -275,7 +303,7 @@ export function MarkAttendance() {
       {
         sectionId: section.data.section_id,
         dateIso: selectedDateIso,
-        students: studentsToCreate,
+        students: studentsForApi,
         concurrency: 8,
       },
       {

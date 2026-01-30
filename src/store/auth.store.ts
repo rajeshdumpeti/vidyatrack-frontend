@@ -24,6 +24,7 @@ type AuthState = {
   setToken: (token: string) => void;
   setSchools: (schools: School[]) => void;
   setActiveSchool: (id: number) => void;
+  setSchoolId: (id: number) => void;
   setAuthMeta: (meta: {
     role?: UserRole | string | null;
     schoolId?: number | string | null;
@@ -120,6 +121,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setActiveSchool: (id: number) => {
     localStorage.setItem("active_school_id", id.toString());
     set({ schoolId: id });
+  },
+  setSchoolId: (id: number) => {
+    get().setActiveSchool(id);
   },
 
   setAuthMeta: (meta) => {

@@ -4,7 +4,7 @@ import type { CreateTeacherInput, Teacher } from "@/types/teacher.types";
 import { logger } from "@/utils/logger";
 
 export async function createManagementTeacher(
-  payload: CreateTeacherInput
+  payload: CreateTeacherInput,
 ): Promise<Teacher> {
   if (import.meta.env.DEV) {
     logger.info("[mgmt][teachers][api] request", {
@@ -15,7 +15,7 @@ export async function createManagementTeacher(
   try {
     const res = await apiClient.post<Teacher>(
       API_ENDPOINTS.management.teachersCreate,
-      payload
+      payload,
     );
     if (import.meta.env.DEV) {
       logger.info("[mgmt][teachers][api] response", {

@@ -68,7 +68,7 @@ export function EnterMarks() {
   const assignmentsQuery = useMyTeachingAssignments();
   const navigate = useNavigate();
 
-  const { submit, isLoading: isSubmitting } = useMarksSubmit();
+  const { submit, isPending: isSubmitting } = useMarksSubmit();
 
   const {
     register,
@@ -171,45 +171,74 @@ export function EnterMarks() {
   };
 
   const handleFinalSubmit = () => {
-    if (!formData || !selectedAssignment) return;
+    // 1. Validation guard: Ensure we have the form data and the assignment context
+    if (!formData || !selectedAssignment) {
+      logger.warn(
+        "[teacher][marks] attempt to submit without data or assignment selection",
+      );
+      return;
+    }
 
+    // 2. Prepare the payload: Convert exam type string to the DTO expected by the backend
     const examTypeDto = mapExamTypeToDto(formData.examType);
+
+    // 3. Extract and sanitize student marks
     const entries = (studentsQuery.data ?? [])
       .map((s) => {
+        // Get value from form state, defaulting to empty string if missing
         const raw = formData.marks?.[String(s.id)] ?? "";
         const trimmed = String(raw).trim();
+
+        // Only include students who actually have a mark entered
         if (!trimmed) return null;
+
         const n = Number(trimmed);
+
+        // Final safety check: skip if the mark isn't a valid number
         if (!Number.isFinite(n)) return null;
+
         return { studentId: s.id, marks: n };
       })
-      .filter(Boolean) as Array<{ studentId: number; marks: number }>;
+      .filter(
+        (entry): entry is { studentId: number; marks: number } =>
+          entry !== null,
+      );
 
+    // 4. Validate subject identity before proceeding
     if (!selectedAssignment.subject_id) {
-      logger.warn("[teacher][marks] missing subject_id", {
+      logger.error("[teacher][marks] missing subject_id in assignment object", {
         assignmentId: formData.assignmentId,
       });
       return;
     }
 
+    // 5. Trigger the submission
+    // Note: 'submit' here is the mutate function from useMarksSubmit
     submit(
       {
         sectionId: selectedAssignment.section_id,
         subjectId: selectedAssignment.subject_id,
         examType: examTypeDto,
         students: entries,
-        concurrency: 8,
+        concurrency: 8, // Optional: defaults to 8 in the hook
       },
       {
         onSuccess: () => {
-          setSubmitSuccess(true);
+          // Close the confirmation modal
           setShowConfirmModal(false);
-          // Refetch existing marks after successful submission
+
+          // Refresh the local cache of marks
           refetchExistingMarks();
+
+          // Redirect to dashboard with success state
           navigate("/teacher", {
             replace: true,
             state: { toast: "Marks submitted successfully" },
           });
+        },
+        onError: (err) => {
+          // Log failure but keep modal open so teacher doesn't lose data
+          logger.error("[teacher][marks] submission failed", { err });
         },
       },
     );
