@@ -10,10 +10,12 @@ import { ErrorState } from "@/components/feedback/ErrorState";
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
 import { logger } from "@/utils/logger";
+import { useAuthStore } from "@/store/auth.store";
 
 export function TeacherDashboard() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
+  const setSchoolId = useAuthStore((s) => s.setSchoolId);
 
   const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
   const assignmentsQuery = useMyTeachingAssignments();
@@ -44,6 +46,12 @@ export function TeacherDashboard() {
       });
     }
   }, [data, trace]);
+
+  useEffect(() => {
+    if (typeof data?.school_id === "number") {
+      setSchoolId(data.school_id);
+    }
+  }, [data?.school_id, setSchoolId]);
 
   if (isLoading) {
     return <LoadingState label="Loading your section..." />;

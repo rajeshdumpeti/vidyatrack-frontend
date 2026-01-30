@@ -2,16 +2,25 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 import type { MarksExamTypeDto } from "@/types/marks-submit.types";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useExistingMarks(
   sectionId?: number,
   subjectId?: number,
   examType?: MarksExamTypeDto,
 ) {
+  const schoolId = useAuthStore((s) => s.schoolId);
+
   return useQuery({
-    queryKey: ["existing-marks", sectionId, subjectId, examType],
+    queryKey: [
+      "existing-marks",
+      sectionId,
+      subjectId,
+      examType,
+      schoolId ?? null,
+    ],
     queryFn: async () => {
-      if (!sectionId || !subjectId || !examType) {
+      if (!sectionId || !subjectId || !examType || !schoolId) {
         return {};
       }
 
@@ -21,6 +30,7 @@ export function useExistingMarks(
             section_id: sectionId,
             subject_id: subjectId,
             exam_type: examType,
+            school_id: schoolId,
           },
         });
 
@@ -42,7 +52,7 @@ export function useExistingMarks(
         return {};
       }
     },
-    enabled: !!sectionId && !!subjectId && !!examType,
+    enabled: !!sectionId && !!subjectId && !!examType && !!schoolId,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });

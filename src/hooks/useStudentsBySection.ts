@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getStudentsBySection } from "@/api/students.api";
 import type { StudentListItem } from "@/types/student.types";
 import { useAuthStore } from "@/store/auth.store"; // 1. Import your auth store
+import axios from "axios";
 
 export function useStudentsBySection(sectionId?: number) {
   const { schoolId } = useAuthStore(); // 2. Get the schoolId from global state
@@ -17,7 +18,14 @@ export function useStudentsBySection(sectionId?: number) {
       }
 
       // 5. Pass both parameters to the API function
-      return getStudentsBySection(sectionId, schoolId);
+      try {
+        return await getStudentsBySection(sectionId, schoolId);
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 422) {
+          return [];
+        }
+        throw err;
+      }
     },
 
     // 6. Only enable if we have both IDs

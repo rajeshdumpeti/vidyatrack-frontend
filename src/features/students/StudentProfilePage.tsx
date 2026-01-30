@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { logger } from "@/utils/logger";
 import { getStudentProfile } from "@/api/students.api";
 import { useStudentNotes } from "@/hooks/useStudentNotes";
+import { useAuthStore } from "@/store/auth.store";
 import type {
   StudentAttendanceSummary,
   StudentGuardian,
@@ -66,12 +67,13 @@ export function StudentProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);
   const params = useParams();
   const studentId = Number(params.studentId);
+  const schoolId = useAuthStore((s) => s.schoolId);
 
   const studentQuery = useQuery({
-    queryKey: ["student", studentId],
-    enabled: Number.isFinite(studentId) && studentId > 0,
+    queryKey: ["student", studentId, schoolId ?? null],
+    enabled: Number.isFinite(studentId) && studentId > 0 && !!schoolId,
     retry: 1,
-    queryFn: () => getStudentProfile(studentId),
+    queryFn: () => getStudentProfile(studentId, schoolId!),
   });
 
   const notesQuery = useStudentNotes(studentId);

@@ -7,6 +7,7 @@ import { useStudentsBySection } from "@/hooks/useStudentsBySection";
 import { createStudentNote, getStudentNotes } from "@/api/studentNotes.api";
 import { logger } from "@/utils/logger";
 import { format } from "date-fns";
+import { useAuthStore } from "@/store/auth.store";
 
 interface StudentNote {
   id: number;
@@ -30,6 +31,7 @@ export function TeacherNotesPage() {
   const [notes, setNotes] = useState<StudentNote[]>([]);
   const [isLoadingNotes, setIsLoadingNotes] = useState(false);
   const [activeTab, setActiveTab] = useState<"write" | "view">("write");
+  const schoolId = useAuthStore((s) => s.schoolId);
 
   const section = useTeacherAttendanceSection();
   const sectionId = section.data?.section_id;
@@ -43,14 +45,14 @@ export function TeacherNotesPage() {
     }
     if (activeTab !== "view") return;
     fetchNotes();
-  }, [studentId, activeTab]);
+  }, [studentId, activeTab, schoolId]);
 
   const fetchNotes = async () => {
-    if (!studentId) return;
+    if (!studentId || !schoolId) return;
 
     setIsLoadingNotes(true);
     try {
-      const response = await getStudentNotes(Number(studentId));
+      const response = await getStudentNotes(Number(studentId), schoolId);
       setNotes(
         (response || []).map((note: any) => ({
           ...note,
@@ -68,13 +70,17 @@ export function TeacherNotesPage() {
   const onSubmit = async () => {
     setError(null);
     setSuccess(null);
-    if (!studentId || !noteText.trim()) return;
+    if (!studentId || !noteText.trim() || !schoolId) return;
 
     try {
       setIsSaving(true);
-      await createStudentNote(Number(studentId), {
-        note_text: noteText.trim(),
-      });
+      await createStudentNote(
+        Number(studentId),
+        {
+          note_text: noteText.trim(),
+        },
+        schoolId,
+      );
       setSuccess("Note saved successfully.");
       setNoteText("");
 
