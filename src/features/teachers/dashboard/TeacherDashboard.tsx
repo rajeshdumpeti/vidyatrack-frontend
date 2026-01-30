@@ -178,18 +178,35 @@ export function TeacherDashboard() {
                 No teaching assignments found yet.
               </div>
             ) : (
+              // Inside your assignments.map((a) => (...))
               assignments.map((a) => (
-                <div
-                  key={`${a.section_id}-${a.subject_id}`}
-                  className="px-6 py-4"
+                <button
+                  key={`${a.section_id}-${a.subject_name}`} // Using subject_name for uniqueness
+                  type="button"
+                  onClick={() =>
+                    navigate("/teacher/attendance", {
+                      state: {
+                        section_id: a.section_id,
+                        subject_name: a.subject_name,
+                      },
+                    })
+                  }
+                  className="w-full px-6 py-4 text-left transition-colors hover:bg-blue-50 group"
                 >
-                  <div className="text-sm font-semibold text-gray-900">
-                    {a.class_name} - {a.subject_name}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-bold text-gray-900 group-hover:text-blue-700">
+                        {a.class_name} - {a.subject_name}
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        Section {a.section_name} • Click to mark attendance
+                      </div>
+                    </div>
+                    <span className="text-blue-400 opacity-0 group-hover:opacity-100">
+                      →
+                    </span>
                   </div>
-                  <div className="mt-1 text-xs text-gray-500">
-                    Section {a.section_name}
-                  </div>
-                </div>
+                </button>
               ))
             )}
           </div>

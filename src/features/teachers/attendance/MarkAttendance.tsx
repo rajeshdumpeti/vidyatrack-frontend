@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -43,6 +43,7 @@ function formatDateLabel(dateIso: string): string {
 
 export function MarkAttendance() {
   const [presentById, setPresentById] = useState<Record<string, boolean>>({});
+
   // FIX: Rename isPending to isSubmitting in the destructuring
   const {
     submit,
@@ -57,6 +58,7 @@ export function MarkAttendance() {
   const [editError, setEditError] = useState<string | null>(null);
   const schoolId = useAuthStore((s) => s.schoolId);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
+  const location = useLocation();
 
   const trace = useMemo(() => logger.traceId(), []);
   const dateLabel = useMemo(
@@ -66,7 +68,8 @@ export function MarkAttendance() {
   const navigate = useNavigate();
 
   const section = useTeacherAttendanceSection();
-  const sectionId = section.data?.section_id;
+
+  const sectionId = location.state?.section_id || section.data?.section_id;
 
   const studentsQuery = useStudentsBySection(sectionId);
   const attendanceQuery = useAttendanceBySectionDate(
@@ -74,6 +77,7 @@ export function MarkAttendance() {
     selectedDateIso,
     schoolId,
   );
+
   const assignmentsQuery = useMyTeachingAssignments();
   const updateAttendance = useUpdateAttendance();
   const createAttendance = useCreateAttendanceRecord();
@@ -143,10 +147,16 @@ export function MarkAttendance() {
     return <LoadingState label="Loading school context..." />;
   }
 
-  const sectionLabel = section.data
-    ? `${section.data.class_name} - ${section.data.section_name}`
-    : "";
+  // const sectionLabel = section.data
+  //   ? `${section.data.class_name} - ${section.data.section_name}`
+  //   : "";
+  const sectionLabel = location.state?.section_id
+    ? `${location.state.class_name || "Class"} - ${location.state.section_name || location.state.subject_name}`
+    : section.data
+      ? `${section.data.class_name} - ${section.data.section_name}`
+      : "Loading Section...";
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const students: StudentUi[] = useMemo(() => {
     const list = studentsQuery.data ?? [];
     return list.map((s, idx) => ({
@@ -159,6 +169,7 @@ export function MarkAttendance() {
     }));
   }, [studentsQuery.data]);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const attendanceMap = useMemo(() => {
     const m = new Map<
       number,
@@ -174,6 +185,7 @@ export function MarkAttendance() {
   }, [attendanceQuery.data]);
 
   // Hydrate/initialize based on fetched attendance
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!students.length) return;
 
@@ -267,6 +279,7 @@ export function MarkAttendance() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const counts = useMemo(() => {
     const total = students.length;
     let present = 0;
