@@ -11,7 +11,7 @@ import { API_ENDPOINTS } from "./endpoints";
 
 export async function getMyAttendanceSection(): Promise<AttendanceSection> {
   const res = await apiClient.get<AttendanceSection>(
-    API_ENDPOINTS.teachers.meAttendanceSection
+    API_ENDPOINTS.teachers.meAttendanceSection,
   );
   return res.data;
 }
@@ -21,21 +21,24 @@ export async function getTeachers(): Promise<TeacherDto[]> {
   return res.data;
 }
 
-export async function listTeachers(): Promise<Teacher[]> {
-  const res = await apiClient.get<Teacher[]>(API_ENDPOINTS.teachers.list);
+// Add schoolId to the list parameters
+export async function listTeachers(schoolId: number): Promise<Teacher[]> {
+  const res = await apiClient.get<Teacher[]>(API_ENDPOINTS.teachers.list, {
+    params: { school_id: schoolId }, // Explicitly send school_id
+  });
   return res.data;
 }
 
+// Update the creation payload
 export async function createTeacher(
-  payload: CreateTeacherInput
+  payload: CreateTeacherInput & { school_id: number },
 ): Promise<TeacherDto> {
   const res = await apiClient.post<TeacherDto>(
     API_ENDPOINTS.teachers.create,
-    payload
+    payload,
   );
   return res.data;
 }
-
 export async function getTeacherMe(): Promise<TeacherMeDto> {
   const res = await apiClient.get<TeacherMeDto>(API_ENDPOINTS.teachers.me);
   return res.data;
@@ -45,7 +48,7 @@ export async function getMyTeachingAssignments(): Promise<
   TeachingAssignmentMeDto[]
 > {
   const res = await apiClient.get<TeachingAssignmentMeDto[]>(
-    API_ENDPOINTS.teachers.meTeachingAssignments
+    API_ENDPOINTS.teachers.meTeachingAssignments,
   );
   return res.data;
 }

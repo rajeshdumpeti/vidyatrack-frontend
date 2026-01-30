@@ -7,61 +7,80 @@ import type {
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 
+/**
+ * Fetch students for a specific section within a school.
+ */
 export async function getStudentsBySection(
-  sectionId: number
+  sectionId: number,
+  schoolId: number, // Added schoolId
 ): Promise<StudentListItem[]> {
   const res = await apiClient.get<StudentListItem[]>(
     API_ENDPOINTS.students.list,
     {
-      params: { section_id: sectionId },
-    }
+      params: {
+        section_id: sectionId,
+        school_id: schoolId, // Pass to backend
+      },
+    },
   );
   return res.data;
 }
 
 /**
- * Baseline students list (no filters).
- * Use when "All Sections" is selected.
+ * Baseline students list for the current school.
  */
-export async function getStudents(): Promise<StudentDto[]> {
-  const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list);
-  return res.data;
-}
-
-/**
- * Section-scoped list (server-side filtering).
- * Use when a specific section is selected.
- *
- * Note: Keep the return type aligned with your usage:
- * - If backend returns full StudentDto, return StudentDto[].
- * - If backend returns slim list, return StudentListItem[].
- *
- * For Principal Students page, we need parent_phone, so we use StudentDto[].
- */
-export async function getStudentsBySectionId(
-  sectionId: number
-): Promise<StudentDto[]> {
+export async function getStudents(schoolId: number): Promise<StudentDto[]> {
   const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
-    params: { section_id: sectionId },
+    params: { school_id: schoolId }, // Ensure all sections are scoped to school
   });
   return res.data;
 }
 
+/**
+ * Scoped list with full Dto details.
+ */
+export async function getStudentsBySectionId(
+  sectionId: number,
+  schoolId: number, // Added schoolId
+): Promise<StudentDto[]> {
+  const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
+    params: {
+      section_id: sectionId,
+      school_id: schoolId,
+    },
+  });
+  return res.data;
+}
+
+/**
+ * Create a student within a specific school context.
+ */
 export async function createStudent(
-  payload: StudentCreateInput
+  payload: StudentCreateInput,
+  schoolId: number, // Added schoolId
 ): Promise<StudentDto> {
   const res = await apiClient.post<StudentDto>(
     API_ENDPOINTS.students.create,
-    payload
+    payload,
+    {
+      params: { school_id: schoolId }, // Post requests also need school_id query param
+    },
   );
   return res.data;
 }
 
+/**
+ * Fetch a single student profile.
+ */
 export async function getStudentProfile(
-  studentId: number
+  studentId: number,
+  schoolId: number, // Added schoolId
 ): Promise<StudentProfileDto> {
   const res = await apiClient.get<StudentProfileDto>(
-    API_ENDPOINTS.students.detail(studentId)
+    API_ENDPOINTS.students.detail(studentId),
+    {
+      params: { school_id: schoolId },
+    },
   );
   return res.data;
 }

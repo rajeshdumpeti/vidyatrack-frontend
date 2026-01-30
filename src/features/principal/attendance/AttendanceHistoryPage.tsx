@@ -6,16 +6,19 @@ import { formatIsoDate } from "@/utils/date";
 import { logger } from "@/utils/logger";
 import { usePrincipalAttendanceHistory } from "@/hooks/usePrincipalAttendanceHistory";
 import { useSections } from "@/hooks/useSections";
+import { useAuthStore } from "@/store/auth.store";
 import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
 import type { SectionDto } from "@/types/section.types";
 
 export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
+  const schoolId = useAuthStore((s) => s.schoolId);
   const [sectionId, setSectionId] = useState<number | "">("");
   const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
   const q = usePrincipalAttendanceHistory(
     dateIso,
     sectionId === "" ? undefined : sectionId,
+    schoolId,
   );
   const sections = useSections().list;
 

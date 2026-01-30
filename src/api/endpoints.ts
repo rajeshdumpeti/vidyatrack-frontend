@@ -19,7 +19,13 @@ export const API_ENDPOINTS = {
     create: "/api/v1/attendance",
     submit: "/api/v1/attendance/submit",
     list: "/api/v1/attendance",
-    update: "/api/v1/attendance",
+    update: (
+      attendanceId: number,
+      schoolId: number,
+      studentId: number,
+      date: string,
+    ) =>
+      `/api/v1/attendance/${attendanceId}?school_id=${schoolId}&student_id=${studentId}&date=${date}`,
   },
   marks: {
     record: "/api/v1/marks/record",

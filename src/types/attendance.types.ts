@@ -3,6 +3,7 @@ export type AttendanceSection = {
   section_name: string;
   class_id: number;
   class_name: string;
+  school_id?: number;
 };
 
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "present" | "absent";

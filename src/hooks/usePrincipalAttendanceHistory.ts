@@ -3,12 +3,17 @@ import { getPrincipalAttendance } from "@/api/principalAttendance.api";
 
 export function usePrincipalAttendanceHistory(
   date: string,
-  sectionId?: number
+  sectionId?: number,
+  schoolId?: number | null,
 ) {
   const query = useQuery({
-    queryKey: ["principal-attendance", { date, sectionId: sectionId ?? null }],
-    queryFn: () => getPrincipalAttendance({ date, sectionId }),
-    enabled: Boolean(date),
+    queryKey: [
+      "principal-attendance",
+      { date, sectionId: sectionId ?? null, schoolId: schoolId ?? null },
+    ],
+    queryFn: () =>
+      getPrincipalAttendance({ date, sectionId, school_id: schoolId! }),
+    enabled: Boolean(date && schoolId),
     retry: 1,
   });
 

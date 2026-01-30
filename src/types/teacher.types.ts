@@ -28,9 +28,10 @@ export type Teacher = {
   email?: string | null;
 };
 
-export type CreateTeacherInput = {
+export interface CreateTeacherInput {
   name: string;
   phone: string;
-  section_id: number;
   email?: string;
-};
+  section_id?: number;
+  school_id?: number; // Add this to allow the mutation to pass it
+}
