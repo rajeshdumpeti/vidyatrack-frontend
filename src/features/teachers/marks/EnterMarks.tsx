@@ -1,12 +1,23 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { useStudentsBySection } from "@/hooks/useStudentsBySection";
 import { useMarksSubmit } from "@/hooks/useMarksSubmit";
 import type { MarksExamTypeDto } from "@/types/marks-submit.types";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
-import { CheckCircle, AlertCircle, Loader2, History } from "lucide-react";
+import {
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  History,
+  GraduationCap,
+  BookOpen,
+  ClipboardList,
+  Ruler,
+  Search,
+  Users,
+} from "lucide-react";
 import { useExistingMarks } from "@/hooks/useExistingMarks"; // Add this import
 
 type ExamType =
@@ -58,21 +69,30 @@ function isValidMark(value: string) {
 }
 
 export function EnterMarks() {
-  const [, setSubmitSuccess] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formData, setFormData] = useState<FormValues | null>(null);
   const [hasLoadedExistingMarks, setHasLoadedExistingMarks] = useState(false);
-
-  const assignmentsQuery = useMyTeachingAssignments();
+  const [searchQuery, setSearchQuery] = useState("");
+  const lastMarksKeyRef = useRef<string | null>(null);
+  const location = useLocation();
   const navigate = useNavigate();
-
+  const assignmentsQuery = useMyTeachingAssignments();
+  const { data: assignments } = useMyTeachingAssignments();
   const { submit, isPending: isSubmitting } = useMarksSubmit();
+  // 2. If not, default to the first assignment in the list
+  const [selectedSectionId, setSelectedSectionId] = useState<
+    number | undefined
+  >(location.state?.section_id || assignments?.[0]?.section_id);
+  const [selectedSubject, setSelectedSubject] = useState<string | undefined>(
+    location.state?.subject_name || assignments?.[0]?.subject_name,
+  );
 
   const {
     register,
     handleSubmit,
+    reset,
     setValue,
     watch,
     formState: { errors, isDirty },
@@ -100,7 +120,7 @@ export function EnterMarks() {
   }, [assignmentsQuery.data, watchAssignmentId]);
 
   const studentsQuery = useStudentsBySection(selectedAssignment?.section_id);
-
+  const marksKey = `${selectedAssignment?.section_id ?? "na"}:${selectedAssignment?.subject_id ?? "na"}:${examTypeDto ?? "na"}`;
   // Use the existing marks hook
   const {
     data: existingMarks = {},
@@ -112,13 +132,23 @@ export function EnterMarks() {
     examTypeDto,
   );
 
+  // Optional: Effect to sync if assignments load after initial render
+  useEffect(() => {
+    if (!selectedSectionId && assignments?.length) {
+      setSelectedSectionId(assignments[0].section_id);
+      setSelectedSubject(assignments[0].subject_name ?? undefined);
+    }
+  }, [assignments, selectedSectionId]);
+
   // Load existing marks into the form when they are fetched
   useEffect(() => {
     if (
       existingMarks &&
       Object.keys(existingMarks).length > 0 &&
       !hasLoadedExistingMarks &&
-      selectedAssignment
+      selectedAssignment &&
+      !loadingExistingMarks &&
+      lastMarksKeyRef.current !== marksKey
     ) {
       // Set each existing mark in the form
       Object.entries(existingMarks).forEach(([studentId, mark]) => {
@@ -128,12 +158,30 @@ export function EnterMarks() {
         });
       });
       setHasLoadedExistingMarks(true);
+      lastMarksKeyRef.current = marksKey;
     }
-  }, [existingMarks, selectedAssignment, setValue, hasLoadedExistingMarks]);
+  }, [
+    existingMarks,
+    selectedAssignment,
+    setValue,
+    hasLoadedExistingMarks,
+    loadingExistingMarks,
+    marksKey,
+  ]);
 
   // Reset the loaded flag when assignment or exam type changes
   useEffect(() => {
     setHasLoadedExistingMarks(false);
+    lastMarksKeyRef.current = null;
+    const current = watch();
+    reset(
+      {
+        examType: current.examType,
+        assignmentId: current.assignmentId,
+        marks: {},
+      },
+      { keepDirty: false },
+    );
   }, [watchAssignmentId, examType]);
 
   // Auto-save functionality
@@ -252,184 +300,160 @@ export function EnterMarks() {
     totalStudents > 0 ? Math.round((filledMarks / totalStudents) * 100) : 0;
 
   // Check if there are existing marks
-  const hasExistingMarks =
-    existingMarks && Object.keys(existingMarks).length > 0;
+  const existingMarksMap = (existingMarks ?? {}) as Record<string, string>;
+  const hasExistingMarks = Object.keys(existingMarksMap).length > 0;
   const existingMarksCount = hasExistingMarks
-    ? Object.keys(existingMarks).length
+    ? Object.keys(existingMarksMap).length
     : 0;
+
+  const filteredStudents = useMemo(() => {
+    const list = studentsQuery.data ?? [];
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((s, idx) => {
+      const name = String(s.name ?? "").toLowerCase();
+      const roll =
+        s.roll_no != null ? String(s.roll_no).toLowerCase() : String(idx + 1);
+      return name.includes(q) || roll.includes(q);
+    });
+  }, [studentsQuery.data, searchQuery]);
 
   // Replace the entire return statement from the Enter Marks component
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-4xl px-4 py-6">
-        {/* Header with Back Button */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gray-50 pb-12">
+      <div className="mx-auto w-full max-w-6xl px-6 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2 md:mb-6">
           <button
-            type="button"
-            className="text-sm font-semibold text-blue-600"
             onClick={() => navigate("/teacher")}
+            className="text-blue-600 font-bold text-sm flex items-center gap-1"
           >
-            ← Back
+            <span className="text-lg">←</span> BACK
           </button>
-          <div className="text-base font-bold text-gray-900 tracking-tight">
+          <div className="text-sm font-bold text-gray-800 tracking-tight md:tracking-widest md:uppercase md:text-gray-400">
             Enter Marks
           </div>
-          <div />
+          <div className="hidden md:block w-16" />
         </div>
-
-        {/* Main Content Card */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          {/* Page Header */}
-          <div className="mb-6">
-            <h1 className="text-lg font-semibold text-gray-900">Enter Marks</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Select exam type and subject, then enter marks per student.
-            </p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-6 md:mb-8">
+          Enter Marks
+        </h1>
+        {/* Existing Marks Notification */}
+        {loadingExistingMarks && selectedAssignment && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <span className="text-sm text-blue-700">
+              Checking for existing marks...
+            </span>
           </div>
+        )}
 
-          {/* Existing Marks Notification */}
-          {loadingExistingMarks && selectedAssignment && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              <span className="text-sm text-blue-700">
-                Checking for existing marks...
-              </span>
-            </div>
-          )}
+        {hasExistingMarks && !loadingExistingMarks && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
+            <History className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-700">
+              Found existing marks for {existingMarksCount} student(s)
+            </span>
+            <span className="text-sm text-blue-600">
+              • You can update them below
+            </span>
+          </div>
+        )}
 
-          {hasExistingMarks && !loadingExistingMarks && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
-              <History className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700">
-                Found existing marks for {existingMarksCount} student(s)
-              </span>
-              <span className="text-sm text-blue-600">
-                • You can update them below
-              </span>
-            </div>
-          )}
-
-          {/* Progress Section */}
-          {/* <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center justify-between">
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit((values) => handleOpenConfirmation(values))}
+        >
+          {/* Selection Panel */}
+          <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
               <div>
-                <div className="text-sm font-semibold text-gray-900">
-                  Progress:{" "}
-                  <span className="text-blue-600">{completionPercentage}%</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {filledMarks} of {totalStudents} students
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {autoSaveStatus === "saving" && (
-                  <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 border border-gray-200">
-                    <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Saving...
-                    </span>
-                  </div>
-                )}
-                {autoSaveStatus === "saved" && (
-                  <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 border border-gray-200">
-                    <CheckCircle className="h-3 w-3 text-green-500" />
-                    <span className="text-xs font-medium text-gray-600">
-                      Saved
-                    </span>
-                  </div>
-                )}
-                {autoSaveStatus === "idle" && isDirty && (
-                  <div className="rounded-full bg-white px-3 py-1.5 border border-gray-200">
-                    <span className="text-xs font-medium text-gray-500">
-                      Unsaved changes
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="mt-3 h-2 w-full rounded-full bg-gray-200">
-              <div
-                className="h-full rounded-full bg-blue-600 transition-all duration-300"
-                style={{ width: `${completionPercentage}%` }}
-              />
-            </div>
-          </div> */}
-
-          {/* Form */}
-          <form
-            onSubmit={handleSubmit((values) => handleOpenConfirmation(values))}
-          >
-            {/* Selection Cards */}
-            <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {/* Exam Type Card */}
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Exam Type
-                </label>
-                <select
-                  className="h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  {...register("examType", { required: true })}
-                >
-                  {MOCK_EXAM_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-2 text-xs text-gray-500">
-                  Choose the exam category.
-                </p>
-              </div>
-
-              {/* Class & Subject Card */}
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-sm font-semibold text-gray-900">
                   Class & Subject
                 </label>
-                <select
-                  className={[
-                    "h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold outline-none",
-                    "focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
-                    errors.assignmentId ? "border-red-300" : "border-gray-200",
-                  ].join(" ")}
-                  {...register("assignmentId", {
-                    required: "Class & subject is required",
-                  })}
-                >
-                  <option value="">Select class & subject</option>
-                  {(assignmentsQuery.data ?? []).map((a) => (
-                    <option
-                      key={`${a.section_id}-${a.subject_id}`}
-                      value={`${a.section_id}-${a.subject_id}`}
-                    >
-                      {a.class_name} - {a.subject_name}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                  <select
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                    {...register("assignmentId", {
+                      required: "Class & subject is required",
+                    })}
+                  >
+                    <option value="">Select class & subject</option>
+                    {(assignmentsQuery.data ?? []).map((a) => (
+                      <option
+                        key={`${a.section_id}-${a.subject_id}`}
+                        value={`${a.section_id}-${a.subject_id}`}
+                      >
+                        {a.class_name} - {a.subject_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {errors.assignmentId ? (
                   <p className="mt-2 text-sm text-red-600">
                     {errors.assignmentId.message}
                   </p>
-                ) : (
-                  <p className="mt-2 text-xs text-gray-500">
-                    Choose a class and subject from your assignments.
-                  </p>
-                )}
+                ) : null}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900">
+                  Assessment Type
+                </label>
+                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                  <ClipboardList className="h-5 w-5 text-blue-600" />
+                  <select
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                    {...register("examType", { required: true })}
+                  >
+                    {MOCK_EXAM_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900">
+                  Maximum Marks
+                </label>
+                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                  <Ruler className="h-5 w-5 text-blue-600" />
+                  <input
+                    type="text"
+                    value="100"
+                    readOnly
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                  />
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* Student List Card */}
-            {selectedAssignment && (
-              <div className="mb-6 rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                {/* Card Header */}
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          {/* Student List Card */}
+          {selectedAssignment && (
+            <div className="mb-6 mt-6 rounded-2xl border border-gray-200 bg-white overflow-hidden">
+              {/* Card Header */}
+              <div className="border-b border-gray-200 px-6 py-5">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                      <Users className="h-5 w-5" />
+                    </div>
                     <div>
-                      <div className="text-sm font-semibold text-gray-900">
-                        Students
+                      <div className="flex items-center gap-3">
+                        <div className="text-base font-semibold text-gray-900">
+                          Student Roster
+                        </div>
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+                          {totalStudents} Students
+                        </span>
                       </div>
-                      <div className="text-xs font-medium text-gray-500">
+                      <div className="mt-1 text-xs font-medium text-gray-500">
                         Exam: <span className="text-gray-900">{examType}</span>{" "}
                         • Subject:{" "}
                         <span className="text-gray-900">
@@ -442,154 +466,163 @@ export function EnterMarks() {
                         )}
                       </div>
                     </div>
-                    <div className="text-xs font-medium text-gray-500">
-                      Marks: 0–100
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+                      <Search className="h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search student..."
+                        className="w-48 bg-transparent text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400"
+                      />
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Students List */}
-                <ul className="divide-y divide-gray-100">
-                  {(studentsQuery.data ?? []).map((s, idx) => {
-                    const key = String(s.id);
-                    const rollNo =
-                      s.roll_no != null ? String(s.roll_no) : String(idx + 1);
-                    const hasMark = marks[key]?.trim() !== "";
-                    const isExistingMark =
-                      existingMarks && existingMarks[key] !== undefined;
+              {/* Students List */}
+              <ul className="divide-y divide-gray-100">
+                {filteredStudents.map((s, idx) => {
+                  const key = String(s.id);
+                  const rollNo =
+                    s.roll_no != null ? String(s.roll_no) : String(idx + 1);
+                  const hasMark = marks[key]?.trim() !== "";
+                  const isExistingMark = existingMarksMap[key] !== undefined;
 
-                    return (
-                      <li
-                        key={s.id}
-                        className="hover:bg-gray-50/50 transition-colors"
-                      >
-                        <div className="grid grid-cols-12 items-center gap-3 px-6 py-4">
-                          {/* Roll Number */}
-                          <div className="col-span-2">
-                            <div className="inline-flex items-center justify-center rounded-full bg-gray-100 px-3 py-1.5">
-                              <span className="text-sm font-semibold text-gray-700">
-                                {rollNo}
+                  return (
+                    <li
+                      key={s.id}
+                      className="hover:bg-gray-50/50 transition-colors"
+                    >
+                      <div className="grid grid-cols-12 items-center gap-3 px-6 py-4">
+                        {/* Roll Number */}
+                        <div className="col-span-2">
+                          <div className="inline-flex items-center justify-center rounded-full bg-gray-100 px-3 py-1.5">
+                            <span className="text-sm font-semibold text-gray-700">
+                              {rollNo}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Student Name */}
+                        <div className="col-span-7">
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-semibold text-gray-900">
+                              {s.name}
+                            </div>
+                            {isExistingMark && !hasMark && (
+                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                Previously: {existingMarksMap[key]}
                               </span>
-                            </div>
+                            )}
                           </div>
+                        </div>
 
-                          {/* Student Name */}
-                          <div className="col-span-7">
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm font-semibold text-gray-900">
-                                {s.name}
-                              </div>
-                              {isExistingMark && !hasMark && (
-                                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                  Previously: {existingMarks[key]}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Marks Input */}
-                          <div className="col-span-3 flex justify-end">
-                            <div className="relative w-full max-w-[140px]">
-                              <input
-                                type="tel"
-                                inputMode="numeric"
-                                placeholder={
-                                  isExistingMark ? existingMarks[key] : "—"
-                                }
-                                className={`
+                        {/* Marks Input */}
+                        <div className="col-span-3 flex justify-end">
+                          <div className="relative w-full max-w-[140px]">
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              placeholder={
+                                isExistingMark ? existingMarksMap[key] : "—"
+                              }
+                              className={`
                                 h-12 w-full rounded-xl border bg-white px-3 text-right text-sm font-semibold text-gray-900 outline-none focus:ring-2
                                 ${hasMark ? "border-green-300 bg-green-50/30" : "border-gray-200 focus:border-blue-500 focus:ring-blue-100"}
                                 ${isExistingMark && !hasMark ? "border-blue-200 bg-blue-50/30" : ""}
                               `}
-                                {...register(`marks.${key}` as const, {
-                                  validate: (v) =>
-                                    isValidMark(v) || "Enter 0–100",
-                                  onChange: (e) => {
-                                    const raw = String(e.target.value ?? "");
-                                    const cleaned = raw.replace(/[^\d]/g, "");
-                                    setValue(`marks.${key}` as const, cleaned, {
-                                      shouldDirty: true,
-                                    });
-                                  },
-                                })}
-                                aria-label={`Marks for ${s.name}`}
-                              />
-                            </div>
+                              {...register(`marks.${key}` as const, {
+                                validate: (v) =>
+                                  isValidMark(v) || "Enter 0–100",
+                                onChange: (e) => {
+                                  const raw = String(e.target.value ?? "");
+                                  const cleaned = raw.replace(/[^\d]/g, "");
+                                  setValue(`marks.${key}` as const, cleaned, {
+                                    shouldDirty: true,
+                                  });
+                                },
+                              })}
+                              aria-label={`Marks for ${s.name}`}
+                            />
                           </div>
                         </div>
-
-                        {errors.marks && (errors.marks as any)[key] && (
-                          <div className="px-6 pb-3 text-right text-sm text-red-600">
-                            {(errors.marks as any)[key]?.message ??
-                              "Invalid mark"}
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {/* Card Footer */}
-                <div className="border-t border-gray-200 px-6 py-4">
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div>
-                      Showing {(studentsQuery.data ?? []).length} Students
-                    </div>
-                    {hasExistingMarks && (
-                      <div className="flex items-center gap-2">
-                        <History className="h-3 w-3 text-blue-500" />
-                        <span className="font-medium text-blue-600">
-                          {existingMarksCount} student(s) have existing marks
-                        </span>
                       </div>
-                    )}
+
+                      {errors.marks && (errors.marks as any)[key] && (
+                        <div className="px-6 pb-3 text-right text-sm text-red-600">
+                          {(errors.marks as any)[key]?.message ??
+                            "Invalid mark"}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Card Footer */}
+              <div className="border-t border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div>
+                    Showing {(studentsQuery.data ?? []).length} Students
                   </div>
+                  {hasExistingMarks && (
+                    <div className="flex items-center gap-2">
+                      <History className="h-3 w-3 text-blue-500" />
+                      <span className="font-medium text-blue-600">
+                        {existingMarksCount} student(s) have existing marks
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={handleSubmit(handleSaveDraft)}
-                disabled={!isDirty || isAutoSaving}
-                className="h-12 rounded-xl border border-gray-300 bg-white px-6 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isAutoSaving ? "Saving..." : "Save Draft"}
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || filledMarks === 0}
-                className="h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? "Submitting..." : "Submit Marks"}
-              </button>
-            </div>
-          </form>
-
-          {/* Completion Status */}
-          {completionPercentage === 100 && (
-            <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-800">
-                    All marks entered
-                  </span>
-                </div>
-                {hasExistingMarks && (
-                  <span className="text-sm text-blue-600">
-                    Editing {existingMarksCount} existing mark(s)
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-green-700">
-                {filledMarks} of {totalStudents} students have marks entered
-              </p>
             </div>
           )}
-        </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={handleSubmit(handleSaveDraft)}
+              disabled={!isDirty || isAutoSaving}
+              className="h-12 rounded-xl border border-gray-300 bg-white px-6 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isAutoSaving ? "Saving..." : "Save Draft"}
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || filledMarks === 0}
+              className="h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Marks"}
+            </button>
+          </div>
+        </form>
+
+        {/* Completion Status */}
+        {completionPercentage === 100 && (
+          <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <span className="text-sm font-medium text-green-800">
+                  All marks entered
+                </span>
+              </div>
+              {hasExistingMarks && (
+                <span className="text-sm text-blue-600">
+                  Editing {existingMarksCount} existing mark(s)
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-green-700">
+              {filledMarks} of {totalStudents} students have marks entered
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Confirmation Modal (keep as is) */}

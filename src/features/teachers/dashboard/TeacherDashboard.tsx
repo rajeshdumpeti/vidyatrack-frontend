@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FiCheckCircle } from "react-icons/fi";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
 import { IoTimeOutline } from "react-icons/io5";
+import {
+  BsCheckCircleFill,
+  BsFillFileEarmarkTextFill,
+  BsFillPencilFill,
+} from "react-icons/bs";
 
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
@@ -17,17 +21,22 @@ export function TeacherDashboard() {
   const trace = useMemo(() => logger.traceId(), []);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
 
+  // NOTE: In the future, pull the actual name from authStore when available
+  const teacherName = "Rajesh Dumpeti";
+
   const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
   const assignmentsQuery = useMyTeachingAssignments();
   const location = useLocation();
   const [toast, setToast] = useState<string | null>(null);
+
+  // --- NEW STATE FOR SELECTION FLOW ---
+  const [activeAssignment, setActiveAssignment] = useState<any>(null);
 
   useEffect(() => {
     const msg = (location.state as any)?.toast as string | undefined;
     if (msg) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setToast(msg);
-      // Clear navigation state so it doesn't re-show on future navigations
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.pathname, location.state, navigate]);
@@ -35,17 +44,6 @@ export function TeacherDashboard() {
   useEffect(() => {
     logger.info("[teacher][dashboard] loaded", { trace });
   }, [trace]);
-
-  useEffect(() => {
-    if (data) {
-      logger.info("[teacher][dashboard] section resolved", {
-        trace,
-        class_name: data.class_name,
-        section_name: data.section_name,
-        section_id: data.section_id,
-      });
-    }
-  }, [data, trace]);
 
   useEffect(() => {
     if (typeof data?.school_id === "number") {
@@ -57,57 +55,21 @@ export function TeacherDashboard() {
     return <LoadingState label="Loading your section..." />;
   }
 
-  if (error) {
-    const status = axios.isAxiosError(error)
-      ? error.response?.status
-      : undefined;
-
-    if (status === 404) {
-      return (
-        <div className="min-h-screen bg-gray-50 p-6">
-          <div className="mx-auto w-full max-w-2xl">
-            <ErrorState
-              title="No attendance section assigned"
-              message="Please contact management to assign your attendance section."
-            />
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      );
-    }
-
+  // Handle Error States
+  if (error || !data) {
+    const is404 = axios.isAxiosError(error) && error.response?.status === 404;
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto w-full max-w-2xl">
           <ErrorState
-            title="Dashboard unavailable"
-            message="Unable to load your attendance section. Please try again."
-          />
-          <button
-            type="button"
-            onClick={() => refetch()}
-            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto w-full max-w-2xl">
-          <ErrorState
-            title="No attendance section assigned"
-            message="Please contact management to assign your attendance section."
+            title={
+              is404 ? "No attendance section assigned" : "Dashboard unavailable"
+            }
+            message={
+              is404
+                ? "Please contact management to assign your attendance section."
+                : "Unable to load data. Please try again."
+            }
           />
           <button
             type="button"
@@ -123,30 +85,37 @@ export function TeacherDashboard() {
 
   const assignments = assignmentsQuery.data ?? [];
 
+  // Helper for navigation with state
+  const handleAction = (route: string) => {
+    if (!activeAssignment) return;
+    navigate(route, { state: activeAssignment });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {toast ? (
-        <div className="mx-auto mb-4 w-full max-w-5xl rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-          <div className="flex items-center justify-between gap-3">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {toast && (
+        <div className="mx-auto mb-4 w-full max-w-4xl px-4 pt-6">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
             <span>{toast}</span>
             <button
               type="button"
-              className="rounded-lg px-3 py-1 text-sm font-semibold text-green-900 hover:bg-green-100"
               onClick={() => setToast(null)}
+              className="text-green-900 hover:underline"
             >
               Dismiss
             </button>
           </div>
         </div>
-      ) : null}
+      )}
 
       <main className="mx-auto w-full max-w-4xl px-4 py-8">
+        {/* Personalized Header */}
         <div className="text-center">
           <div className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
             <HiOutlineAcademicCap className="h-5 w-5" />
-            Welcome back
+            Welcome {teacherName}!
           </div>
-          <h1 className="mt-2 text-3xl font-extrabold text-gray-900">
+          <h1 className="mt-2 text-3xl font-extrabold text-gray-900 tracking-tight">
             Have a great day of teaching!
           </h1>
           <p className="mt-2 text-sm text-gray-600">
@@ -154,105 +123,128 @@ export function TeacherDashboard() {
           </p>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4">
+        {/* Schedule Card */}
+        <div className="mt-10 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-100 bg-white px-6 py-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
               <IoTimeOutline className="h-4 w-4" />
               Today's Schedule
             </div>
           </div>
+
           <div className="divide-y divide-gray-100">
             {assignmentsQuery.isLoading ? (
-              <div className="px-6 py-6">
+              <div className="p-10">
                 <LoadingState label="Loading schedule..." />
               </div>
-            ) : assignmentsQuery.error ? (
-              <div className="px-6 py-6">
-                <ErrorState
-                  title="Unable to load schedule"
-                  message="Please try again."
-                />
-              </div>
             ) : assignments.length === 0 ? (
-              <div className="px-6 py-6 text-sm text-gray-600">
-                No teaching assignments found yet.
+              <div className="p-10 text-center text-sm text-gray-500 font-medium">
+                No teaching assignments found.
               </div>
             ) : (
-              // Inside your assignments.map((a) => (...))
-              assignments.map((a) => (
-                <button
-                  key={`${a.section_id}-${a.subject_name}`} // Using subject_name for uniqueness
-                  type="button"
-                  onClick={() =>
-                    navigate("/teacher/attendance", {
-                      state: {
-                        section_id: a.section_id,
-                        subject_name: a.subject_name,
-                      },
-                    })
-                  }
-                  className="w-full px-6 py-4 text-left transition-colors hover:bg-blue-50 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-bold text-gray-900 group-hover:text-blue-700">
-                        {a.class_name} - {a.subject_name}
+              assignments.map((a) => {
+                const isActive =
+                  activeAssignment?.section_id === a.section_id &&
+                  activeAssignment?.subject_name === a.subject_name;
+                return (
+                  <button
+                    key={`${a.section_id}-${a.subject_name}`}
+                    type="button"
+                    onClick={() => setActiveAssignment(a)}
+                    className={`w-full px-6 py-5 text-left transition-all ${isActive ? "bg-blue-50/60" : "hover:bg-gray-50"}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div
+                          className={`text-[15px] font-bold ${isActive ? "text-blue-700" : "text-gray-900"}`}
+                        >
+                          {a.class_name} - {a.subject_name}
+                        </div>
+                        <div className="mt-1 text-xs font-medium text-gray-500">
+                          Section {a.section_name} • Click to select
+                        </div>
                       </div>
-                      <div className="mt-1 text-xs text-gray-500">
-                        Section {a.section_name} • Click to mark attendance
-                      </div>
+                      {isActive ? (
+                        <BsCheckCircleFill className="h-5 w-5 text-blue-600" />
+                      ) : (
+                        <span className="text-blue-400 opacity-0 group-hover:opacity-100">
+                          →
+                        </span>
+                      )}
                     </div>
-                    <span className="text-blue-400 opacity-0 group-hover:opacity-100">
-                      →
-                    </span>
-                  </div>
-                </button>
-              ))
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
+        {/* Action Buttons */}
+        <div className="mt-10 space-y-4">
           <button
             type="button"
-            onClick={() => navigate("/teacher/attendance")}
-            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+            disabled={!activeAssignment}
+            onClick={() => handleAction("/teacher/attendance")}
+            className={`flex w-full items-center justify-between rounded-2xl px-6 py-5 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98] ${
+              activeAssignment
+                ? "bg-[#2D54E8] hover:bg-[#2546C1]"
+                : "bg-gray-400 cursor-not-allowed opacity-60"
+            }`}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                <FiCheckCircle className="h-4 w-4" />
-              </span>
-              Mark Attendance
+            <span className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <BsCheckCircleFill className="h-5 w-5" />
+              </div>
+              Mark Attendance{" "}
+              {activeAssignment && `(${activeAssignment.class_name})`}
             </span>
-            <span>→</span>
+            <span className="text-xl">→</span>
           </button>
+
           <button
             type="button"
-            onClick={() => navigate("/teacher/marks")}
-            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+            disabled={!activeAssignment}
+            onClick={() => handleAction("/teacher/marks")}
+            className={`flex w-full items-center justify-between rounded-2xl px-6 py-5 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98] ${
+              activeAssignment
+                ? "bg-[#2D54E8] hover:bg-[#2546C1]"
+                : "bg-gray-400 cursor-not-allowed opacity-60"
+            }`}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                <HiOutlineAcademicCap className="h-4 w-4" />
-              </span>
-              Enter Marks
+            <span className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <BsFillFileEarmarkTextFill className="h-5 w-5" />
+              </div>
+              Enter Marks{" "}
+              {activeAssignment && `(${activeAssignment.class_name})`}
             </span>
-            <span>→</span>
+            <span className="text-xl">→</span>
           </button>
+
           <button
             type="button"
-            onClick={() => navigate("/teacher/notes")}
-            className="flex w-full items-center justify-between rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white hover:bg-blue-700"
+            disabled={!activeAssignment}
+            onClick={() => handleAction("/teacher/notes")}
+            className={`flex w-full items-center justify-between rounded-2xl px-6 py-5 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98] ${
+              activeAssignment
+                ? "bg-[#2D54E8] hover:bg-[#2546C1]"
+                : "bg-gray-400 cursor-not-allowed opacity-60"
+            }`}
           >
-            <span className="inline-flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                <HiOutlineAcademicCap className="h-4 w-4" />
-              </span>
+            <span className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
+                <BsFillPencilFill className="h-4 w-4" />
+              </div>
               Write Student Note
+              {activeAssignment && `(${activeAssignment.class_name})`}
             </span>
-            <span>→</span>
+            <span className="text-xl">→</span>
           </button>
         </div>
+
+        <footer className="mt-16 text-center text-xs font-medium text-gray-400">
+          School Management System © 2026. All rights reserved.
+        </footer>
       </main>
     </div>
   );
