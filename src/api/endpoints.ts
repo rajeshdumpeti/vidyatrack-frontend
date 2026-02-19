@@ -32,6 +32,10 @@ export const API_ENDPOINTS = {
     submit: "/api/v1/marks/submit",
     list: "/api/v1/marks", // Add this line
   },
+  communications: {
+    homework: "/api/v1/communications/homework",
+    parentMessage: "/api/v1/communications/parent-messages",
+  },
   teachers: {
     list: "/api/v1/teachers",
     create: "/api/v1/teachers",

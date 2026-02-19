@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { useExistingMarks } from "@/hooks/useExistingMarks"; // Add this import
+import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 
 type ExamType =
   | "Unit Test"
@@ -82,6 +83,9 @@ export function EnterMarks() {
   const { data: assignments } = useMyTeachingAssignments();
   const { submit, isPending: isSubmitting } = useMarksSubmit();
   // 2. If not, default to the first assignment in the list
+  const section = useTeacherAttendanceSection();
+  const className =
+    location.state?.class_name || section.data?.class_name || "Class";
   const [selectedSectionId, setSelectedSectionId] = useState<
     number | undefined
   >(location.state?.section_id || assignments?.[0]?.section_id);
@@ -374,22 +378,8 @@ export function EnterMarks() {
                 </label>
                 <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-                  <select
-                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
-                    {...register("assignmentId", {
-                      required: "Class & subject is required",
-                    })}
-                  >
-                    <option value="">Select class & subject</option>
-                    {(assignmentsQuery.data ?? []).map((a) => (
-                      <option
-                        key={`${a.section_id}-${a.subject_id}`}
-                        value={`${a.section_id}-${a.subject_id}`}
-                      >
-                        {a.class_name} - {a.subject_name}
-                      </option>
-                    ))}
-                  </select>
+
+                  {className}
                 </div>
                 {errors.assignmentId ? (
                   <p className="mt-2 text-sm text-red-600">
