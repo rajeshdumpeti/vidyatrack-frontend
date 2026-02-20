@@ -72,4 +72,7 @@ export const API_ENDPOINTS = {
   management: {
     teachersCreate: "/api/v1/management/teachers",
   },
+  cms: {
+    byContentType: (contentType: string) => `/api/v1/cms/${contentType}`,
+  },
 } as const;

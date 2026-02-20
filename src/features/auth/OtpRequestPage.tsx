@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiPhone, FiHelpCircle, FiArrowRight } from "react-icons/fi";
 import { HiAcademicCap } from "react-icons/hi2";
 import { MdWifi } from "react-icons/md";
@@ -10,6 +10,12 @@ import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { useOtpRequest } from "@/hooks/useOtpRequest";
 import { logger } from "@/utils/logger";
+import { getLoginPageCmsContent } from "@/cms";
+import {
+  LOGIN_PAGE_DEFAULTS,
+  type LoginPageCmsContent,
+} from "@/cms";
+import { useAuthStore } from "@/store/auth.store";
 
 type FormValues = {
   phone: string;
@@ -18,6 +24,41 @@ type FormValues = {
 export function OtpRequestPage() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
+  const [searchParams] = useSearchParams();
+  const schoolId = useAuthStore((state) => state.schoolId);
+
+  const schoolCodeParam =
+    searchParams.get("school_code") ?? searchParams.get("school");
+  const schoolCode =
+    schoolCodeParam?.trim() || (schoolId ? String(schoolId) : undefined);
+
+  const [cmsContent, setCmsContent] =
+    useState<LoginPageCmsContent>(LOGIN_PAGE_DEFAULTS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCms = async () => {
+      try {
+        const content = await getLoginPageCmsContent({
+          schoolId: schoolCode ? undefined : schoolId,
+          schoolCode,
+        });
+
+        if (!isMounted) return;
+        setCmsContent(content);
+      } catch {
+        if (!isMounted) return;
+        setCmsContent(LOGIN_PAGE_DEFAULTS);
+      }
+    };
+
+    void loadCms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [schoolId, schoolCode]);
 
   const {
     register,
@@ -73,15 +114,32 @@ export function OtpRequestPage() {
             {/* Left panel */}
             <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-10">
               <div className="text-center">
-                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                  <MdWifi className="h-6 w-6 text-white" />
+                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-white">
+                  {cmsContent.brandIconUrl ? (
+                    <img
+                      src={cmsContent.brandIconUrl}
+                      alt="Brand icon"
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                    />
+                  ) : (
+                    <MdWifi className="h-6 w-6 text-white" />
+                  )}
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  One Platform, Complete School
+                  {cmsContent.heroTitle}
                 </h2>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-gray-600">
-                  Attendance • Grades • Parent Communication • Reports
+                  {cmsContent.heroSubtitle}
                 </p>
+                {cmsContent.leftPanelImageUrl ? (
+                  <img
+                    src={cmsContent.leftPanelImageUrl}
+                    alt="Login panel"
+                    className="mx-auto mt-6 max-h-40 w-auto rounded-xl"
+                    loading="lazy"
+                  />
+                ) : null}
               </div>
             </div>
 
@@ -198,7 +256,7 @@ export function OtpRequestPage() {
                       })
                     }
                   >
-                    Terms & Privacy Policy
+                    {cmsContent.termsText}
                   </button>
                   .
                 </p>

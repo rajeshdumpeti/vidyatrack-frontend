@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   HiOutlineUserGroup,
   HiOutlineAcademicCap,
@@ -7,16 +7,15 @@ import {
   HiOutlineInformationCircle,
 } from "react-icons/hi";
 
-import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import {
   useTeachingAssignments,
   useCreateTeachingAssignment,
 } from "@/hooks/useTeachingAssignments";
+import { createSection } from "@/api/sections.api";
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
 import { logger } from "@/utils/logger";
-import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
 import { useAuthStore } from "@/store/auth.store";
 
 // Types
@@ -26,9 +25,11 @@ type SubjectDto = { id: number; name: string };
 type TeacherDto = { id: number; name?: string | null; phone?: string | null };
 
 function getFriendlyAssignError(err: unknown): string {
-  const anyErr = err as any;
-  const status = anyErr?.response?.status;
-  const detail = anyErr?.response?.data?.detail;
+  const maybeError = err as {
+    response?: { status?: number; data?: { detail?: unknown } };
+  };
+  const status = maybeError?.response?.status;
+  const detail = maybeError?.response?.data?.detail;
 
   if (status === 409 && detail === "assignment_conflict") {
     return "Subject is already assigned to a different teacher.";
@@ -39,6 +40,7 @@ function getFriendlyAssignError(err: unknown): string {
 export function AssignSubjectsPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const { schoolId } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const [classId, setClassId] = useState<number | null>(null);
   const [sectionId, setSectionId] = useState<number | null>(null);
@@ -99,8 +101,30 @@ export function AssignSubjectsPage() {
     enabled: !!schoolId && !!classId,
   });
 
-  const { data: assignments, isLoading: assignmentsLoading } =
-    useTeachingAssignments(sectionId);
+  const createDefaultSectionMutation = useMutation({
+    mutationFn: async () => {
+      if (!schoolId || !classId) throw new Error("missing_context");
+      return createSection({
+        school_id: schoolId,
+        class_id: classId,
+        name: "General",
+      });
+    },
+    onSuccess: async (section) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["sections", schoolId, { classId }],
+      });
+      setSectionId(section.id);
+      logger.info("[assign] created default section", {
+        trace,
+        schoolId,
+        classId,
+        sectionId: section.id,
+      });
+    },
+  });
+
+  const { data: assignments } = useTeachingAssignments(sectionId);
   const createMutation = useCreateTeachingAssignment();
 
   // 2. Computed Logic
@@ -108,6 +132,10 @@ export function AssignSubjectsPage() {
   const sections = sectionsQuery.data ?? [];
   const subjects = subjectsQuery.data ?? [];
   const teachers = teachersQuery.data ?? [];
+
+  const selectedClass = classes.find((row) => row.id === classId);
+  const noSectionsForClass =
+    !!classId && !sectionsQuery.isLoading && sections.length === 0;
 
   const assignedTeacherIdBySubject = useMemo(() => {
     const map: Record<number, number> = {};
@@ -189,8 +217,11 @@ export function AssignSubjectsPage() {
               <select
                 className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all"
                 value={classId ?? ""}
-                onChange={(e) => {
-                  setClassId(Number(e.target.value));
+                onChange={(event) => {
+                  const nextClassId = event.target.value
+                    ? Number(event.target.value)
+                    : null;
+                  setClassId(nextClassId);
                   setSectionId(null);
                 }}
               >
@@ -210,8 +241,12 @@ export function AssignSubjectsPage() {
               <select
                 className="w-full h-12 px-4 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold focus:ring-4 focus:ring-blue-50 outline-none transition-all disabled:opacity-50"
                 value={sectionId ?? ""}
-                onChange={(e) => setSectionId(Number(e.target.value))}
-                disabled={!classId}
+                onChange={(event) =>
+                  setSectionId(
+                    event.target.value ? Number(event.target.value) : null,
+                  )
+                }
+                disabled={!classId || noSectionsForClass}
               >
                 <option value="">
                   {sectionsQuery.isLoading ? "Loading..." : "Choose Section..."}
@@ -224,7 +259,33 @@ export function AssignSubjectsPage() {
               </select>
             </div>
 
-            {!sectionId && (
+            {noSectionsForClass ? (
+              <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-semibold text-amber-800">
+                  No sections found for {selectedClass?.name ?? "this class"}.
+                </p>
+                <p className="text-[11px] text-amber-700">
+                  Create a default section to continue assigning teachers.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => createDefaultSectionMutation.mutate()}
+                  disabled={createDefaultSectionMutation.isPending}
+                  className="h-10 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {createDefaultSectionMutation.isPending
+                    ? "Creating..."
+                    : 'Create "General" Section'}
+                </button>
+                {createDefaultSectionMutation.isError ? (
+                  <p className="text-[11px] font-semibold text-red-600">
+                    Failed to create section. Please try again.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            {!sectionId && !noSectionsForClass && (
               <div className="flex items-start gap-2 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
                 <HiOutlineInformationCircle
                   className="text-blue-500 mt-0.5 shrink-0"
@@ -245,7 +306,9 @@ export function AssignSubjectsPage() {
             <div className="bg-white/50 rounded-[40px] border-2 border-dashed border-slate-200 p-20 flex flex-col items-center justify-center text-center">
               <HiOutlineAcademicCap className="text-slate-200 size-16 mb-4" />
               <p className="text-slate-400 font-semibold italic">
-                Awaiting section selection...
+                {noSectionsForClass
+                  ? "Create a section to start assigning teachers..."
+                  : "Awaiting section selection..."}
               </p>
             </div>
           ) : (
@@ -273,7 +336,7 @@ export function AssignSubjectsPage() {
                     );
                     const isRowSubmitting =
                       createMutation.isPending &&
-                      (createMutation.variables as any)?.subject_id === subj.id;
+                      createMutation.variables?.subject_id === subj.id;
                     const message = rowMessage[subj.id];
 
                     return (
@@ -311,10 +374,12 @@ export function AssignSubjectsPage() {
                             <select
                               className="h-11 px-4 rounded-xl border border-slate-100 bg-slate-50 text-xs font-bold focus:ring-2 focus:ring-blue-100 outline-none w-full md:w-48"
                               value={selectedTeacherBySubject[subj.id] ?? ""}
-                              onChange={(e) =>
+                              onChange={(event) =>
                                 setSelectedTeacherBySubject((p) => ({
                                   ...p,
-                                  [subj.id]: Number(e.target.value),
+                                  [subj.id]: event.target.value
+                                    ? Number(event.target.value)
+                                    : "",
                                 }))
                               }
                             >
