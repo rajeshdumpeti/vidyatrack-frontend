@@ -17,9 +17,11 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  // 2. Automatically attach active school_id to all requests
-  // This ensures backend security checks pass without manual work in components
-  if (schoolId) {
+  // 2. Attach active school_id for protected app APIs, but not for CMS endpoints
+  const requestUrl = config.url ?? "";
+  const isCmsRequest = requestUrl.includes("/cms/");
+
+  if (schoolId && !isCmsRequest) {
     config.params = {
       ...config.params,
       school_id: schoolId,
