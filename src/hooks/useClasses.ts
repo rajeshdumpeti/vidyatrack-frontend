@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createClass, getClasses } from "@/api/classes.api";
+import { getAcademicSetup } from "@/api/academicSetup.api";
+import { createClass } from "@/api/classes.api";
 import { useAuthStore } from "@/store/auth.store"; // Import the store
 
 export function useClasses() {
@@ -7,10 +8,9 @@ export function useClasses() {
   const { schoolId } = useAuthStore(); // Get current active school
 
   const list = useQuery({
-    // Adding schoolId here is CRITICAL.
-    // It creates a unique cache for every school.
-    queryKey: ["classes", schoolId],
-    queryFn: () => getClasses(schoolId!), // Pass schoolId to the API
+    queryKey: ["academic-setup", schoolId],
+    queryFn: () => getAcademicSetup(schoolId!),
+    select: (data) => data.classes,
     enabled: !!schoolId, // Only fetch if a school is selected
     retry: 1,
   });
@@ -19,6 +19,7 @@ export function useClasses() {
     mutationFn: (payload: { name: string; school_id: number }) =>
       createClass({ ...payload, school_id: schoolId! }),
     onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["academic-setup", schoolId] });
       // Invalidate ONLY the current school's list
       await qc.invalidateQueries({ queryKey: ["classes", schoolId] });
     },

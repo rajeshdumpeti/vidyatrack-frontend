@@ -17,11 +17,12 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  // 2. Attach active school_id for protected app APIs, but not for CMS endpoints
+  // 2. Attach active school_id only for app-scoped APIs (never auth/cms).
   const requestUrl = config.url ?? "";
+  const isAuthRequest = requestUrl.includes("/api/v1/auth/");
   const isCmsRequest = requestUrl.includes("/cms/");
 
-  if (schoolId && !isCmsRequest) {
+  if (schoolId && !isCmsRequest && !isAuthRequest) {
     config.params = {
       ...config.params,
       school_id: schoolId,

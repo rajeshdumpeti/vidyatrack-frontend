@@ -10,6 +10,10 @@ type HeaderProps = {
 export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const schoolId = useAuthStore((s) => s.schoolId);
+  const schools = useAuthStore((s) => s.schools);
+  const activeSchoolName =
+    schools.find((s) => s.id === schoolId)?.name ?? null;
 
   const today = useMemo(() => {
     // Local date, minimal formatting (pilot-safe)
@@ -33,6 +37,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           <span className="hidden text-sm font-bold tracking-tight text-gray-900 md:inline">
             VidyaTrack
           </span>
+          {activeSchoolName ? (
+            <span className="hidden truncate rounded-lg bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 md:inline">
+              {activeSchoolName}
+            </span>
+          ) : null}
           <button
             type="button"
             onClick={onMenuClick}

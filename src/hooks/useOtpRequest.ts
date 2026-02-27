@@ -3,9 +3,7 @@ import { requestOtp } from "@/api/auth.api";
 
 export function useOtpRequest() {
   const mutation = useMutation({
-    mutationFn: async (phoneE164: string) => {
-      await requestOtp(phoneE164);
-    },
+    mutationFn: async (phoneE164: string) => requestOtp(phoneE164),
   });
 
   return {

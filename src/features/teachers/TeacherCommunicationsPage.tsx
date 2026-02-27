@@ -476,7 +476,7 @@ export function TeacherCommunicationsPage() {
               <label className="block text-sm font-semibold text-gray-900">
                 Class & Subject
               </label>
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+              <div className="mt-3 flex items-center gap-3 rounded-xl">
                 <BookOpen className="h-5 w-5 text-blue-600" />
                 {className}
               </div>
@@ -488,7 +488,7 @@ export function TeacherCommunicationsPage() {
               <label className="block text-sm font-semibold text-gray-900">
                 Students
               </label>
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+              <div className="mt-3 flex items-center gap-3 rounded-xl">
                 <Users className="h-5 w-5 text-blue-600" />
                 <div className="text-sm font-semibold text-gray-900">
                   {(studentsQuery.data ?? []).length} enrolled
@@ -544,7 +544,7 @@ export function TeacherCommunicationsPage() {
                     <label className="block text-sm font-semibold text-gray-900">
                       Due Date
                     </label>
-                    <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <div className="mt-3 flex items-center gap-3 rounded-xl">
                       <Calendar className="h-5 w-5 text-blue-600" />
                       <input
                         type="date"

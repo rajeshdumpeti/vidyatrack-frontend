@@ -4,6 +4,8 @@ import type {
   TeacherDto,
   Teacher,
   TeacherMeDto,
+  TeacherContextDto,
+  TeacherReadinessDto,
 } from "@/types/teacher.types";
 import type { TeachingAssignmentMeDto } from "@/types/teachingAssignment.types";
 import { apiClient } from "./apiClient";
@@ -41,6 +43,25 @@ export async function createTeacher(
 }
 export async function getTeacherMe(): Promise<TeacherMeDto> {
   const res = await apiClient.get<TeacherMeDto>(API_ENDPOINTS.teachers.me);
+  return res.data;
+}
+
+export async function getTeacherReadiness(): Promise<TeacherReadinessDto> {
+  const res = await apiClient.get<TeacherReadinessDto>(
+    API_ENDPOINTS.teachers.meReadiness,
+  );
+  return res.data;
+}
+
+export async function getTeacherContext(
+  schoolId: number,
+): Promise<TeacherContextDto> {
+  const res = await apiClient.get<TeacherContextDto>(
+    API_ENDPOINTS.teachers.meContext,
+    {
+      params: { school_id: schoolId },
+    },
+  );
   return res.data;
 }
 

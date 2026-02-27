@@ -27,6 +27,7 @@ export type HomeworkRecordDto = {
 
 export type ParentMessageRecordDto = {
   id: number;
+  message_id?: number;
   school_id: number;
   section_id: number;
   subject?: string | null;

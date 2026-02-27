@@ -16,6 +16,7 @@ import {
   type LoginPageCmsContent,
 } from "@/cms";
 import { useAuthStore } from "@/store/auth.store";
+import type { SupportedCountryCode } from "@/types/auth.types";
 
 type FormValues = {
   phone: string;
@@ -34,6 +35,7 @@ export function OtpRequestPage() {
 
   const [cmsContent, setCmsContent] =
     useState<LoginPageCmsContent>(LOGIN_PAGE_DEFAULTS);
+  const [countryCode, setCountryCode] = useState<SupportedCountryCode>("+91");
 
   useEffect(() => {
     let isMounted = true;
@@ -73,13 +75,19 @@ export function OtpRequestPage() {
 
   const onSubmit = (values: FormValues) => {
     const phoneDigits = digitsOnly(values.phone);
-    const phoneE164 = `+91${phoneDigits}`;
+    const phoneE164 = `${countryCode}${phoneDigits}`;
 
-    logger.info("[auth][otp-request] submit", { trace, phoneDigits });
+    logger.info("[auth][otp-request] submit", { trace, countryCode, phoneDigits });
 
     requestOtp(phoneE164, {
-      onSuccess: () => {
-        navigate("/auth/verify", { state: { phoneDigits } });
+      onSuccess: (result) => {
+        navigate("/auth/verify", {
+          state: {
+            phoneDigits,
+            countryCode,
+            deliveryChannel: result.delivery_channel,
+          },
+        });
       },
       onError: (err) => {
         logger.warn("[auth][otp-request] failed", { trace, err });
@@ -161,7 +169,7 @@ export function OtpRequestPage() {
                     htmlFor="phone"
                     className="block text-sm font-semibold text-gray-900"
                   >
-                    Your Mobile Number
+                    Enter phone number to receive OTP on WhatsApp
                   </label>
 
                   {/* Phone input group (country + number) */}
@@ -173,9 +181,17 @@ export function OtpRequestPage() {
                     ].join(" ")}
                   >
                     <FiPhone className="mr-3 h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">
-                      +91
-                    </span>
+                    <select
+                      aria-label="Country code"
+                      value={countryCode}
+                      onChange={(e) =>
+                        setCountryCode(e.target.value as SupportedCountryCode)
+                      }
+                      className="bg-transparent text-sm font-medium text-gray-700 outline-none"
+                    >
+                      <option value="+91">+91</option>
+                      <option value="+1">+1</option>
+                    </select>
                     <span className="mx-3 h-5 w-px bg-gray-200" />
                     <input
                       id="phone"
@@ -189,9 +205,9 @@ export function OtpRequestPage() {
                         validate: (value) => {
                           const d = digitsOnly(value);
                           if (d.length < 10)
-                            return "Enter a valid 10-digit Indian mobile number";
+                            return "Enter a valid 10-digit mobile number";
                           if (d.length > 10)
-                            return "Enter a valid 10-digit Indian mobile number";
+                            return "Enter a valid 10-digit mobile number";
                           return true;
                         },
                       })}

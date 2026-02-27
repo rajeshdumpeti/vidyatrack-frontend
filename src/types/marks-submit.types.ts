@@ -1,9 +1,4 @@
-export type MarksExamTypeDto =
-  | "UNIT_TEST"
-  | "MONTHLY_TEST"
-  | "QUARTERLY"
-  | "HALF_YEARLY"
-  | "ANNUAL";
+export type MarksExamTypeDto = string;
 
 export type RecordMarkRequest = {
   student_id: number;

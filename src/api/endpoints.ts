@@ -40,8 +40,13 @@ export const API_ENDPOINTS = {
     list: "/api/v1/teachers",
     create: "/api/v1/teachers",
     me: "/api/v1/teachers/me",
+    meReadiness: "/api/v1/teachers/me/readiness",
+    meContext: "/api/v1/teachers/me/context",
     meTeachingAssignments: "/api/v1/teachers/me/teaching-assignments",
     meAttendanceSection: "/api/v1/teachers/me/attendance-section",
+  },
+  academicSetup: {
+    list: "/api/v1/academic-setup",
   },
   schools: {
     list: "/api/v1/schools",
