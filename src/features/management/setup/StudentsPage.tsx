@@ -7,7 +7,12 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 
-import { useStudents, useCreateStudent } from "@/hooks//useStudents";
+import {
+  useStudents,
+  useCreateStudent,
+  usePreviewStudentsImport,
+  useCommitStudentsImport,
+} from "@/hooks//useStudents";
 
 // Reuse existing hooks from your setup screens (do NOT create duplicates)
 import { useClasses } from "@/hooks/useClasses";
@@ -15,6 +20,14 @@ import { useSections } from "@/hooks/useSections"; // if you have useSectionsByC
 
 import type { StudentDto } from "@/types/student.types";
 import type { StudentCreateInput } from "@/types/student.types";
+import type {
+  StudentImportCommitResponse,
+  StudentImportPreviewResponse,
+} from "@/types/student.types";
+import { LoadingButton } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/hooks/usePagination";
+import { Toast } from "@/components/feedback/Toast";
 
 type CreateFormValues = {
   first_name: string;
@@ -36,8 +49,15 @@ function normalizePhoneDigits(v: string) {
 
 export function ManagementSetupStudentsPage() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sectionId, setSectionId] = useState<string>("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [previewData, setPreviewData] = useState<StudentImportPreviewResponse | null>(null);
+  const [commitResult, setCommitResult] = useState<StudentImportCommitResponse | null>(
+    null,
+  );
+  const [toast, setToast] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const studentsQuery = useStudents();
@@ -46,6 +66,8 @@ export function ManagementSetupStudentsPage() {
   const classesList = classesQuery.list;
   const sectionsList = sectionsQuery.list;
   const createMutation = useCreateStudent();
+  const previewImportMutation = usePreviewStudentsImport();
+  const commitImportMutation = useCommitStudentsImport();
 
   const {
     register,
@@ -115,11 +137,103 @@ export function ManagementSetupStudentsPage() {
     if (!sectionIdNumber) return filteredStudents;
     return filteredStudents.filter((s) => s.section_id === sectionIdNumber);
   }, [filteredStudents, sectionIdNumber]);
+  const studentsPagination = usePagination(filteredBySection, {
+    initialPageSize: 20,
+    resetDeps: [search, sectionId],
+  });
+
+  const selectedAcademicContext = useMemo(() => {
+    if (!sectionIdNumber) {
+      return {
+        className: "All Classes",
+        sectionName: "All Sections",
+      };
+    }
+
+    const section = (sectionsList.data ?? []).find((s: any) => s.id === sectionIdNumber);
+    const className = section?.class_id
+      ? classLabelById.get(section.class_id) ?? `Class ${section.class_id}`
+      : "Unknown Class";
+    const sectionName = section?.name ?? `Section ${sectionIdNumber}`;
+
+    return { className, sectionName };
+  }, [sectionIdNumber, sectionsList.data, classLabelById]);
+
+  const previewAcademicGroups = useMemo(() => {
+    if (!previewData) return [];
+    const grouped = new Map<string, number>();
+    previewData.rows.forEach((row) => {
+      const className = row.class_name?.trim() || "Unknown Class";
+      const sectionName = row.section_name?.trim() || "Unknown Section";
+      const key = `${className} / ${sectionName}`;
+      grouped.set(key, (grouped.get(key) ?? 0) + 1);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [previewData]);
 
   const onClose = () => {
     setIsOpen(false);
     createMutation.reset();
     reset();
+  };
+
+  const onOpenImport = () => {
+    setIsImportOpen(true);
+    setImportFile(null);
+    setPreviewData(null);
+    setCommitResult(null);
+    previewImportMutation.reset();
+    commitImportMutation.reset();
+  };
+
+  const onCloseImport = () => {
+    setIsImportOpen(false);
+    setImportFile(null);
+    setPreviewData(null);
+    setCommitResult(null);
+    previewImportMutation.reset();
+    commitImportMutation.reset();
+  };
+
+  const downloadTemplate = () => {
+    const csv = [
+      "first_name,last_name,name,parent_phone,parent_name,class_name,section_name,roll_number,date_of_birth,gender,admission_date",
+      "Rahul,Sharma,,9876511111,Suresh Sharma,Grade 6th,A,101,2012-04-10,male,2024-06-10",
+      "Ananya,Verma,,9876522222,Priya Verma,Grade 6th,A,102,2012-08-21,female,2024-06-10",
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "vidyatrack_students_import_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePreviewImport = async () => {
+    if (previewImportMutation.isPending || commitImportMutation.isPending) return;
+    if (!importFile) return;
+    const data = await previewImportMutation.mutateAsync(importFile);
+    setPreviewData(data);
+    setCommitResult(null);
+  };
+
+  const handleCommitImport = async () => {
+    if (commitImportMutation.isPending || previewImportMutation.isPending) return;
+    if (!previewData?.import_token) return;
+    const res = await commitImportMutation.mutateAsync({
+      import_token: previewData.import_token,
+      mode: "skip_duplicates",
+    });
+    setCommitResult(res);
+    setToast(
+      `Student import completed: ${res.created_rows} created, ${res.duplicate_rows} duplicates, ${res.failed_rows} failed.`,
+    );
+    onCloseImport();
   };
 
   const onSubmit = async (values: CreateFormValues) => {
@@ -172,13 +286,22 @@ export function ManagementSetupStudentsPage() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="h-11 rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white"
-          onClick={() => setIsOpen(true)}
-        >
-          + Add Student
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={onOpenImport}
+          >
+            Import Students
+          </button>
+          <button
+            type="button"
+            className="h-11 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
+            onClick={() => setIsOpen(true)}
+          >
+            + Add Student
+          </button>
+        </div>
       </div>
 
       {/* Search + Filter */}
@@ -197,7 +320,7 @@ export function ManagementSetupStudentsPage() {
           </div>
           <div className="min-w-[200px]">
             <label className="block text-xs font-semibold text-gray-600">
-              All Classes
+              Section
             </label>
             <select
               className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-gray-300 disabled:opacity-60"
@@ -205,7 +328,7 @@ export function ManagementSetupStudentsPage() {
               onChange={(e) => setSectionId(e.target.value)}
               disabled={sectionsList.isLoading}
             >
-              <option value="">All Classes</option>
+              <option value="">All Sections</option>
               {(sectionsList.data ?? []).map((s: any) => {
                 const label =
                   sectionLabelById.get(s.id) ?? `Section ${s.id}`;
@@ -263,6 +386,7 @@ export function ManagementSetupStudentsPage() {
                     <th className="px-4 py-3">Full Name</th>
                     <th className="px-4 py-3">Student ID</th>
                     <th className="px-4 py-3">Class</th>
+                    <th className="px-4 py-3">Section</th>
                     <th className="px-4 py-3">Guardian</th>
                     <th className="px-4 py-3">Contact</th>
                     <th className="px-4 py-3">Status</th>
@@ -270,12 +394,15 @@ export function ManagementSetupStudentsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredBySection.map((s: StudentDto) => {
-                    const sectionLabel =
-                      s.section_name && s.class_name
-                        ? `${s.class_name} - ${s.section_name}`
-                        : sectionLabelById.get(s.section_id) ??
-                          `Section ${s.section_id}`;
+                  {studentsPagination.pagedItems.map((s: StudentDto) => {
+                    const classLabel =
+                      s.class_name ??
+                      ((sectionsList.data ?? []).find((section: any) => section.id === s.section_id)
+                        ?.class_name ?? "—");
+                    const onlySectionLabel =
+                      s.section_name ??
+                      ((sectionsList.data ?? []).find((section: any) => section.id === s.section_id)
+                        ?.name ?? `Section ${s.section_id ?? "—"}`);
                     const initials = (s.name ?? "?")
                       .trim()
                       .slice(0, 2)
@@ -299,16 +426,29 @@ export function ManagementSetupStudentsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-sm font-semibold text-gray-900">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/management/students/${s.id}`, {
+                                state: { breadcrumbLabel: s.name ?? "Student" },
+                              })
+                            }
+                            className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                          >
                             {s.name}
-                          </div>
+                          </button>
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-700">
                           {studentCode}
                         </td>
                         <td className="px-4 py-3">
                           <span className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                            {sectionLabel}
+                            {classLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                            {onlySectionLabel}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
@@ -327,8 +467,12 @@ export function ManagementSetupStudentsPage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"
-                            className="rounded-full bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
-                            onClick={() => navigate(`/management/students/${s.id}`)}
+                            className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                            onClick={() =>
+                              navigate(`/management/students/${s.id}`, {
+                                state: { breadcrumbLabel: s.name ?? "Student" },
+                              })
+                            }
                           >
                             View
                           </button>
@@ -339,6 +483,16 @@ export function ManagementSetupStudentsPage() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={studentsPagination.page}
+              pageSize={studentsPagination.pageSize}
+              totalItems={studentsPagination.totalItems}
+              totalPages={studentsPagination.totalPages}
+              from={studentsPagination.from}
+              to={studentsPagination.to}
+              onPageChange={studentsPagination.setPage}
+              onPageSizeChange={studentsPagination.setPageSize}
+            />
           </div>
         ) : null}
       </div>
@@ -559,7 +713,7 @@ export function ManagementSetupStudentsPage() {
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="h-11 w-full rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                  className="h-11 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
                 >
                   {createMutation.isPending ? "Saving..." : "Add Student"}
                 </button>
@@ -567,6 +721,245 @@ export function ManagementSetupStudentsPage() {
             </form>
           </div>
         </div>
+      ) : null}
+
+      {isImportOpen ? (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/40" onClick={onCloseImport} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-lg md:inset-10 md:mx-auto md:max-w-5xl md:rounded-2xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Import Students (Bulk)
+              </h2>
+              <button
+                type="button"
+                className="h-10 rounded-xl px-3 text-sm font-semibold text-gray-700"
+                onClick={onCloseImport}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+                Academic Context
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                <span className="rounded-full border border-blue-200 bg-white px-3 py-1 font-semibold text-blue-900">
+                  Class: {selectedAcademicContext.className}
+                </span>
+                <span className="rounded-full border border-blue-200 bg-white px-3 py-1 font-semibold text-blue-900">
+                  Section: {selectedAcademicContext.sectionName}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-blue-700">
+                CSV rows should include `class_name` and `section_name` to map students correctly.
+              </p>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800"
+              >
+                Download CSV Template
+              </button>
+              <input
+                type="file"
+                accept=".csv"
+                className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+                disabled={previewImportMutation.isPending || commitImportMutation.isPending}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setImportFile(file);
+                  setPreviewData(null);
+                  setCommitResult(null);
+                }}
+              />
+              <LoadingButton
+                type="button"
+                onClick={handlePreviewImport}
+                disabled={!importFile || commitImportMutation.isPending}
+                isLoading={previewImportMutation.isPending}
+                loadingText="Validating..."
+                fullWidth
+                className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700"
+              >
+                Preview Import
+              </LoadingButton>
+            </div>
+
+            {previewImportMutation.isError ? (
+              <div className="mt-4">
+                <ErrorState
+                  title="Unable to preview import"
+                  message="Please check CSV format and class/section names."
+                />
+              </div>
+            ) : null}
+
+            {previewData ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className="rounded-xl border border-gray-200 bg-white p-3">
+                    <div className="text-xs text-gray-500">Total Rows</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {previewData.total_rows}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-green-200 bg-green-50 p-3">
+                    <div className="text-xs text-green-700">Valid</div>
+                    <div className="text-lg font-semibold text-green-800">
+                      {previewData.valid_rows}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <div className="text-xs text-amber-700">Duplicates</div>
+                    <div className="text-lg font-semibold text-amber-800">
+                      {previewData.duplicate_rows}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3">
+                    <div className="text-xs text-red-700">Invalid</div>
+                    <div className="text-lg font-semibold text-red-800">
+                      {previewData.invalid_rows}
+                    </div>
+                  </div>
+                </div>
+
+                {previewAcademicGroups.length > 0 ? (
+                  <div className="rounded-2xl border border-gray-200 bg-white p-3">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                      Academic Distribution (Preview)
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {previewAcademicGroups.map((group) => (
+                        <span
+                          key={group.label}
+                          className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700"
+                        >
+                          {group.label}: {group.count}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="overflow-hidden rounded-2xl border border-gray-200">
+                  <div className="w-full overflow-x-auto">
+                    <table className="w-full min-w-[960px] text-left text-sm">
+                      <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        <tr>
+                          <th className="px-3 py-2">Row</th>
+                          <th className="px-3 py-2">Status</th>
+                          <th className="px-3 py-2">Student</th>
+                          <th className="px-3 py-2">Class</th>
+                          <th className="px-3 py-2">Section</th>
+                          <th className="px-3 py-2">Phone</th>
+                          <th className="px-3 py-2">Errors</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {previewData.rows.map((row) => (
+                          <tr key={row.row_number}>
+                            <td className="px-3 py-2">{row.row_number}</td>
+                            <td className="px-3 py-2">
+                              <span
+                                className={[
+                                  "rounded-full px-2 py-1 text-xs font-semibold",
+                                  row.status === "valid"
+                                    ? "bg-green-50 text-green-700"
+                                    : row.status === "duplicate"
+                                      ? "bg-amber-50 text-amber-700"
+                                      : "bg-red-50 text-red-700",
+                                ].join(" ")}
+                              >
+                                {row.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">{row.student_name || "—"}</td>
+                            <td className="px-3 py-2">{row.class_name || "—"}</td>
+                            <td className="px-3 py-2">{row.section_name || "—"}</td>
+                            <td className="px-3 py-2">{row.parent_phone || "—"}</td>
+                            <td className="px-3 py-2 text-xs text-red-700">
+                              {row.errors.join(", ") || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={onCloseImport}
+                    className="h-11 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <LoadingButton
+                    type="button"
+                    disabled={
+                      !previewData.import_token ||
+                      previewData.valid_rows === 0 ||
+                      previewImportMutation.isPending
+                    }
+                    onClick={handleCommitImport}
+                    isLoading={commitImportMutation.isPending}
+                    loadingText="Importing..."
+                    className="h-11 rounded-xl bg-blue-600 px-5 text-sm hover:bg-blue-700"
+                  >
+                    Confirm Import
+                  </LoadingButton>
+                </div>
+              </div>
+            ) : null}
+
+            {commitResult ? (
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4">
+                <div className="text-sm font-semibold text-gray-900">
+                  Import Completed
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <div className="text-sm text-gray-700">
+                    Total: <strong>{commitResult.total_rows}</strong>
+                  </div>
+                  <div className="text-sm text-green-700">
+                    Created: <strong>{commitResult.created_rows}</strong>
+                  </div>
+                  <div className="text-sm text-amber-700">
+                    Duplicates: <strong>{commitResult.duplicate_rows}</strong>
+                  </div>
+                  <div className="text-sm text-red-700">
+                    Failed: <strong>{commitResult.failed_rows}</strong>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {commitImportMutation.isPending ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/35">
+          <div className="rounded-2xl border border-blue-100 bg-white px-8 py-6 text-center shadow-xl">
+            <div className="text-base font-bold text-gray-900">
+              Importing students...
+            </div>
+            <div className="mt-1 text-sm text-gray-600">
+              Please wait while we process the file.
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {toast ? (
+        <Toast
+          variant="success"
+          message={toast}
+          onClose={() => setToast(null)}
+        />
       ) : null}
     </div>
   );

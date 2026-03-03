@@ -1,8 +1,12 @@
 import type {
+  StudentImportCommitInput,
+  StudentImportCommitResponse,
+  StudentImportPreviewResponse,
   StudentCreateInput,
   StudentDto,
   StudentListItem,
   StudentProfileDto,
+  StudentReportCardDto,
 } from "@/types/student.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
@@ -78,6 +82,50 @@ export async function getStudentProfile(
 ): Promise<StudentProfileDto> {
   const res = await apiClient.get<StudentProfileDto>(
     API_ENDPOINTS.students.detail(studentId),
+    {
+      params: { school_id: schoolId },
+    },
+  );
+  return res.data;
+}
+
+export async function getStudentReportCard(
+  studentId: number,
+  schoolId: number,
+): Promise<StudentReportCardDto> {
+  const res = await apiClient.get<StudentReportCardDto>(
+    API_ENDPOINTS.students.reportCard(studentId),
+    {
+      params: { school_id: schoolId },
+    },
+  );
+  return res.data;
+}
+
+export async function previewStudentsImport(
+  file: File,
+  schoolId: number,
+): Promise<StudentImportPreviewResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await apiClient.post<StudentImportPreviewResponse>(
+    API_ENDPOINTS.students.importPreview,
+    formData,
+    {
+      params: { school_id: schoolId },
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+  return res.data;
+}
+
+export async function commitStudentsImport(
+  payload: StudentImportCommitInput,
+  schoolId: number,
+): Promise<StudentImportCommitResponse> {
+  const res = await apiClient.post<StudentImportCommitResponse>(
+    API_ENDPOINTS.students.importCommit,
+    payload,
     {
       params: { school_id: schoolId },
     },

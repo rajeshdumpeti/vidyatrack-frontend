@@ -11,6 +11,7 @@ type SubmitArgs = {
   sectionId: number;
   subjectId: string | number;
   examType: MarksExamTypeDto;
+  maxMarks: number;
   students: Array<{ studentId: number; marks: number }>;
   concurrency?: number; // default 8
 };
@@ -51,7 +52,7 @@ export function useMarksSubmit() {
           subject_id: Number(args.subjectId),
           exam_type: args.examType,
           marks_obtained: s.marks,
-          max_marks: 100, // Assuming 100 as standard max
+          max_marks: args.maxMarks,
         };
 
         return async () => {

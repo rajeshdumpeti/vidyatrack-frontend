@@ -12,8 +12,11 @@ export const API_ENDPOINTS = {
   students: {
     create: "/api/v1/students",
     list: "/api/v1/students",
+    importPreview: "/api/v1/students/import/preview",
+    importCommit: "/api/v1/students/import/commit",
     detail: (studentId: number) => `/api/v1/students/${studentId}`,
     notes: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+    reportCard: (studentId: number) => `/api/v1/students/${studentId}/report-card`,
   },
   attendance: {
     create: "/api/v1/attendance",
@@ -40,12 +43,21 @@ export const API_ENDPOINTS = {
     list: "/api/v1/teachers",
     create: "/api/v1/teachers",
     me: "/api/v1/teachers/me",
+    meReadiness: "/api/v1/teachers/me/readiness",
+    meContext: "/api/v1/teachers/me/context",
     meTeachingAssignments: "/api/v1/teachers/me/teaching-assignments",
     meAttendanceSection: "/api/v1/teachers/me/attendance-section",
+  },
+  academicSetup: {
+    list: "/api/v1/academic-setup",
   },
   schools: {
     list: "/api/v1/schools",
     create: "/api/v1/schools",
+    dashboard: (schoolId: number) => `/api/v1/schools/${schoolId}/dashboard`,
+    teachers: (schoolId: number) => `/api/v1/schools/${schoolId}/teachers`,
+    students: (schoolId: number) => `/api/v1/schools/${schoolId}/students`,
+    staff: (schoolId: number) => `/api/v1/schools/${schoolId}/staff`,
   },
   classes: {
     list: "/api/v1/classes",
@@ -71,5 +83,8 @@ export const API_ENDPOINTS = {
 
   management: {
     teachersCreate: "/api/v1/management/teachers",
+  },
+  cms: {
+    byContentType: (contentType: string) => `/api/v1/cms/${contentType}`,
   },
 } as const;

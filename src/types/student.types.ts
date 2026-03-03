@@ -34,6 +34,39 @@ export type StudentCreateInput = {
   admission_date?: string;
 };
 
+export type StudentImportPreviewRow = {
+  row_number: number;
+  status: "valid" | "invalid" | "duplicate";
+  errors: string[];
+  student_name?: string | null;
+  parent_phone?: string | null;
+  class_name?: string | null;
+  section_name?: string | null;
+  roll_number?: string | null;
+};
+
+export type StudentImportPreviewResponse = {
+  import_token?: string | null;
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_rows: number;
+  rows: StudentImportPreviewRow[];
+};
+
+export type StudentImportCommitInput = {
+  import_token: string;
+  mode?: "skip_duplicates";
+};
+
+export type StudentImportCommitResponse = {
+  total_rows: number;
+  created_rows: number;
+  duplicate_rows: number;
+  failed_rows: number;
+  errors: StudentImportPreviewRow[];
+};
+
 export type StudentPersonalDetails = {
   date_of_birth?: string | null;
   gender?: string | null;
@@ -72,4 +105,31 @@ export type StudentProfileDto = {
   guardians?: StudentGuardian[] | null;
   attendance?: StudentAttendanceSummary | null;
   recent_results?: StudentRecentResult[] | null;
+};
+
+export type StudentReportCardRow = {
+  subject_name: string;
+  exam_type: string;
+  marks_obtained: number;
+  max_marks: number;
+  percentage: number;
+  grade: string;
+};
+
+export type StudentReportCardDto = {
+  student_id: number;
+  student_name: string;
+  student_code: string;
+  class_name?: string | null;
+  section_name?: string | null;
+  attendance_percentage: number;
+  present_days: number;
+  absent_days: number;
+  total_days: number;
+  total_obtained: number;
+  total_max: number;
+  overall_percentage: number;
+  overall_grade: string;
+  generated_at: string;
+  rows: StudentReportCardRow[];
 };

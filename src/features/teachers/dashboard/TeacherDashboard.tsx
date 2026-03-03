@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import { HiOutlineAcademicCap } from "react-icons/hi2";
 import { IoTimeOutline } from "react-icons/io5";
 import {
@@ -13,6 +14,8 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
+import { useTeacherReadiness } from "@/hooks/useTeacherReadiness";
+import { getTeacherMe } from "@/api/teachers.api";
 import { logger } from "@/utils/logger";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -20,9 +23,16 @@ export function TeacherDashboard() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
-
-  // NOTE: In the future, pull the actual name from authStore when available
-  const teacherName = "Rajesh Dumpeti";
+  const teacherMeQuery = useQuery({
+    queryKey: ["teacher", "me"],
+    queryFn: getTeacherMe,
+    retry: 1,
+  });
+  const readiness = useTeacherReadiness();
+  const teacherName =
+    teacherMeQuery.data?.name?.trim() ||
+    teacherMeQuery.data?.phone ||
+    "Teacher";
 
   const { data, isLoading, error, refetch } = useTeacherAttendanceSection();
   const assignmentsQuery = useMyTeachingAssignments();
@@ -51,8 +61,53 @@ export function TeacherDashboard() {
     }
   }, [data?.school_id, setSchoolId]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (typeof readiness.data?.school_id === "number") {
+      setSchoolId(readiness.data.school_id);
+    }
+  }, [readiness.data?.school_id, setSchoolId]);
+
+  if (isLoading || readiness.isLoading) {
     return <LoadingState label="Loading your section..." />;
+  }
+
+  if (readiness.data && readiness.data.status !== "ready") {
+    const messages: Record<string, string> = {
+      needs_school_mapping: "Your school access mapping is pending.",
+      needs_primary_section: "Primary section is not assigned yet.",
+      needs_subject_assignment: "No subject assignment found for your profile.",
+      needs_students: "No students are enrolled in your primary section.",
+      needs_teacher_profile: "Teacher profile has not been created.",
+    };
+
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto w-full max-w-2xl">
+          <ErrorState
+            title="Teacher setup in progress"
+            message={
+              messages[readiness.data.status] ??
+              "Your teacher account setup is incomplete."
+            }
+          />
+          <div className="mt-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700">
+            {readiness.data.recommended_next_action ??
+              "Please contact management to complete setup."}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              readiness.refetch();
+              refetch();
+              assignmentsQuery.refetch();
+            }}
+            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Handle Error States

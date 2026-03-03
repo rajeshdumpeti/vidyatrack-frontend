@@ -1,6 +1,7 @@
 import type {
   AuthMeResponse,
   OtpRequestBody,
+  OtpRequestResponse,
   OtpVerifyBody,
   OtpVerifyResponse,
 } from "@/types/auth.types";
@@ -8,19 +9,23 @@ import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 import { logger } from "@/utils/logger";
 
-export async function requestOtp(phone: string): Promise<void> {
+export async function requestOtp(phone: string): Promise<OtpRequestResponse> {
   const body: OtpRequestBody = { phone };
   if (import.meta.env.DEV) {
     logger.info("[auth][otp-request][api] request", { phone, body });
   }
   try {
-    const res = await apiClient.post(API_ENDPOINTS.auth.otpRequest, body);
+    const res = await apiClient.post<OtpRequestResponse>(
+      API_ENDPOINTS.auth.otpRequest,
+      body,
+    );
     if (import.meta.env.DEV) {
       logger.info("[auth][otp-request][api] response", {
         status: res.status,
         data: res.data,
       });
     }
+    return res.data;
   } catch (err: any) {
     if (import.meta.env.DEV) {
       logger.warn("[auth][otp-request][api] error", {

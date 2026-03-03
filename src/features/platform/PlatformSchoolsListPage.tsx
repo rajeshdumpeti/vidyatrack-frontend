@@ -8,14 +8,39 @@ import {
   Users,
   GraduationCap,
 } from "lucide-react";
-import { Activity } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { SchoolDto } from "@/types/school.types";
+import { useQueries } from "@tanstack/react-query";
+import { getSchoolDashboard } from "@/api/schools.api";
 
 export function PlatformSchoolsListPage() {
   const { list } = useSchools();
   const [search, setSearch] = useState("");
 
-  const filteredSchools = list.data?.filter((s) =>
+  const schoolMetricsQueries = useQueries({
+    queries: (list.data ?? []).map((school) => ({
+      queryKey: ["platform-school-dashboard-fallback", school.id],
+      queryFn: () => getSchoolDashboard(school.id),
+      staleTime: 60_000,
+      retry: 1,
+    })),
+  });
+
+  const fallbackBySchoolId = useMemo(() => {
+    const result = new Map<number, { teacher: number; student: number }>();
+    (list.data ?? []).forEach((school, idx) => {
+      const payload = schoolMetricsQueries[idx]?.data;
+      if (!payload) return;
+      result.set(school.id, {
+        teacher: payload.teacher_count,
+        student: payload.student_count,
+      });
+    });
+    return result;
+  }, [list.data, schoolMetricsQueries]);
+
+  const filteredSchools = (list.data ?? []).filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -74,7 +99,7 @@ export function PlatformSchoolsListPage() {
 
       {/* List */}
       <div className="grid gap-3">
-        {!filteredSchools || filteredSchools.length === 0 ? (
+        {filteredSchools.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
             <School className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">
@@ -82,25 +107,32 @@ export function PlatformSchoolsListPage() {
             </p>
           </div>
         ) : (
-          filteredSchools.map((school: any) => (
-            <div
+          filteredSchools.map((school: SchoolDto) => (
+            <Link
               key={school.id}
-              className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all"
+              to={`/platform/schools/${school.id}?tab=overview`}
+              className="group flex items-center justify-between p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all"
             >
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <div className="h-10 w-12 bg-blue-50 rounded-xl flex items-center justify-center text-gray-900 font-bold group-hover:bg-gray-900 group-hover:text-white transition-colors">
                   {school.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">{school.name}</h3>
                   <div className="flex gap-3 mt-1">
                     <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">
-                      <Users className="h-3 w-3" /> {school.teacher_count || 0}{" "}
+                      <Users className="h-3 w-3" />{" "}
+                      {school.teacher_count ??
+                        fallbackBySchoolId.get(school.id)?.teacher ??
+                        0}{" "}
                       Teachers
                     </span>
                     <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-green-500 bg-green-50 px-2 py-0.5 rounded-md">
                       <GraduationCap className="h-3 w-3" />{" "}
-                      {school.student_count || 0} Students
+                      {school.student_count ??
+                        fallbackBySchoolId.get(school.id)?.student ??
+                        0}{" "}
+                      Students
                     </span>
                   </div>
                 </div>
@@ -109,11 +141,11 @@ export function PlatformSchoolsListPage() {
                 <p className="text-[10px] font-mono text-gray-400">
                   ID: {school.id}
                 </p>
-                <button className="text-gray-300 hover:text-blue-600 p-2 transition-colors">
-                  <Activity className="h-5 w-5" />
-                </button>
+                <span className="text-gray-300 group-hover:text-gray-900 p-2 transition-colors">
+                  <ArrowRight className="h-5 w-5" />
+                </span>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

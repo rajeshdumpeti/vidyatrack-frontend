@@ -19,4 +19,8 @@ export type PrincipalMarksRowDto = {
   student_name?: string;
   roll_no?: string | number;
   section_id?: number;
+  class_name?: string | null;
+  section_name?: string | null;
+  subject_name?: string | null;
+  created_at?: string;
 };

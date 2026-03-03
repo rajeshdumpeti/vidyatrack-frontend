@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getMyAttendanceSection, getTeacherMe } from "@/api/teachers.api";
 import type { AttendanceSection } from "@/types/attendance.types";
 import { useAuthStore } from "@/store/auth.store";
+import { useTeacherContext } from "@/hooks/useTeacherContext";
 
 function extractSchoolId(value: unknown): number | null {
   if (!value || typeof value !== "object") return null;
@@ -25,9 +26,12 @@ export function useTeacherAttendanceSection() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
   const didFallbackRef = useRef(false);
+  const teacherContext = useTeacherContext();
   const query = useQuery({
     queryKey: ["teacher", "me", "attendance-section"],
     queryFn: getMyAttendanceSection,
+    // Do not block on schoolId; this endpoint is the source of truth for teacher context.
+    enabled: true,
   });
 
   useEffect(() => {
@@ -40,7 +44,13 @@ export function useTeacherAttendanceSection() {
   }, [query.data, schoolId, setSchoolId]);
 
   useEffect(() => {
-    if (schoolId || didFallbackRef.current || !query.data) return;
+    if (schoolId || didFallbackRef.current) return;
+    const contextSchoolId = teacherContext.data?.school_id;
+    if (typeof contextSchoolId === "number") {
+      didFallbackRef.current = true;
+      setSchoolId(contextSchoolId);
+      return;
+    }
     didFallbackRef.current = true;
     getTeacherMe()
       .then((me) => {
@@ -51,7 +61,7 @@ export function useTeacherAttendanceSection() {
       .catch(() => {
         // leave fallback flagged to avoid loops
       });
-  }, [schoolId, query.data, setSchoolId]);
+  }, [schoolId, query.data, setSchoolId, teacherContext.data]);
 
   return {
     data: query.data as AttendanceSection | undefined,

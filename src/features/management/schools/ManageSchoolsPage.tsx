@@ -7,6 +7,7 @@ import type { SchoolDto } from "@/types/school.types";
 
 type FormValues = {
   name: string;
+  admin_phone: string;
 };
 
 export function ManageSchoolsPage() {
@@ -21,7 +22,7 @@ export function ManageSchoolsPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { name: "" },
+    defaultValues: { name: "", admin_phone: "" },
     mode: "onBlur",
   });
 
@@ -29,11 +30,14 @@ export function ManageSchoolsPage() {
     setToast(null);
 
     create.mutate(
-      { name: values.name.trim() },
+      {
+        name: values.name.trim(),
+        admin_phone: values.admin_phone.trim(),
+      },
       {
         onSuccess: () => {
           setToast("School created successfully.");
-          reset({ name: "" });
+          reset({ name: "", admin_phone: "" });
           logger.info("[management][schools] create_success", { trace });
         },
         onError: (err) => {
@@ -91,6 +95,32 @@ export function ManageSchoolsPage() {
               {errors.name ? (
                 <p className="mt-2 text-sm text-red-600">
                   {errors.name.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900">
+                Admin Phone
+              </label>
+              <input
+                className={[
+                  "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
+                  "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                  errors.admin_phone ? "border-red-500" : "border-gray-200",
+                ].join(" ")}
+                placeholder="+91XXXXXXXXXX"
+                {...register("admin_phone", {
+                  required: "Admin phone is required",
+                  validate: (v) =>
+                    v.trim().length >= 10
+                      ? true
+                      : "Enter a valid admin phone number",
+                })}
+              />
+              {errors.admin_phone ? (
+                <p className="mt-2 text-sm text-red-600">
+                  {errors.admin_phone.message}
                 </p>
               ) : null}
             </div>

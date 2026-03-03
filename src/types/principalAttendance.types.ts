@@ -12,4 +12,6 @@ export type PrincipalAttendanceRowDto = {
   student_name?: string;
   roll_no?: string | number;
   section_id?: number;
+  class_name?: string;
+  section_name?: string;
 };

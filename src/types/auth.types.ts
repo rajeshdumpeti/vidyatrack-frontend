@@ -2,8 +2,12 @@ export type AuthRole = "teacher" | "principal" | "management" | "super_admin";
 
 export type OtpCodeDigits = [string, string, string, string];
 
+export type SupportedCountryCode = "+91" | "+1";
+
 export type AuthLocationState = {
   phoneDigits?: string;
+  countryCode?: SupportedCountryCode;
+  deliveryChannel?: "whatsapp" | "email";
 };
 
 // Define the School object structure
@@ -40,4 +44,8 @@ export type AuthMeResponse = {
 };
 
 export type OtpRequestBody = { phone: string };
+export type OtpRequestResponse = {
+  status: "otp_sent";
+  delivery_channel: "whatsapp" | "email";
+};
 export type OtpVerifyBody = { phone: string; otp: string };

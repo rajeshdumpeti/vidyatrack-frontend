@@ -1,13 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
-import type { MarksExamTypeDto } from "@/types/marks-submit.types";
 import { useAuthStore } from "@/store/auth.store";
+
+type ExistingMarksData = {
+  marksMap: Record<string, string>;
+  maxMarks: number | null;
+};
 
 export function useExistingMarks(
   sectionId?: number,
   subjectId?: number,
-  examType?: MarksExamTypeDto,
+  examType?: string,
 ) {
   const schoolId = useAuthStore((s) => s.schoolId);
 
@@ -21,7 +25,7 @@ export function useExistingMarks(
     ],
     queryFn: async () => {
       if (!sectionId || !subjectId || !examType || !schoolId) {
-        return {};
+        return { marksMap: {}, maxMarks: null } satisfies ExistingMarksData;
       }
 
       try {
@@ -34,26 +38,29 @@ export function useExistingMarks(
           },
         });
 
-        // Transform API response to { studentId: marks } mapping
+        // Transform API response to { studentId: marks } mapping + inferred max marks.
         const marksMap: Record<string, string> = {};
+        let maxMarks: number | null = null;
 
-        // Assuming API returns array of marks records like:
-        // [{ student_id: 1, marks_obtained: 85 }, ...]
         (response.data || []).forEach((record: any) => {
           if (record.student_id && record.marks_obtained !== undefined) {
             marksMap[record.student_id.toString()] =
               record.marks_obtained.toString();
           }
+          if (typeof record.max_marks === "number" && record.max_marks > 0) {
+            maxMarks = maxMarks ?? record.max_marks;
+          }
         });
 
-        return marksMap;
-      } catch (error) {
-        // If 404 or no marks exist, return empty object
-        return {};
+        return { marksMap, maxMarks } satisfies ExistingMarksData;
+      } catch {
+        // If no marks exist, return empty object
+        return { marksMap: {}, maxMarks: null } satisfies ExistingMarksData;
       }
     },
     enabled: !!sectionId && !!subjectId && !!examType && !!schoolId,
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
     retry: 1,
   });
 }

@@ -9,7 +9,7 @@ import { ErrorState } from "@/components/feedback/ErrorState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { logger } from "@/utils/logger";
 import { digitsOnly } from "@/utils/phone";
-import type { CreateTeacherInput, Teacher } from "@/types/teacher.types";
+import type { CreateTeacherInput, TeacherDto } from "@/types/teacher.types";
 import type { SectionDto } from "@/types/section.types";
 import type { ClassDto } from "@/types/class.types";
 
@@ -17,7 +17,7 @@ function normalize(s: string) {
   return s.trim().toLowerCase();
 }
 
-function matchesSearch(t: Teacher, q: string) {
+function matchesSearch(t: TeacherDto, q: string) {
   const hay = [t.name ?? "", t.phone ?? "", t.email ?? ""]
     .map(normalize)
     .join(" ");
@@ -36,7 +36,7 @@ export function TeachersPage() {
   const trace = useMemo(() => logger.traceId(), []);
 
   // Queries
-  const { data, isLoading, error, refetch } = useTeachers();
+  const { data, isLoading } = useTeachers();
   const classesQuery = useClasses();
   const sectionsQuery = useSections();
   const createMutation = useCreateManagementTeacher();
@@ -53,7 +53,7 @@ export function TeachersPage() {
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
       name: "",
@@ -120,7 +120,7 @@ export function TeachersPage() {
         setSuccessMsg("Teacher created successfully.");
         logger.info("[mgmt][teachers] create success", { trace });
       },
-      onError: (err) => {
+      onError: () => {
         setInlineError("Unable to create teacher. Please try again.");
       },
     });

@@ -28,6 +28,37 @@ export type Teacher = {
   email?: string | null;
 };
 
+export type TeacherContextDto = {
+  teacher_id: number;
+  user_id: number;
+  school_id: number;
+  school_name: string;
+  class_id: number | null;
+  class_name: string | null;
+  section_id: number | null;
+  section_name: string | null;
+  subjects: Array<{
+    subject_id: number;
+    subject_name: string;
+  }>;
+};
+
+export type TeacherReadinessDto = {
+  status: string;
+  school_id?: number | null;
+  teacher_id?: number | null;
+  section_id?: number | null;
+  checks: {
+    has_teacher_profile: boolean;
+    has_school_mapping: boolean;
+    has_primary_section: boolean;
+    has_subject_assignments: boolean;
+    has_students_in_primary_section: boolean;
+  };
+  missing_requirements: string[];
+  recommended_next_action?: string | null;
+};
+
 export interface CreateTeacherInput {
   name: string;
   phone: string;

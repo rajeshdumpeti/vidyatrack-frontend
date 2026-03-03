@@ -1,13 +1,60 @@
 export type SchoolDto = {
   id: number;
   name: string;
+  code?: string | null;
+  board?: string | null;
+  category?: string | null;
+  medium?: string | null;
+  school_type?: string | null;
+  established_year?: number | null;
+  affiliation_number?: string | null;
+  udise_code?: string | null;
+  status?: string | null;
+  created_by?: number | null;
+  updated_by?: number | null;
   teacher_count?: number; // Added for Super Admin Pulse
   student_count?: number; // Added for Super Admin Pulse
-  // Optional, if backend returns it later
   created_at?: string;
+  updated_at?: string;
 };
 
 export type CreateSchoolPayload = {
   name: string;
   admin_phone: string;
+};
+
+export type SchoolDashboardDto = {
+  school_id: number;
+  teacher_count: number;
+  student_count: number;
+  staff_count: number;
+  total_registered: number;
+};
+
+export type SchoolTeacherListItemDto = {
+  id: number;
+  school_id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: "active" | "inactive";
+};
+
+export type SchoolStudentListItemDto = {
+  id: number;
+  school_id: number;
+  name: string;
+  parent_name?: string | null;
+  parent_phone?: string | null;
+  status: "active" | "inactive";
+};
+
+export type SchoolStaffListItemDto = {
+  user_id: number;
+  school_id: number;
+  role: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: "active" | "inactive";
 };

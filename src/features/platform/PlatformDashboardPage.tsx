@@ -1,7 +1,24 @@
 import { Link } from "react-router-dom";
-import { School, PlusCircle, Activity } from "lucide-react";
+import { School, PlusCircle, Activity, Users, GraduationCap } from "lucide-react";
+import { useMemo } from "react";
+import { useSchools } from "@/hooks/useSchools";
+import { InsightState } from "@/components/feedback/InsightState";
 
 export function PlatformDashboardPage() {
+  const { list } = useSchools();
+  const metrics = useMemo(() => {
+    const schools = list.data ?? [];
+    return schools.reduce(
+      (acc, school) => {
+        acc.schools += 1;
+        acc.teachers += school.teacher_count ?? 0;
+        acc.students += school.student_count ?? 0;
+        return acc;
+      },
+      { schools: 0, teachers: 0, students: 0 },
+    );
+  }, [list.data]);
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <header className="mb-8">
@@ -10,6 +27,35 @@ export function PlatformDashboardPage() {
           <Activity className="h-4 w-4" /> SUPER_ADMIN Session Active
         </p>
       </header>
+
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+            Active Schools
+          </div>
+          <div className="mt-2 text-3xl font-extrabold text-blue-900">
+            {metrics.schools}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+            Registered Teachers
+          </div>
+          <div className="mt-2 flex items-center gap-2 text-3xl font-extrabold text-emerald-900">
+            <Users className="h-6 w-6" />
+            {metrics.teachers}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-700">
+            Registered Students
+          </div>
+          <div className="mt-2 flex items-center gap-2 text-3xl font-extrabold text-indigo-900">
+            <GraduationCap className="h-6 w-6" />
+            {metrics.students}
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link
@@ -43,10 +89,11 @@ export function PlatformDashboardPage() {
         </Link>
       </div>
 
-      <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-        <p className="text-xs text-gray-400 text-center uppercase tracking-widest font-semibold">
-          Pilot Phase: Observation Mode
-        </p>
+      <div className="mt-8">
+        <InsightState
+          title="Pilot Phase: Observation Mode"
+          description="This workspace is optimized for real-time visibility. Open any school to monitor teachers, students, and staff coverage in one place."
+        />
       </div>
     </div>
   );

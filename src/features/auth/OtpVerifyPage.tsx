@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FiHelpCircle } from "react-icons/fi";
 import { HiAcademicCap, HiLockClosed } from "react-icons/hi2";
 
+import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { useAuthStore } from "@/store/auth.store";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getOtpVerifyErrorMessage } from "./auth.errors";
-import type { AuthLocationState, OtpCodeDigits } from "@/types/auth.types";
+import type {
+  AuthLocationState,
+  OtpCodeDigits,
+  SupportedCountryCode,
+} from "@/types/auth.types";
 import { buildOtpCode, digitsFromInput, maskPhoneDigits } from "./otp.utils";
 import { getAuthMe } from "@/api/auth.api";
 
 import { useOtpVerify } from "@/hooks/useOtpVerify";
 import { useOtpResend } from "@/hooks/useOtpResend";
 import { logger } from "@/utils/logger";
+import { LoadingButton } from "@/components/ui/Button";
 
 type FormValues = {
   d1: string;
@@ -40,6 +46,10 @@ export function OtpVerifyPage() {
 
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phoneDigits = state.phoneDigits ?? "";
+  const countryCode: SupportedCountryCode = state.countryCode ?? "+91";
+  const [deliveryChannel, setDeliveryChannel] = useState<
+    "whatsapp" | "email"
+  >(state.deliveryChannel ?? "whatsapp");
   const hasPhone = phoneDigits.trim().length > 0;
 
   const {
@@ -53,8 +63,8 @@ export function OtpVerifyPage() {
   });
 
   const maskedPhone = useMemo(
-    () => maskPhoneDigits(state.phoneDigits),
-    [state.phoneDigits],
+    () => maskPhoneDigits(state.phoneDigits, countryCode),
+    [countryCode, state.phoneDigits],
   );
 
   const {
@@ -124,7 +134,7 @@ export function OtpVerifyPage() {
 
     const digits = toDigits(values);
     const code = buildOtpCode(digits);
-    const phoneE164 = `+91${phoneDigits}`;
+    const phoneE164 = `${countryCode}${phoneDigits}`;
 
     logger.info("[auth][otp-verify] submit", { trace });
 
@@ -191,12 +201,17 @@ export function OtpVerifyPage() {
   const onResend = () => {
     if (!hasPhone) return;
 
-    const phoneE164 = `+91${phoneDigits}`;
+    const phoneE164 = `${countryCode}${phoneDigits}`;
     logger.info("[auth][otp-verify] resend clicked", { trace });
 
     resendOtp(phoneE164, {
-      onSuccess: () =>
-        logger.info("[auth][otp-verify] resend success", { trace }),
+      onSuccess: (result) => {
+        setDeliveryChannel(result.delivery_channel);
+        logger.info("[auth][otp-verify] resend success", {
+          trace,
+          deliveryChannel: result.delivery_channel,
+        });
+      },
       onError: (err) =>
         logger.warn("[auth][otp-verify] resend failed", { trace, err }),
     });
@@ -237,7 +252,9 @@ export function OtpVerifyPage() {
           </h1>
 
           <p className="mt-3 text-center text-sm text-gray-600">
-            We sent a 4-digit code to
+            {deliveryChannel === "email"
+              ? "WhatsApp delivery failed. Enter the 4-digit code sent to your email."
+              : "Enter the 4-digit code sent to your WhatsApp"}
           </p>
           <p className="mt-1 text-center text-sm font-semibold text-gray-900">
             {maskedPhone}
@@ -284,29 +301,35 @@ export function OtpVerifyPage() {
               </div>
             ) : null}
 
-            <button
+            <LoadingButton
               type="submit"
-              disabled={isSubmitting || isVerifying || !hasPhone}
-              className="mt-8 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              isLoading={isVerifying}
+              disabled={isSubmitting || !hasPhone}
+              loadingText="Verifying..."
+              fullWidth
+              className="mt-8 rounded-full"
             >
-              {isVerifying ? "Verifying..." : "Verify"}
-            </button>
+              Verify
+            </LoadingButton>
 
             <div className="mt-6 text-center text-sm text-gray-600">
               Didn’t receive the code?{" "}
-              <button
+              <LoadingButton
                 type="button"
-                className="font-semibold text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                variant="secondary"
+                className="ml-2 rounded-full px-3 py-1.5 align-middle text-xs"
                 onClick={onResend}
-                disabled={isResending || isVerifying}
+                disabled={isVerifying}
+                isLoading={isResending}
+                loadingText="Resending..."
               >
-                {isResending ? "Resending..." : "Resend"}
-              </button>
+                {deliveryChannel === "email" ? "Resend code" : "Resend on WhatsApp"}
+              </LoadingButton>
               {resendError ? (
                 <div className="mt-4">
                   <ErrorState
                     title="OTP not sent"
-                    message="We couldn’t resend the OTP. Please try again."
+                    message={getUserFriendlyErrorMessage(resendError)}
                   />
                 </div>
               ) : null}

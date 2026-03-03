@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FiPhone, FiHelpCircle, FiArrowRight } from "react-icons/fi";
 import { HiAcademicCap } from "react-icons/hi2";
 import { MdWifi } from "react-icons/md";
@@ -10,6 +10,14 @@ import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { useOtpRequest } from "@/hooks/useOtpRequest";
 import { logger } from "@/utils/logger";
+import { getLoginPageCmsContent } from "@/cms";
+import {
+  LOGIN_PAGE_DEFAULTS,
+  type LoginPageCmsContent,
+} from "@/cms";
+import { useAuthStore } from "@/store/auth.store";
+import type { SupportedCountryCode } from "@/types/auth.types";
+import { LoadingButton } from "@/components/ui/Button";
 
 type FormValues = {
   phone: string;
@@ -18,6 +26,42 @@ type FormValues = {
 export function OtpRequestPage() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
+  const [searchParams] = useSearchParams();
+  const schoolId = useAuthStore((state) => state.schoolId);
+
+  const schoolCodeParam =
+    searchParams.get("school_code") ?? searchParams.get("school");
+  const schoolCode =
+    schoolCodeParam?.trim() || (schoolId ? String(schoolId) : undefined);
+
+  const [cmsContent, setCmsContent] =
+    useState<LoginPageCmsContent>(LOGIN_PAGE_DEFAULTS);
+  const [countryCode, setCountryCode] = useState<SupportedCountryCode>("+91");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCms = async () => {
+      try {
+        const content = await getLoginPageCmsContent({
+          schoolId: schoolCode ? undefined : schoolId,
+          schoolCode,
+        });
+
+        if (!isMounted) return;
+        setCmsContent(content);
+      } catch {
+        if (!isMounted) return;
+        setCmsContent(LOGIN_PAGE_DEFAULTS);
+      }
+    };
+
+    void loadCms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [schoolId, schoolCode]);
 
   const {
     register,
@@ -32,13 +76,19 @@ export function OtpRequestPage() {
 
   const onSubmit = (values: FormValues) => {
     const phoneDigits = digitsOnly(values.phone);
-    const phoneE164 = `+91${phoneDigits}`;
+    const phoneE164 = `${countryCode}${phoneDigits}`;
 
-    logger.info("[auth][otp-request] submit", { trace, phoneDigits });
+    logger.info("[auth][otp-request] submit", { trace, countryCode, phoneDigits });
 
     requestOtp(phoneE164, {
-      onSuccess: () => {
-        navigate("/auth/verify", { state: { phoneDigits } });
+      onSuccess: (result) => {
+        navigate("/auth/verify", {
+          state: {
+            phoneDigits,
+            countryCode,
+            deliveryChannel: result.delivery_channel,
+          },
+        });
       },
       onError: (err) => {
         logger.warn("[auth][otp-request] failed", { trace, err });
@@ -73,15 +123,32 @@ export function OtpRequestPage() {
             {/* Left panel */}
             <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-10">
               <div className="text-center">
-                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white">
-                  <MdWifi className="h-6 w-6 text-white" />
+                <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-white">
+                  {cmsContent.brandIconUrl ? (
+                    <img
+                      src={cmsContent.brandIconUrl}
+                      alt="Brand icon"
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                    />
+                  ) : (
+                    <MdWifi className="h-6 w-6 text-white" />
+                  )}
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  One Platform, Complete School
+                  {cmsContent.heroTitle}
                 </h2>
                 <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-gray-600">
-                  Attendance • Grades • Parent Communication • Reports
+                  {cmsContent.heroSubtitle}
                 </p>
+                {cmsContent.leftPanelImageUrl ? (
+                  <img
+                    src={cmsContent.leftPanelImageUrl}
+                    alt="Login panel"
+                    className="mx-auto mt-6 max-h-40 w-auto rounded-xl"
+                    loading="lazy"
+                  />
+                ) : null}
               </div>
             </div>
 
@@ -103,7 +170,7 @@ export function OtpRequestPage() {
                     htmlFor="phone"
                     className="block text-sm font-semibold text-gray-900"
                   >
-                    Your Mobile Number
+                    Enter phone number to receive OTP on WhatsApp
                   </label>
 
                   {/* Phone input group (country + number) */}
@@ -115,9 +182,17 @@ export function OtpRequestPage() {
                     ].join(" ")}
                   >
                     <FiPhone className="mr-3 h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">
-                      +91
-                    </span>
+                    <select
+                      aria-label="Country code"
+                      value={countryCode}
+                      onChange={(e) =>
+                        setCountryCode(e.target.value as SupportedCountryCode)
+                      }
+                      className="bg-transparent text-sm font-medium text-gray-700 outline-none"
+                    >
+                      <option value="+91">+91</option>
+                      <option value="+1">+1</option>
+                    </select>
                     <span className="mx-3 h-5 w-px bg-gray-200" />
                     <input
                       id="phone"
@@ -131,9 +206,9 @@ export function OtpRequestPage() {
                         validate: (value) => {
                           const d = digitsOnly(value);
                           if (d.length < 10)
-                            return "Enter a valid 10-digit Indian mobile number";
+                            return "Enter a valid 10-digit mobile number";
                           if (d.length > 10)
-                            return "Enter a valid 10-digit Indian mobile number";
+                            return "Enter a valid 10-digit mobile number";
                           return true;
                         },
                       })}
@@ -156,20 +231,17 @@ export function OtpRequestPage() {
                   ) : null}
                 </div>
 
-                <button
+                <LoadingButton
                   type="submit"
-                  disabled={isSubmitting || isLoading}
-                  className={[
-                    "mt-2 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white",
-                    "hover:bg-blue-700",
-                    "disabled:cursor-not-allowed disabled:opacity-60",
-                  ].join(" ")}
+                  isLoading={isLoading}
+                  disabled={isSubmitting}
+                  loadingText="Sending OTP..."
+                  leftIcon={<FiArrowRight className="h-4 w-4" />}
+                  fullWidth
+                  className="mt-2 rounded-full"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    {isLoading ? "Sending OTP..." : "Send OTP"}
-                    <FiArrowRight className="h-4 w-4" />
-                  </span>
-                </button>
+                  Send OTP
+                </LoadingButton>
 
                 <button
                   type="button"
@@ -198,7 +270,7 @@ export function OtpRequestPage() {
                       })
                     }
                   >
-                    Terms & Privacy Policy
+                    {cmsContent.termsText}
                   </button>
                   .
                 </p>

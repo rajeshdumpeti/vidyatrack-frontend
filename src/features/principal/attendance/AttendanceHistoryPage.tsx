@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -9,10 +10,13 @@ import { useSections } from "@/hooks/useSections";
 import { useAuthStore } from "@/store/auth.store";
 import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
 import type { SectionDto } from "@/types/section.types";
+import { ArrowLeft, CalendarDays, FileDown } from "lucide-react";
 
 export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const schoolId = useAuthStore((s) => s.schoolId);
+  const role = useAuthStore((s) => s.role);
+  const backLink = role === "management" ? "/management" : "/principal";
   const [sectionId, setSectionId] = useState<number | "">("");
   const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
   const q = usePrincipalAttendanceHistory(
@@ -60,6 +64,7 @@ export function AttendanceHistoryPage() {
 
   const breakdown = useMemo(() => {
     const map = new Map<number, { total: number; present: number }>();
+    const labels = new Map<number, string>();
     rows.forEach((r) => {
       const key = r.section_id ?? 0;
       const entry = map.get(key) ?? { total: 0, present: 0 };
@@ -68,13 +73,19 @@ export function AttendanceHistoryPage() {
         entry.present += 1;
       }
       map.set(key, entry);
+
+      const backendLabel =
+        r.class_name && r.section_name
+          ? `${r.class_name} - ${r.section_name}`
+          : r.class_name ?? r.section_name;
+      if (backendLabel) {
+        labels.set(key, backendLabel);
+      }
     });
 
     return Array.from(map.entries()).map(([key, entry]) => {
       const label =
-        key === 0
-          ? "Unassigned Section"
-          : (sectionLabelById.get(key) ?? `Section #${key}`);
+        labels.get(key) ?? sectionLabelById.get(key) ?? `Section #${key}`;
       const absent = entry.total - entry.present;
       const pct = entry.total
         ? Math.round((entry.present / entry.total) * 100)
@@ -94,6 +105,13 @@ export function AttendanceHistoryPage() {
     <div className="min-h-screen bg-gray-50 pb-10">
       <header className="px-4 pt-6">
         <div className="mx-auto w-full max-w-6xl">
+          <Link
+            to={backLink}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to {role === "management" ? "Management" : "Principal"} Overview
+          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Attendance Overview
           </h1>
@@ -106,8 +124,8 @@ export function AttendanceHistoryPage() {
       <main className="mx-auto w-full max-w-6xl px-4 py-5 space-y-5">
         {/* Filters */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+            <div className="lg:col-span-2">
               <label className="block text-sm font-semibold text-gray-900">
                 Section
               </label>
@@ -133,21 +151,27 @@ export function AttendanceHistoryPage() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div>
               <label className="block text-sm font-semibold text-gray-900">
                 Date
               </label>
-              <input
-                type="date"
-                className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                value={dateIso}
-                onChange={(e) => onFilterChange({ dateIso: e.target.value })}
-              />
+              <div className="relative mt-2">
+                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="date"
+                  className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  value={dateIso}
+                  onChange={(e) => onFilterChange({ dateIso: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex items-end">
               <button
                 type="button"
-                className="h-12 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
                 disabled
               >
+                <FileDown className="h-4 w-4" />
                 Export
               </button>
             </div>

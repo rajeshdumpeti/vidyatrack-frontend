@@ -1,9 +1,8 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { logger } from "@/utils/logger";
 import { useStudentsBySection } from "@/hooks/useStudentsBySection";
 import { useMarksSubmit } from "@/hooks/useMarksSubmit";
-import type { MarksExamTypeDto } from "@/types/marks-submit.types";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
 import {
@@ -11,53 +10,48 @@ import {
   AlertCircle,
   Loader2,
   History,
-  GraduationCap,
   BookOpen,
-  ClipboardList,
   Ruler,
   Search,
   Users,
 } from "lucide-react";
-import { useExistingMarks } from "@/hooks/useExistingMarks"; // Add this import
+import { useExistingMarks } from "@/hooks/useExistingMarks";
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 
-type ExamType =
-  | "Unit Test"
-  | "Monthly Test"
-  | "Quarterly"
-  | "Half Yearly"
-  | "Annual";
-
 type FormValues = {
-  examType: ExamType;
+  maxMarks: string;
   assignmentId: string;
   marks: Record<string, string>;
 };
 
-const MOCK_EXAM_TYPES: ExamType[] = [
-  "Unit Test",
-  "Monthly Test",
-  "Quarterly",
-  "Half Yearly",
-  "Annual",
-];
+const EXAM_TYPE_PRESETS = [
+  { label: "Unit Test", value: "UNIT_TEST" },
+  { label: "Monthly Test", value: "MONTHLY_TEST" },
+  { label: "Quarterly", value: "QUARTERLY" },
+  { label: "Half Yearly", value: "HALF_YEARLY" },
+  { label: "Annual", value: "ANNUAL" },
+] as const;
 
-function mapExamTypeToDto(exam: ExamType): MarksExamTypeDto {
-  switch (exam) {
-    case "Unit Test":
-      return "UNIT_TEST";
-    case "Monthly Test":
-      return "MONTHLY_TEST";
-    case "Quarterly":
-      return "QUARTERLY";
-    case "Half Yearly":
-      return "HALF_YEARLY";
-    case "Annual":
-      return "ANNUAL";
-  }
+function normalizeExamType(raw: string): string {
+  const base = String(raw ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return base.slice(0, 32);
 }
 
-function isValidMark(value: string) {
+function prettyExamType(value: string): string {
+  const preset = EXAM_TYPE_PRESETS.find((p) => p.value === value);
+  if (preset) return preset.label;
+  return value
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0] + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function isValidMark(value: string, maxMarks: number) {
   if (!value || typeof value !== "string") return true;
   const trimmed = value.trim();
   if (trimmed === "") return true;
@@ -65,7 +59,7 @@ function isValidMark(value: string) {
   const n = Number(trimmed);
   if (!Number.isFinite(n)) return false;
   if (n < 0) return false;
-  if (n > 100) return false;
+  if (n > maxMarks) return false;
   return true;
 }
 
@@ -74,9 +68,15 @@ export function EnterMarks() {
   const [, setAutoSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [formData, setFormData] = useState<FormValues | null>(null);
-  const [hasLoadedExistingMarks, setHasLoadedExistingMarks] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const lastMarksKeyRef = useRef<string | null>(null);
+  const [activeExamType, setActiveExamType] = useState<string>("UNIT_TEST");
+  const [showCustomExamInput, setShowCustomExamInput] = useState(false);
+  const [customExamDraft, setCustomExamDraft] = useState("");
+  const [customExamChips, setCustomExamChips] = useState<string[]>([]);
+  const [contextMarksMap, setContextMarksMap] = useState<
+    Record<string, string>
+  >({});
+  const lastAppliedMarksKeyRef = useRef<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const assignmentsQuery = useMyTeachingAssignments();
@@ -84,14 +84,14 @@ export function EnterMarks() {
   const { submit, isPending: isSubmitting } = useMarksSubmit();
   // 2. If not, default to the first assignment in the list
   const section = useTeacherAttendanceSection();
-  const className =
+  const fallbackClassName =
     location.state?.class_name || section.data?.class_name || "Class";
+  const fallbackSectionName =
+    location.state?.section_name || section.data?.section_name || "";
+  const fallbackSubjectName = location.state?.subject_name || "";
   const [selectedSectionId, setSelectedSectionId] = useState<
     number | undefined
   >(location.state?.section_id || assignments?.[0]?.section_id);
-  const [selectedSubject, setSelectedSubject] = useState<string | undefined>(
-    location.state?.subject_name || assignments?.[0]?.subject_name,
-  );
 
   const {
     register,
@@ -102,7 +102,7 @@ export function EnterMarks() {
     formState: { errors, isDirty },
   } = useForm<FormValues>({
     defaultValues: {
-      examType: "Unit Test",
+      maxMarks: "100",
       assignmentId: "",
       marks: {},
     },
@@ -110,11 +110,13 @@ export function EnterMarks() {
   });
 
   const watchAssignmentId = watch("assignmentId");
-  const examType = watch("examType");
+  const maxMarksInput = watch("maxMarks");
+  const parsedMaxMarks = Number(maxMarksInput);
+  const maxMarks =
+    Number.isFinite(parsedMaxMarks) && parsedMaxMarks > 0
+      ? parsedMaxMarks
+      : 100;
   const marks = watch("marks");
-
-  // Convert exam type to DTO for API
-  const examTypeDto = useMemo(() => mapExamTypeToDto(examType), [examType]);
 
   const selectedAssignment = useMemo(() => {
     const list = assignmentsQuery.data ?? [];
@@ -122,71 +124,175 @@ export function EnterMarks() {
       (a) => `${a.section_id}-${a.subject_id}` === watchAssignmentId,
     );
   }, [assignmentsQuery.data, watchAssignmentId]);
+  const assignmentClassLabel =
+    selectedAssignment?.class_name?.trim() || fallbackClassName;
+  const assignmentSectionLabel = selectedAssignment?.section_name?.trim()
+    ? selectedAssignment.section_name.trim()
+    : fallbackSectionName;
+  const assignmentSubjectLabel =
+    selectedAssignment?.subject_name?.trim() || fallbackSubjectName;
 
   const studentsQuery = useStudentsBySection(selectedAssignment?.section_id);
-  const marksKey = `${selectedAssignment?.section_id ?? "na"}:${selectedAssignment?.subject_id ?? "na"}:${examTypeDto ?? "na"}`;
+  const buildBlankMarks = useCallback(
+    () =>
+      Object.fromEntries(
+        (studentsQuery.data ?? []).map((s) => [String(s.id), ""]),
+      ) as Record<string, string>,
+    [studentsQuery.data],
+  );
+
   // Use the existing marks hook
   const {
-    data: existingMarks = {},
+    data: existingMarksData,
     isLoading: loadingExistingMarks,
+    isFetching: fetchingExistingMarks,
     refetch: refetchExistingMarks,
   } = useExistingMarks(
     selectedAssignment?.section_id,
     selectedAssignment?.subject_id,
-    examTypeDto,
+    activeExamType,
   );
+
+  const marksKey = `${selectedAssignment?.section_id ?? "na"}:${selectedAssignment?.subject_id ?? "na"}:${activeExamType || "na"}`;
+  const isContextLoading = loadingExistingMarks || fetchingExistingMarks;
+  const assignmentToken = selectedAssignment
+    ? `${selectedAssignment.section_id}-${selectedAssignment.subject_id}`
+    : "na";
+  const customChipStorageKey = `vt_marks_custom_exams_${assignmentToken}`;
+
+  const applyExamContext = (nextExamType: string) => {
+    setActiveExamType(nextExamType);
+    setShowCustomExamInput(false);
+    lastAppliedMarksKeyRef.current = null;
+    setContextMarksMap({});
+    reset(
+      {
+        maxMarks: "100",
+        assignmentId: watchAssignmentId,
+        marks: buildBlankMarks(),
+      },
+      { keepDirty: false },
+    );
+  };
+
+  const addCustomExamChip = () => {
+    const normalized = normalizeExamType(customExamDraft);
+    if (!normalized) return;
+    setCustomExamChips((prev) => {
+      if (prev.includes(normalized)) return prev;
+      const next = [...prev, normalized];
+      localStorage.setItem(customChipStorageKey, JSON.stringify(next));
+      return next;
+    });
+    setShowCustomExamInput(false);
+    setCustomExamDraft("");
+    applyExamContext(normalized);
+  };
 
   // Optional: Effect to sync if assignments load after initial render
   useEffect(() => {
     if (!selectedSectionId && assignments?.length) {
       setSelectedSectionId(assignments[0].section_id);
-      setSelectedSubject(assignments[0].subject_name ?? undefined);
     }
   }, [assignments, selectedSectionId]);
 
-  // Load existing marks into the form when they are fetched
+  // Ensure assignmentId is always initialized so selectedAssignment resolves.
   useEffect(() => {
-    if (
-      existingMarks &&
-      Object.keys(existingMarks).length > 0 &&
-      !hasLoadedExistingMarks &&
-      selectedAssignment &&
-      !loadingExistingMarks &&
-      lastMarksKeyRef.current !== marksKey
-    ) {
-      // Set each existing mark in the form
-      Object.entries(existingMarks).forEach(([studentId, mark]) => {
-        setValue(`marks.${studentId}` as const, mark, {
-          shouldDirty: false, // Don't mark as dirty since we're loading existing data
-          shouldValidate: true,
-        });
-      });
-      setHasLoadedExistingMarks(true);
-      lastMarksKeyRef.current = marksKey;
-    }
-  }, [
-    existingMarks,
-    selectedAssignment,
-    setValue,
-    hasLoadedExistingMarks,
-    loadingExistingMarks,
-    marksKey,
-  ]);
+    if (!assignments?.length) return;
+    if (watchAssignmentId) return;
 
-  // Reset the loaded flag when assignment or exam type changes
+    const stateSectionId = Number(location.state?.section_id);
+    const stateSubjectName = String(location.state?.subject_name ?? "").trim();
+
+    const fromState = assignments.find(
+      (a) =>
+        a.section_id === stateSectionId &&
+        String(a.subject_name ?? "").trim() === stateSubjectName,
+    );
+
+    const fallback = fromState ?? assignments[0];
+    if (!fallback) return;
+
+    setValue("assignmentId", `${fallback.section_id}-${fallback.subject_id}`, {
+      shouldDirty: false,
+    });
+  }, [assignments, location.state, setValue, watchAssignmentId]);
+
   useEffect(() => {
-    setHasLoadedExistingMarks(false);
-    lastMarksKeyRef.current = null;
-    const current = watch();
+    if (!selectedAssignment) return;
+    const raw = localStorage.getItem(customChipStorageKey);
+    if (!raw) {
+      setCustomExamChips([]);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as string[];
+      const cleaned = Array.isArray(parsed)
+        ? parsed
+            .map((x) => normalizeExamType(String(x)))
+            .filter((x) => x.length > 0)
+        : [];
+      setCustomExamChips(Array.from(new Set(cleaned)));
+    } catch {
+      setCustomExamChips([]);
+    }
+  }, [customChipStorageKey, selectedAssignment]);
+
+  // Reset to default exam context when assignment changes.
+  useEffect(() => {
+    if (assignmentToken === "na") return;
+    setActiveExamType("UNIT_TEST");
+    setShowCustomExamInput(false);
+    setCustomExamDraft("");
+    lastAppliedMarksKeyRef.current = null;
+    setContextMarksMap({});
     reset(
       {
-        examType: current.examType,
-        assignmentId: current.assignmentId,
-        marks: {},
+        maxMarks: "100",
+        assignmentId: watchAssignmentId,
+        marks: buildBlankMarks(),
       },
       { keepDirty: false },
     );
-  }, [watchAssignmentId, examType]);
+  }, [assignmentToken, reset, watchAssignmentId, buildBlankMarks]);
+
+  // Load existing marks for the active context only after fetch settles.
+  useEffect(() => {
+    if (!selectedAssignment || fetchingExistingMarks) return;
+    if (lastAppliedMarksKeyRef.current === marksKey) return;
+
+    const nextMarksMap = existingMarksData?.marksMap ?? {};
+    const nextMaxMarks =
+      typeof existingMarksData?.maxMarks === "number"
+        ? existingMarksData.maxMarks
+        : null;
+
+    setContextMarksMap(nextMarksMap);
+
+    // Explicitly resetting ensures the form state is wiped clean before
+    // being populated with the new (or empty) marks map.
+    reset(
+      {
+        maxMarks: nextMaxMarks ? String(nextMaxMarks) : "100",
+        assignmentId: watchAssignmentId,
+        marks:
+          Object.keys(nextMarksMap).length > 0
+            ? nextMarksMap
+            : buildBlankMarks(),
+      },
+      { keepDirty: false },
+    );
+
+    lastAppliedMarksKeyRef.current = marksKey;
+  }, [
+    selectedAssignment,
+    fetchingExistingMarks,
+    marksKey,
+    existingMarksData,
+    reset,
+    watchAssignmentId,
+    buildBlankMarks,
+  ]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -209,7 +315,7 @@ export function EnterMarks() {
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [isDirty, marks, watchAssignmentId, examType]);
+  }, [isDirty, marks, watchAssignmentId, activeExamType]);
 
   const handleSaveDraft = (values: FormValues) => {
     console.log("Draft saved:", values);
@@ -231,8 +337,9 @@ export function EnterMarks() {
       return;
     }
 
-    // 2. Prepare the payload: Convert exam type string to the DTO expected by the backend
-    const examTypeDto = mapExamTypeToDto(formData.examType);
+    // 2. Resolve exam type code for backend/storage.
+    const examTypeDto = normalizeExamType(activeExamType);
+    if (!examTypeDto) return;
 
     // 3. Extract and sanitize student marks
     const entries = (studentsQuery.data ?? [])
@@ -271,6 +378,7 @@ export function EnterMarks() {
         sectionId: selectedAssignment.section_id,
         subjectId: selectedAssignment.subject_id,
         examType: examTypeDto,
+        maxMarks,
         students: entries,
         concurrency: 8, // Optional: defaults to 8 in the hook
       },
@@ -285,7 +393,9 @@ export function EnterMarks() {
           // Redirect to dashboard with success state
           navigate("/teacher", {
             replace: true,
-            state: { toast: "Marks submitted successfully" },
+            state: {
+              toast: `Marks submitted successfully for the subject ${selectedAssignment.subject_name} - (${selectedAssignment.class_name} ${selectedAssignment.section_name})`,
+            },
           });
         },
         onError: (err) => {
@@ -302,13 +412,15 @@ export function EnterMarks() {
     : 0;
   const completionPercentage =
     totalStudents > 0 ? Math.round((filledMarks / totalStudents) * 100) : 0;
+  const hasValidExamType = normalizeExamType(activeExamType).length > 0;
 
   // Check if there are existing marks
-  const existingMarksMap = (existingMarks ?? {}) as Record<string, string>;
+  const existingMarksMap = contextMarksMap as Record<string, string>;
   const hasExistingMarks = Object.keys(existingMarksMap).length > 0;
   const existingMarksCount = hasExistingMarks
     ? Object.keys(existingMarksMap).length
     : 0;
+  const lockMaxMarks = hasExistingMarks;
 
   const filteredStudents = useMemo(() => {
     const list = studentsQuery.data ?? [];
@@ -321,14 +433,15 @@ export function EnterMarks() {
       return name.includes(q) || roll.includes(q);
     });
   }, [studentsQuery.data, searchQuery]);
+  const showStudentRows = !isContextLoading && filteredStudents.length > 0;
 
   // Replace the entire return statement from the Enter Marks component
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
-      <div className="mx-auto w-full max-w-6xl px-6 py-8">
+      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2 md:mb-6">
+        <div className="mb-2 flex items-center justify-between md:mb-6">
           <button
             onClick={() => navigate("/teacher")}
             className="text-blue-600 font-bold text-sm flex items-center gap-1"
@@ -340,20 +453,20 @@ export function EnterMarks() {
           </div>
           <div className="hidden md:block w-16" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-6 md:mb-8">
+        <h1 className="mb-5 text-2xl font-extrabold text-gray-900 md:mb-8 md:text-3xl">
           Enter Marks
         </h1>
         {/* Existing Marks Notification */}
-        {loadingExistingMarks && selectedAssignment && (
+        {isContextLoading && selectedAssignment && (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
             <span className="text-sm text-blue-700">
-              Checking for existing marks...
+              Loading exam context...
             </span>
           </div>
         )}
 
-        {hasExistingMarks && !loadingExistingMarks && (
+        {hasExistingMarks && !isContextLoading && (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-3">
             <History className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-700">
@@ -370,81 +483,179 @@ export function EnterMarks() {
           onSubmit={handleSubmit((values) => handleOpenConfirmation(values))}
         >
           {/* Selection Panel */}
-          <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:mt-6 md:p-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-semibold text-gray-900">
+                <label className="block text-sm font-semibold text-gray-900 md:text-base">
                   Class & Subject
                 </label>
-                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                <div className="mt-2 flex items-center gap-2 text-base font-semibold text-gray-900 md:text-lg">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-
-                  {className}
+                  <span>
+                    {assignmentClassLabel}
+                    {assignmentSectionLabel
+                      ? ` - ${assignmentSectionLabel}`
+                      : ""}
+                    {assignmentSubjectLabel
+                      ? ` • ${assignmentSubjectLabel}`
+                      : ""}
+                  </span>
                 </div>
-                {errors.assignmentId ? (
-                  <p className="mt-2 text-sm text-red-600">
-                    {errors.assignmentId.message}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 md:text-base">
+                  Maximum Marks
+                </label>
+                <div className="mt-2 flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-3">
+                  <Ruler className="h-5 w-5 text-blue-600" />
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    inputMode="numeric"
+                    className="w-full bg-transparent text-base font-semibold text-gray-900 outline-none md:text-sm"
+                    disabled={lockMaxMarks || isContextLoading}
+                    {...register("maxMarks", {
+                      required: "Maximum marks is required",
+                      validate: (v) =>
+                        Number(v) > 0 || "Maximum marks must be greater than 0",
+                    })}
+                  />
+                </div>
+                <p
+                  className={`mt-1 text-xs leading-relaxed ${lockMaxMarks ? "text-red-500" : "text-gray-500"}`}
+                >
+                  This exam is scored out of {maxMarks}.
+                  {lockMaxMarks
+                    ? " Maximum marks is locked because marks already exist for this exam."
+                    : ""}
+                </p>
+                {errors.maxMarks ? (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.maxMarks.message}
                   </p>
                 ) : null}
               </div>
+            </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900">
-                  Assessment Type
-                </label>
-                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
-                  <ClipboardList className="h-5 w-5 text-blue-600" />
-                  <select
-                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
-                    {...register("examType", { required: true })}
-                  >
-                    {MOCK_EXAM_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <label className="block text-sm font-semibold text-gray-900 md:text-base">
+                Assessment Type
+              </label>
+              <div className="mt-2 flex flex-wrap gap-2.5">
+                {EXAM_TYPE_PRESETS.map((preset) => {
+                  const active = activeExamType === preset.value;
+                  return (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => applyExamContext(preset.value)}
+                      className={[
+                        "rounded-full border px-3.5 py-2 text-sm font-semibold transition",
+                        active
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:text-blue-700",
+                      ].join(" ")}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+                {customExamChips.map((chip) => {
+                  const active = activeExamType === chip;
+                  return (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => applyExamContext(chip)}
+                      className={[
+                        "rounded-full border px-3.5 py-2 text-sm font-semibold transition",
+                        active
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:text-blue-700",
+                      ].join(" ")}
+                    >
+                      {prettyExamType(chip)}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomExamInput((v) => !v)}
+                  className={[
+                    "rounded-full border px-3.5 py-2 text-sm font-semibold transition",
+                    showCustomExamInput
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-gray-200 bg-white text-gray-700 hover:border-blue-200 hover:text-blue-700",
+                  ].join(" ")}
+                >
+                  + Add Exam
+                </button>
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900">
-                  Maximum Marks
-                </label>
-                <div className="mt-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                  <Ruler className="h-5 w-5 text-blue-600" />
+              {showCustomExamInput ? (
+                <div className="mt-3">
                   <input
                     type="text"
-                    value="100"
-                    readOnly
-                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                    placeholder="e.g. PRE_BOARD_1 or Formative Assessment 1"
+                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    value={customExamDraft}
+                    onChange={(e) => setCustomExamDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomExamChip();
+                      }
+                    }}
                   />
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={addCustomExamChip}
+                      className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      Add Exam
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomExamInput(false);
+                        setCustomExamDraft("");
+                      }}
+                      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           </div>
 
           {/* Student List Card */}
           {selectedAssignment && (
-            <div className="mb-6 mt-6 rounded-2xl border border-gray-200 bg-white overflow-hidden">
+            <div className="mb-6 mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white">
               {/* Card Header */}
-              <div className="border-b border-gray-200 px-6 py-5">
+              <div className="border-b border-gray-200 px-4 py-4 md:px-6 md:py-5">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <div className="flex items-start gap-3 md:items-center">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
                       <Users className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-base font-semibold text-gray-900">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                        <div className="text-lg font-semibold text-gray-900 md:text-base">
                           Student Roster
                         </div>
                         <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                           {totalStudents} Students
                         </span>
                       </div>
-                      <div className="mt-1 text-xs font-medium text-gray-500">
-                        Exam: <span className="text-gray-900">{examType}</span>{" "}
+                      <div className="mt-1 text-xs font-medium leading-relaxed text-gray-500">
+                        Exam:{" "}
+                        <span className="text-gray-900">
+                          {prettyExamType(activeExamType)}
+                        </span>{" "}
                         • Subject:{" "}
                         <span className="text-gray-900">
                           {selectedAssignment.subject_name}
@@ -459,14 +670,14 @@ export function EnterMarks() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+                    <div className="flex w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm md:w-auto">
                       <Search className="h-4 w-4 text-gray-400" />
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search student..."
-                        className="w-48 bg-transparent text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400"
+                        className="w-full bg-transparent text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400 md:w-48"
                       />
                     </div>
                   </div>
@@ -475,87 +686,105 @@ export function EnterMarks() {
 
               {/* Students List */}
               <ul className="divide-y divide-gray-100">
-                {filteredStudents.map((s, idx) => {
-                  const key = String(s.id);
-                  const rollNo =
-                    s.roll_no != null ? String(s.roll_no) : String(idx + 1);
-                  const hasMark = marks[key]?.trim() !== "";
-                  const isExistingMark = existingMarksMap[key] !== undefined;
+                {isContextLoading ? (
+                  <li className="px-4 py-10 md:px-6">
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      Loading students and marks...
+                    </div>
+                  </li>
+                ) : filteredStudents.length === 0 ? (
+                  <li className="px-4 py-10 text-center text-sm text-gray-500 md:px-6">
+                    No students found for this class.
+                  </li>
+                ) : null}
+                {showStudentRows &&
+                  filteredStudents.map((s, idx) => {
+                    const key = String(s.id);
+                    const rollNo =
+                      s.roll_no != null ? String(s.roll_no) : String(idx + 1);
+                    const hasMark = marks[key]?.trim() !== "";
+                    const isExistingMark = existingMarksMap[key] !== undefined;
 
-                  return (
-                    <li
-                      key={s.id}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <div className="grid grid-cols-12 items-center gap-3 px-6 py-4">
-                        {/* Roll Number */}
-                        <div className="col-span-2">
-                          <div className="inline-flex items-center justify-center rounded-full bg-gray-100 px-3 py-1.5">
-                            <span className="text-sm font-semibold text-gray-700">
-                              {rollNo}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Student Name */}
-                        <div className="col-span-7">
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm font-semibold text-gray-900">
-                              {s.name}
-                            </div>
-                            {isExistingMark && !hasMark && (
-                              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                                Previously: {existingMarksMap[key]}
+                    return (
+                      <li
+                        key={s.id}
+                        className="hover:bg-gray-50/50 transition-colors"
+                      >
+                        <div className="grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-12 md:items-center md:gap-3 md:px-6">
+                          {/* Roll Number */}
+                          <div className="md:col-span-2">
+                            <div className="inline-flex items-center justify-center rounded-full bg-gray-100 px-3 py-1.5">
+                              <span className="text-sm font-semibold text-gray-700">
+                                {rollNo}
                               </span>
-                            )}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Marks Input */}
-                        <div className="col-span-3 flex justify-end">
-                          <div className="relative w-full max-w-[140px]">
-                            <input
-                              type="tel"
-                              inputMode="numeric"
-                              placeholder={
-                                isExistingMark ? existingMarksMap[key] : "—"
-                              }
-                              className={`
-                                h-12 w-full rounded-xl border bg-white px-3 text-right text-sm font-semibold text-gray-900 outline-none focus:ring-2
+                          {/* Student Name */}
+                          <div className="md:col-span-7">
+                            <div className="flex items-center gap-2">
+                              <div className="text-base font-semibold text-gray-900 md:text-sm">
+                                {s.name}
+                              </div>
+                              {isExistingMark && !hasMark && (
+                                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                                  Previously: {existingMarksMap[key]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Marks Input */}
+                          <div className="md:col-span-3 md:flex md:justify-end">
+                            <div className="relative w-full md:max-w-[220px]">
+                              <input
+                                type="tel"
+                                inputMode="numeric"
+                                disabled={isContextLoading}
+                                placeholder={
+                                  isExistingMark ? existingMarksMap[key] : "—"
+                                }
+                                className={`
+                                h-14 w-full rounded-xl border bg-white pl-4 pr-16 text-right text-base font-semibold text-gray-900 outline-none focus:ring-2 md:h-12 md:text-sm
                                 ${hasMark ? "border-green-300 bg-green-50/30" : "border-gray-200 focus:border-blue-500 focus:ring-blue-100"}
                                 ${isExistingMark && !hasMark ? "border-blue-200 bg-blue-50/30" : ""}
                               `}
-                              {...register(`marks.${key}` as const, {
-                                validate: (v) =>
-                                  isValidMark(v) || "Enter 0–100",
-                                onChange: (e) => {
-                                  const raw = String(e.target.value ?? "");
-                                  const cleaned = raw.replace(/[^\d]/g, "");
-                                  setValue(`marks.${key}` as const, cleaned, {
-                                    shouldDirty: true,
-                                  });
-                                },
-                              })}
-                              aria-label={`Marks for ${s.name}`}
-                            />
+                                {...register(`marks.${key}` as const, {
+                                  validate: (v) =>
+                                    isValidMark(v, maxMarks) ||
+                                    `Enter 0–${maxMarks}`,
+                                  onChange: (e) => {
+                                    const raw = String(e.target.value ?? "");
+                                    const cleaned = raw.replace(/[^\d]/g, "");
+                                    setValue(`marks.${key}` as const, cleaned, {
+                                      shouldDirty: true,
+                                    });
+                                  },
+                                })}
+                                aria-label={`Marks for ${s.name}`}
+                              />
+                              <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-gray-400 md:right-3 md:text-xs">
+                                /{maxMarks}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {errors.marks && (errors.marks as any)[key] && (
-                        <div className="px-6 pb-3 text-right text-sm text-red-600">
-                          {(errors.marks as any)[key]?.message ??
-                            "Invalid mark"}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
+                        {errors.marks && (errors.marks as any)[key] && (
+                          <div className="px-4 pb-3 text-right text-sm text-red-600 md:px-6">
+                            {(errors.marks as any)[key]?.message ??
+                              "Invalid mark"}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
               </ul>
 
               {/* Card Footer */}
-              <div className="border-t border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="border-t border-gray-200 px-4 py-4 md:px-6">
+                <div className="flex flex-col gap-2 text-sm text-gray-500 md:flex-row md:items-center md:justify-between">
                   <div>
                     Showing {(studentsQuery.data ?? []).length} Students
                   </div>
@@ -573,19 +802,24 @@ export function EnterMarks() {
           )}
 
           {/* Submit Button */}
-          <div className="flex justify-end gap-4">
+          <div className="sticky bottom-0 z-10 mt-2 flex gap-3 border-t border-gray-200 bg-gray-50/95 px-0 py-3 backdrop-blur md:static md:mt-0 md:justify-end md:border-0 md:bg-transparent md:py-0">
             <button
               type="button"
               onClick={handleSubmit(handleSaveDraft)}
               disabled={!isDirty || isAutoSaving}
-              className="h-12 rounded-xl border border-gray-300 bg-white px-6 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-12 flex-1 rounded-xl border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-6"
             >
               {isAutoSaving ? "Saving..." : "Save Draft"}
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || filledMarks === 0}
-              className="h-12 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={
+                isSubmitting ||
+                isContextLoading ||
+                filledMarks === 0 ||
+                !hasValidExamType
+              }
+              className="h-12 flex-[1.25] rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-blue-800 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-8"
             >
               {isSubmitting ? "Submitting..." : "Submit Marks"}
             </button>
@@ -595,7 +829,7 @@ export function EnterMarks() {
         {/* Completion Status */}
         {completionPercentage === 100 && (
           <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <span className="text-sm font-medium text-green-800">
@@ -630,6 +864,9 @@ export function EnterMarks() {
                 <p className="mt-1 text-sm text-gray-600">
                   You are about to submit marks for{" "}
                   <strong>{filledMarks} students</strong>.
+                  <span className="block mt-1">
+                    Maximum marks for this exam: <strong>{maxMarks}</strong>.
+                  </span>
                   {hasExistingMarks && (
                     <span className="block mt-1 text-blue-600">
                       This will update {existingMarksCount} existing mark(s).
@@ -647,9 +884,8 @@ export function EnterMarks() {
                     Important Notice
                   </p>
                   <p className="mt-1 text-xs text-amber-700">
-                    Once submitted, marks will be locked. Any future changes
-                    will require a formal correction request with admin
-                    approval.
+                    After submission, marks can be corrected for 7 days. After
+                    that, marks are locked and changes require admin approval.
                   </p>
                 </div>
               </div>
