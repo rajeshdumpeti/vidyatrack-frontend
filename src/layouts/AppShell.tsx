@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Menu, MessageCircle, Search } from "lucide-react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useMemo } from "react";
 import type { NavRole } from "@/navigation/navConfig";
@@ -41,6 +41,9 @@ export function AppShell() {
 
   const crumbs = useMemo(() => {
     const pathname = location.pathname;
+    const locationState = location.state as {
+      breadcrumbLabel?: string;
+    } | null;
     const activeItem = navItems.items.find((item) => item.to === pathname);
     const roleLabel =
       role === "management"
@@ -51,17 +54,43 @@ export function AppShell() {
             ? "Platform"
             : "Teacher";
 
+    const rolePath =
+      role === "management"
+        ? "/management"
+        : role === "principal"
+          ? "/principal"
+          : role === "super_admin"
+            ? "/platform"
+            : "/teacher";
+
     if (activeItem) {
-      return [roleLabel, activeItem.label];
+      return [
+        { label: roleLabel, to: rolePath },
+        { label: activeItem.label, to: undefined },
+      ];
     }
 
     const segments = pathname.split("/").filter(Boolean);
-    if (!segments.length) return [roleLabel];
-    const tail = segments[segments.length - 1]
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    return [roleLabel, tail];
-  }, [location.pathname, navItems.items, role]);
+    if (!segments.length) return [{ label: roleLabel, to: undefined }];
+    const rawTail = segments[segments.length - 1];
+    const parentSegment = segments[segments.length - 2] ?? "";
+    if (/^\d+$/.test(rawTail) && (parentSegment === "students" || parentSegment === "teachers")) {
+      const parentLabel =
+        parentSegment === "students" ? "Students" : "Teachers";
+      return [
+        { label: roleLabel, to: rolePath },
+        { label: parentLabel, to: `${rolePath}/${parentSegment}` },
+        {
+          label: locationState?.breadcrumbLabel?.trim() || "Details",
+          to: pathname,
+        },
+      ];
+    }
+    const tail = /^\d+$/.test(rawTail)
+      ? locationState?.breadcrumbLabel?.trim() || "Details"
+      : rawTail.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return [{ label: roleLabel, to: rolePath }, { label: tail, to: undefined }];
+  }, [location.pathname, location.state, navItems.items, role]);
   // Escape closes drawer (mobile)
   useEffect(() => {
     if (!isDrawerOpen) return;
@@ -100,8 +129,8 @@ export function AppShell() {
 
           {/* Main content */}
           <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-            {role !== "teacher" ? (
-              <div className="flex h-14 items-center justify-between border-b border-gray-200/70 bg-white/70 px-3 md:hidden">
+            <div className="flex h-14 items-center justify-between border-b border-gray-200/70 bg-white/70 px-3 md:hidden">
+              {role !== "teacher" ? (
                 <button
                   type="button"
                   onClick={openDrawer}
@@ -110,26 +139,41 @@ export function AppShell() {
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : null}
+              ) : (
+                <div className="text-sm font-semibold text-gray-600">
+                  Teacher
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={onLogout}
+                className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Logout
+              </button>
+            </div>
             <div className="hidden h-16 items-center justify-between border-b border-gray-200/80 bg-white/85 px-6 md:flex">
               <div className="truncate text-sm font-semibold text-gray-500">
                 {crumbs.map((crumb, idx) => (
-                  <span key={`${crumb}-${idx}`}>
-                    <span
-                      className={
-                        idx === crumbs.length - 1 ? "text-gray-900" : ""
-                      }
-                    >
-                      {crumb}
-                    </span>
+                  <span key={`${crumb.label}-${idx}`}>
+                    {crumb.to ? (
+                      <Link
+                        to={crumb.to}
+                        className="text-blue-600 hover:text-blue-700 hover:underline"
+                      >
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      <span
+                        className={
+                          idx === crumbs.length - 1
+                            ? "text-gray-900"
+                            : "text-blue-600"
+                        }
+                      >
+                        {crumb.label}
+                      </span>
+                    )}
                     {idx < crumbs.length - 1 ? (
                       <span className="px-2 text-gray-300">›</span>
                     ) : null}
@@ -139,25 +183,12 @@ export function AppShell() {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                  aria-label="Notifications"
+                  className="inline-flex h-9 items-center gap-1 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                  aria-label="Logout"
+                  onClick={onLogout}
                 >
-                  <Bell className="h-4.5 w-4.5" />
-                </button>
-                <button
-                  type="button"
-                  className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                  aria-label="Messages"
-                >
-                  <MessageCircle className="h-4.5 w-4.5" />
-                  <span className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
-                </button>
-                <button
-                  type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100"
-                  aria-label="Search"
-                >
-                  <Search className="h-4.5 w-4.5" />
+                  <LogOut className="h-4 w-4" />
+                  Logout
                 </button>
               </div>
             </div>

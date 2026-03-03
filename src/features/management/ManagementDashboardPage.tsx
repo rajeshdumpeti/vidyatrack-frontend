@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { LayoutGrid, Users, GraduationCap, ClipboardCheck } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuthStore } from "@/store/auth.store";
 import { getManagementDashboardCmsContent } from "@/cms";
@@ -51,6 +51,7 @@ function resolveSchoolByCode(
 }
 
 export function ManagementDashboardPage() {
+  const navigate = useNavigate();
   const schools = useAuthStore((state) => state.schools);
   const schoolId = useAuthStore((state) => state.schoolId);
   const setActiveSchool = useAuthStore((state) => state.setActiveSchool);
@@ -154,7 +155,7 @@ export function ManagementDashboardPage() {
         </div>
 
         {schools.length > 1 ? (
-          <div>
+          <div className="space-y-2">
             <label
               htmlFor="school-switch"
               className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500"
@@ -192,6 +193,13 @@ export function ManagementDashboardPage() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => navigate("/auth/select-school")}
+              className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              Switch Schools
+            </button>
           </div>
         ) : null}
       </header>

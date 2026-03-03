@@ -1,17 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTeachers } from "@/api/teachers.api";
+import { listTeachers } from "@/api/teachers.api";
 import type { TeacherDto } from "@/types/teacher.types";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useTeacherById(teacherId: number) {
   const qc = useQueryClient();
+  const schoolId = useAuthStore((s) => s.schoolId);
 
   const query = useQuery({
-    queryKey: ["teachers"],
-    queryFn: getTeachers,
-    enabled: Number.isFinite(teacherId) && teacherId > 0,
+    queryKey: ["teachers", schoolId ?? null],
+    queryFn: () => listTeachers(schoolId!),
+    enabled: Number.isFinite(teacherId) && teacherId > 0 && !!schoolId,
     retry: 1,
     initialData: () => {
-      const cached = qc.getQueryData<TeacherDto[]>(["teachers"]);
+      const cached = qc.getQueryData<TeacherDto[]>(["teachers", schoolId ?? null]);
       return cached;
     },
   });

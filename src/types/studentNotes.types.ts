@@ -5,6 +5,9 @@ export type StudentNoteDto = {
   author_user_id: number | null;
   author_name?: string | null;
   author_role?: string | null;
+  class_name?: string | null;
+  section_name?: string | null;
+  subject_name?: string | null;
   note_text: string;
   created_at: string; // ISO string
 };

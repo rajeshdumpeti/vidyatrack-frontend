@@ -9,6 +9,8 @@ import { useAuthStore } from "@/store/auth.store";
 import { useSections } from "@/hooks/useSections";
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 import { useStudentsBySection } from "@/hooks/useStudentsBySection";
+import { usePagination } from "@/hooks/usePagination";
+import { Pagination } from "@/components/ui/Pagination";
 import type { SectionDto } from "@/types/section.types";
 
 export function StudentsListPage() {
@@ -61,6 +63,14 @@ export function StudentsListPage() {
   }, [teacherStudents.data, search]);
 
   const principalStudents = q.data ?? [];
+  const principalPagination = usePagination(principalStudents, {
+    initialPageSize: 20,
+    resetDeps: [sectionId, search],
+  });
+  const teacherPagination = usePagination(teacherFiltered, {
+    initialPageSize: 20,
+    resetDeps: [search, teacherSectionId],
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
@@ -177,7 +187,7 @@ export function StudentsListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {principalStudents.map((s) => {
+                {principalPagination.pagedItems.map((s) => {
                   const sectionLabel =
                     s.section_name && s.class_name
                       ? `${s.class_name} - ${s.section_name}`
@@ -206,9 +216,17 @@ export function StudentsListPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-sm font-semibold text-gray-900">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/${navigateRole}/students/${s.id}`, {
+                              state: { breadcrumbLabel: s.name ?? "Student" },
+                            })
+                          }
+                          className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                        >
                           {s.name}
-                        </div>
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-700">
                         {studentCode}
@@ -234,13 +252,15 @@ export function StudentsListPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
-                          className="rounded-full bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+                          className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                           onClick={() => {
                             logger.info("[students] row_tap", {
                               trace,
                               studentId: s.id,
                             });
-                            navigate(`/${navigateRole}/students/${s.id}`);
+                            navigate(`/${navigateRole}/students/${s.id}`, {
+                              state: { breadcrumbLabel: s.name ?? "Student" },
+                            });
                           }}
                         >
                           View
@@ -252,6 +272,16 @@ export function StudentsListPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={principalPagination.page}
+            pageSize={principalPagination.pageSize}
+            totalItems={principalPagination.totalItems}
+            totalPages={principalPagination.totalPages}
+            from={principalPagination.from}
+            to={principalPagination.to}
+            onPageChange={principalPagination.setPage}
+            onPageSizeChange={principalPagination.setPageSize}
+          />
         </div>
       ) : null}
 
@@ -265,9 +295,11 @@ export function StudentsListPage() {
           </div>
 
           <ul className="divide-y divide-gray-100">
-            {teacherFiltered.map((s, idx) => {
+            {teacherPagination.pagedItems.map((s, idx) => {
               const roll =
-                s.roll_no != null ? String(s.roll_no) : String(idx + 1);
+                s.roll_no != null
+                  ? String(s.roll_no)
+                  : String((teacherPagination.page - 1) * teacherPagination.pageSize + idx + 1);
 
               return (
                 <li key={s.id} className="px-4 py-4">
@@ -277,9 +309,17 @@ export function StudentsListPage() {
                         <span className="inline-flex h-8 min-w-[44px] items-center justify-center rounded-lg bg-gray-100 px-2 text-sm font-bold text-gray-800">
                           {roll}
                         </span>
-                        <div className="truncate text-sm font-semibold text-gray-900">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/${navigateRole}/students/${s.id}`, {
+                              state: { breadcrumbLabel: s.name ?? "Student" },
+                            })
+                          }
+                          className="truncate text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                        >
                           {s.name}
-                        </div>
+                        </button>
                       </div>
 
                       {teacherSection.data ? (
@@ -297,6 +337,16 @@ export function StudentsListPage() {
               );
             })}
           </ul>
+          <Pagination
+            page={teacherPagination.page}
+            pageSize={teacherPagination.pageSize}
+            totalItems={teacherPagination.totalItems}
+            totalPages={teacherPagination.totalPages}
+            from={teacherPagination.from}
+            to={teacherPagination.to}
+            onPageChange={teacherPagination.setPage}
+            onPageSizeChange={teacherPagination.setPageSize}
+          />
         </div>
       ) : null}
     </div>

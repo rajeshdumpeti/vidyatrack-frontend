@@ -19,6 +19,7 @@ import { getAuthMe } from "@/api/auth.api";
 import { useOtpVerify } from "@/hooks/useOtpVerify";
 import { useOtpResend } from "@/hooks/useOtpResend";
 import { logger } from "@/utils/logger";
+import { LoadingButton } from "@/components/ui/Button";
 
 type FormValues = {
   d1: string;
@@ -300,28 +301,30 @@ export function OtpVerifyPage() {
               </div>
             ) : null}
 
-            <button
+            <LoadingButton
               type="submit"
-              disabled={isSubmitting || isVerifying || !hasPhone}
-              className="mt-8 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              isLoading={isVerifying}
+              disabled={isSubmitting || !hasPhone}
+              loadingText="Verifying..."
+              fullWidth
+              className="mt-8 rounded-full"
             >
-              {isVerifying ? "Verifying..." : "Verify"}
-            </button>
+              Verify
+            </LoadingButton>
 
             <div className="mt-6 text-center text-sm text-gray-600">
               Didn’t receive the code?{" "}
-              <button
+              <LoadingButton
                 type="button"
-                className="font-semibold text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                variant="secondary"
+                className="ml-2 rounded-full px-3 py-1.5 align-middle text-xs"
                 onClick={onResend}
-                disabled={isResending || isVerifying}
+                disabled={isVerifying}
+                isLoading={isResending}
+                loadingText="Resending..."
               >
-                {isResending
-                  ? "Resending..."
-                  : deliveryChannel === "email"
-                    ? "Resend code"
-                    : "Resend on WhatsApp"}
-              </button>
+                {deliveryChannel === "email" ? "Resend code" : "Resend on WhatsApp"}
+              </LoadingButton>
               {resendError ? (
                 <div className="mt-4">
                   <ErrorState

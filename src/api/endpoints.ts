@@ -12,8 +12,11 @@ export const API_ENDPOINTS = {
   students: {
     create: "/api/v1/students",
     list: "/api/v1/students",
+    importPreview: "/api/v1/students/import/preview",
+    importCommit: "/api/v1/students/import/commit",
     detail: (studentId: number) => `/api/v1/students/${studentId}`,
     notes: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+    reportCard: (studentId: number) => `/api/v1/students/${studentId}/report-card`,
   },
   attendance: {
     create: "/api/v1/attendance",
@@ -51,6 +54,10 @@ export const API_ENDPOINTS = {
   schools: {
     list: "/api/v1/schools",
     create: "/api/v1/schools",
+    dashboard: (schoolId: number) => `/api/v1/schools/${schoolId}/dashboard`,
+    teachers: (schoolId: number) => `/api/v1/schools/${schoolId}/teachers`,
+    students: (schoolId: number) => `/api/v1/schools/${schoolId}/students`,
+    staff: (schoolId: number) => `/api/v1/schools/${schoolId}/staff`,
   },
   classes: {
     list: "/api/v1/classes",

@@ -4,10 +4,10 @@ import { useSchools } from "@/hooks/useSchools";
 import {
   ArrowLeft,
   Check,
-  Loader2,
   School,
   ShieldCheck,
 } from "lucide-react";
+import { LoadingButton } from "@/components/ui/Button";
 
 type OnboardingForm = {
   school_name: string;
@@ -808,24 +808,16 @@ export function PlatformCreateSchoolPage() {
                 Continue
               </button>
             ) : (
-              <button
+              <LoadingButton
                 type="button"
                 onClick={submit}
-                disabled={create.isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                isLoading={create.isPending}
+                loadingText="Creating School..."
+                leftIcon={<ShieldCheck className="h-4 w-4" />}
+                className="py-2.5 text-sm font-bold"
               >
-                {create.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating School...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="h-4 w-4" />
-                    Confirm & Onboard School
-                  </>
-                )}
-              </button>
+                Confirm & Onboard School
+              </LoadingButton>
             )}
           </div>
         </div>

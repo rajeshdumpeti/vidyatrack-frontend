@@ -22,3 +22,39 @@ export type CreateSchoolPayload = {
   name: string;
   admin_phone: string;
 };
+
+export type SchoolDashboardDto = {
+  school_id: number;
+  teacher_count: number;
+  student_count: number;
+  staff_count: number;
+  total_registered: number;
+};
+
+export type SchoolTeacherListItemDto = {
+  id: number;
+  school_id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: "active" | "inactive";
+};
+
+export type SchoolStudentListItemDto = {
+  id: number;
+  school_id: number;
+  name: string;
+  parent_name?: string | null;
+  parent_phone?: string | null;
+  status: "active" | "inactive";
+};
+
+export type SchoolStaffListItemDto = {
+  user_id: number;
+  school_id: number;
+  role: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: "active" | "inactive";
+};

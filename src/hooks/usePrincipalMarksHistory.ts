@@ -9,7 +9,6 @@ export function usePrincipalMarksHistory(filters: {
 }) {
   const schoolId = useAuthStore((s) => s.schoolId);
   const enabled =
-    typeof filters.sectionId === "number" &&
     typeof filters.subjectId === "number" &&
     typeof filters.examType === "string" &&
     filters.examType.length > 0 &&
@@ -27,7 +26,7 @@ export function usePrincipalMarksHistory(filters: {
     ],
     queryFn: () =>
       getPrincipalMarks({
-        sectionId: filters.sectionId!,
+        sectionId: filters.sectionId,
         subjectId: filters.subjectId!,
         examType: filters.examType!,
         schoolId: schoolId!,

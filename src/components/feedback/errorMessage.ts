@@ -4,9 +4,14 @@ function getBackendErrorCode(error: unknown): string | null {
   if (!axios.isAxiosError(error)) return null;
 
   const data = error.response?.data as
-    | { code?: string; error?: { code?: string }; detail?: { code?: string } }
+    | {
+        code?: string;
+        error?: { code?: string };
+        detail?: { code?: string } | string;
+      }
     | undefined;
 
+  if (typeof data?.detail === "string") return data.detail;
   return data?.code ?? data?.error?.code ?? data?.detail?.code ?? null;
 }
 
@@ -30,6 +35,12 @@ export function getUserFriendlyErrorMessage(error: unknown): string {
 
     if (status === 503 && code === "whatsapp_delivery_failed") {
       return "We couldn’t deliver the OTP via WhatsApp. Please try again in a moment.";
+    }
+    if (status === 503 && code === "email_delivery_failed") {
+      return "We couldn’t deliver the OTP via email. Please try again in a moment.";
+    }
+    if (status === 404 && code === "email_not_found_for_phone") {
+      return "No email is linked to this phone number. Contact your administrator.";
     }
 
     if (status === 429)

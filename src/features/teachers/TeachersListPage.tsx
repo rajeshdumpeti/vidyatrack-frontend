@@ -198,9 +198,17 @@ export function TeachersListPage() {
                     return (
                       <tr key={t.id} className="align-top">
                         <td className="px-4 py-3">
-                          <div className="text-sm font-semibold text-gray-900">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/${navigateRole}/teachers/${t.id}`, {
+                                state: { breadcrumbLabel: name },
+                              })
+                            }
+                            className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                          >
                             {name}
-                          </div>
+                          </button>
                           {t.assigned_section_label ? (
                             <div className="mt-1 text-xs text-gray-500">
                               {t.assigned_section_label}
@@ -211,8 +219,34 @@ export function TeachersListPage() {
                           {employeeId}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-600">
-                          <div>{email}</div>
-                          <div className="mt-1">{phone}</div>
+                          <div>
+                            {email === "—" ? (
+                              email
+                            ) : (
+                              <a
+                                href={`mailto:${email}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                              >
+                                {email}
+                              </a>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            {phone === "—" ? (
+                              phone
+                            ) : (
+                              <a
+                                href={`tel:${phone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                              >
+                                {phone}
+                              </a>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1.5">
@@ -257,13 +291,15 @@ export function TeachersListPage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             type="button"
-                            className="rounded-full bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
+                            className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                             onClick={() => {
                               logger.info("[teachers] row_tap", {
                                 trace,
                                 teacherId: t.id,
                               });
-                              navigate(`/${navigateRole}/teachers/${t.id}`);
+                              navigate(`/${navigateRole}/teachers/${t.id}`, {
+                                state: { breadcrumbLabel: name },
+                              });
                             }}
                           >
                             View

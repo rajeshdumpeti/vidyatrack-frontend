@@ -3,9 +3,8 @@ import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { EmptyState } from "@/components/feedback/EmptyState";
-import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
+import { Pagination } from "@/components/ui/Pagination";
 
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 import { useStudentsBySection } from "@/hooks/useStudentsBySection";
@@ -13,10 +12,9 @@ import { useAttendanceBySectionDate } from "@/hooks/useAttendanceBySectionDate";
 import { useAttendanceSubmit } from "@/hooks/useAttendanceSubmit";
 import { useCreateAttendanceRecord } from "@/hooks/useCreateAttendanceRecord";
 import { useUpdateAttendance } from "@/hooks/useUpdateAttendance";
-import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
+import { usePagination } from "@/hooks/usePagination";
 import { AttendanceSubmitModal } from "@/features/teachers/attendance/AttendanceSubmitModal";
-import { logger } from "@/utils/logger";
-import { formatToday, formatIsoDate } from "@/utils/date";
+import { formatIsoDate } from "@/utils/date";
 import type { AttendanceStatusDto } from "@/types/attendance-submit.types";
 import type { AttendanceRecordDto } from "@/types/attendance.types";
 import { useAuthStore } from "@/store/auth.store";
@@ -32,22 +30,10 @@ function normalizeStatus(status: AttendanceStatusDto): "PRESENT" | "ABSENT" {
   return status === "ABSENT" || status === "absent" ? "ABSENT" : "PRESENT";
 }
 
-function formatDateLabel(dateIso: string): string {
-  const [year, month, day] = dateIso.split("-").map(Number);
-  if (!year || !month || !day) return formatToday();
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  }).format(new Date(year, month - 1, day));
-}
-
 export function MarkAttendance() {
   const navigate = useNavigate();
   const location = useLocation();
   const qc = useQueryClient();
-  const trace = useMemo(() => logger.traceId(), []);
 
   const schoolId = useAuthStore((s) => s.schoolId);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
@@ -55,14 +41,9 @@ export function MarkAttendance() {
   const [presentById, setPresentById] = useState<Record<string, boolean>>({});
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
-  const [editError, setEditError] = useState<string | null>(null);
 
   const todayIso = useMemo(() => formatIsoDate(new Date()), []);
   const [selectedDateIso] = useState(todayIso);
-  const dateLabel = useMemo(
-    () => formatDateLabel(selectedDateIso),
-    [selectedDateIso],
-  );
 
   const {
     submit,
@@ -108,7 +89,9 @@ export function MarkAttendance() {
     const timeout = window.setTimeout(() => {
       navigate("/teacher", {
         replace: true,
-        state: { toast: "Attendance submitted" },
+        state: {
+          toast: `Attendance submitted for ${section.data?.class_name} ${section.data?.section_name}`,
+        },
       });
     }, 5000);
     return () => {
@@ -140,6 +123,10 @@ export function MarkAttendance() {
         .slice(0, 2),
     }));
   }, [studentsQuery.data]);
+  const studentsPagination = usePagination(students, {
+    initialPageSize: 20,
+    resetDeps: [sectionId, selectedDateIso],
+  });
 
   const attendanceMap = useMemo(() => {
     const m = new Map<
@@ -190,8 +177,6 @@ export function MarkAttendance() {
   const toggleStatus = (studentId: string) => {
     if (isReadOnly || !sectionId || !schoolId) return;
 
-    setEditError(null);
-
     const wasPresent = presentById[studentId] !== false;
     const nextStatus: AttendanceStatusDto = wasPresent ? "ABSENT" : "PRESENT";
     setPresentById((prev) => ({ ...prev, [studentId]: !wasPresent }));
@@ -210,11 +195,9 @@ export function MarkAttendance() {
           (detail === "attendance_edit_not_allowed" ||
             code === "attendance_edit_not_allowed")
         ) {
-          setEditError("Attendance can only be edited today.");
           return;
         }
       }
-      setEditError("Unable to update attendance. Please try again.");
     };
 
     if (existing) {
@@ -323,7 +306,7 @@ export function MarkAttendance() {
           </div>
 
           <div className="divide-y divide-gray-50 md:divide-gray-100">
-            {students.map((s) => {
+            {studentsPagination.pagedItems.map((s) => {
               const isPresent = presentById[s.id] !== false;
               return (
                 <div
@@ -385,6 +368,16 @@ export function MarkAttendance() {
               );
             })}
           </div>
+          <Pagination
+            page={studentsPagination.page}
+            pageSize={studentsPagination.pageSize}
+            totalItems={studentsPagination.totalItems}
+            totalPages={studentsPagination.totalPages}
+            from={studentsPagination.from}
+            to={studentsPagination.to}
+            onPageChange={studentsPagination.setPage}
+            onPageSizeChange={studentsPagination.setPageSize}
+          />
         </div>
 
         {/* Responsive Summary Footer */}
@@ -435,7 +428,7 @@ export function MarkAttendance() {
           onReturnHome={() =>
             navigate("/teacher", {
               replace: true,
-              state: { toast: "Attendance submitted" },
+              state: { toast: `Attendance submitted for ${sectionLabel}` },
             })
           }
         />

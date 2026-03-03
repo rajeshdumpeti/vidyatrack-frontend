@@ -17,6 +17,7 @@ import {
 } from "@/cms";
 import { useAuthStore } from "@/store/auth.store";
 import type { SupportedCountryCode } from "@/types/auth.types";
+import { LoadingButton } from "@/components/ui/Button";
 
 type FormValues = {
   phone: string;
@@ -230,20 +231,17 @@ export function OtpRequestPage() {
                   ) : null}
                 </div>
 
-                <button
+                <LoadingButton
                   type="submit"
-                  disabled={isSubmitting || isLoading}
-                  className={[
-                    "mt-2 w-full rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white",
-                    "hover:bg-blue-700",
-                    "disabled:cursor-not-allowed disabled:opacity-60",
-                  ].join(" ")}
+                  isLoading={isLoading}
+                  disabled={isSubmitting}
+                  loadingText="Sending OTP..."
+                  leftIcon={<FiArrowRight className="h-4 w-4" />}
+                  fullWidth
+                  className="mt-2 rounded-full"
                 >
-                  <span className="inline-flex items-center gap-2">
-                    {isLoading ? "Sending OTP..." : "Send OTP"}
-                    <FiArrowRight className="h-4 w-4" />
-                  </span>
-                </button>
+                  Send OTP
+                </LoadingButton>
 
                 <button
                   type="button"

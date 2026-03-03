@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
@@ -61,8 +61,11 @@ export function TeacherCommunicationsPage() {
   const section = useTeacherAttendanceSection();
   const assignmentsQuery = useMyTeachingAssignments();
   const assignments = assignmentsQuery.data ?? [];
-  const className =
+  const fallbackClassName =
     location.state?.class_name || section.data?.class_name || "Class";
+  const fallbackSectionName =
+    location.state?.section_name || section.data?.section_name || "";
+  const fallbackSubjectName = location.state?.subject_name || "";
 
   const [activeTab, setActiveTab] = useState<TabKey>("homework");
   const [assignmentKey, setAssignmentKey] = useState("");
@@ -72,6 +75,8 @@ export function TeacherCommunicationsPage() {
   const [homeworkDueDate, setHomeworkDueDate] = useState("");
 
   const [parentSearch, setParentSearch] = useState("");
+  const [noteStudentSearch, setNoteStudentSearch] = useState("");
+  const [isNoteSearchOpen, setIsNoteSearchOpen] = useState(false);
   const [selectedParentIds, setSelectedParentIds] = useState<number[]>([]);
   const [parentSubject, setParentSubject] = useState("");
   const [parentMessage, setParentMessage] = useState("");
@@ -95,16 +100,37 @@ export function TeacherCommunicationsPage() {
 
   useEffect(() => {
     if (!assignmentKey && assignments.length) {
-      const first = assignments[0];
-      setAssignmentKey(`${first.section_id}-${first.subject_id}`);
+      const stateSectionId = Number(location.state?.section_id);
+      const stateSubjectId = Number(location.state?.subject_id);
+      const stateSubjectName = String(location.state?.subject_name ?? "").trim();
+
+      const fromState = assignments.find((a) => {
+        const sameSection = a.section_id === stateSectionId;
+        const sameSubjectId =
+          Number.isFinite(stateSubjectId) && a.subject_id === stateSubjectId;
+        const sameSubjectName =
+          stateSubjectName.length > 0 &&
+          String(a.subject_name ?? "").trim() === stateSubjectName;
+        return sameSection && (sameSubjectId || sameSubjectName);
+      });
+
+      const initial = fromState ?? assignments[0];
+      setAssignmentKey(`${initial.section_id}-${initial.subject_id}`);
     }
-  }, [assignmentKey, assignments]);
+  }, [assignmentKey, assignments, location.state]);
 
   const selectedAssignment = useMemo(() => {
     return assignments.find(
       (a) => `${a.section_id}-${a.subject_id}` === assignmentKey,
     );
   }, [assignments, assignmentKey]);
+  const assignmentClassLabel =
+    selectedAssignment?.class_name?.trim() || fallbackClassName;
+  const assignmentSectionLabel = selectedAssignment?.section_name?.trim()
+    ? selectedAssignment.section_name.trim()
+    : fallbackSectionName;
+  const assignmentSubjectLabel =
+    selectedAssignment?.subject_name?.trim() || fallbackSubjectName;
 
   const sectionId = selectedAssignment?.section_id;
   const studentsQuery = useStudentsBySectionDetailed(sectionId);
@@ -140,10 +166,35 @@ export function TeacherCommunicationsPage() {
   const selectedStudent = parentStudents.find(
     (s) => s.id.toString() === studentId,
   );
+  const noteSearchRef = useRef<HTMLDivElement | null>(null);
+  const filteredNoteStudents = useMemo(() => {
+    const q = noteStudentSearch.trim().toLowerCase();
+    if (!q) return parentStudents.slice(0, 12);
+    return parentStudents.filter((s) => {
+      const name = String(s.name ?? "").toLowerCase();
+      const roll = s.roll_no != null ? String(s.roll_no).toLowerCase() : "";
+      return name.includes(q) || roll.includes(q);
+    });
+  }, [noteStudentSearch, parentStudents]);
+
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (
+        noteSearchRef.current &&
+        !noteSearchRef.current.contains(event.target as Node)
+      ) {
+        setIsNoteSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   useEffect(() => {
     setSelectedParentIds([]);
     setStudentId("");
+    setNoteStudentSearch("");
+    setIsNoteSearchOpen(false);
     setNotes([]);
     setNoteError(null);
     setNoteSuccess(null);
@@ -478,7 +529,9 @@ export function TeacherCommunicationsPage() {
               </label>
               <div className="mt-3 flex items-center gap-3 rounded-xl">
                 <BookOpen className="h-5 w-5 text-blue-600" />
-                {className}
+                {assignmentClassLabel}
+                {assignmentSectionLabel ? ` - ${assignmentSectionLabel}` : ""}
+                {assignmentSubjectLabel ? ` • ${assignmentSubjectLabel}` : ""}
               </div>
               <p className="mt-2 text-xs text-gray-500">
                 Messages and homework are sent to the selected class & subject.
@@ -907,19 +960,57 @@ export function TeacherCommunicationsPage() {
               <label className="block text-sm font-semibold text-gray-900">
                 Select Student
               </label>
-              <select
-                className="mt-3 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                disabled={studentsQuery.isLoading}
-              >
-                <option value="">Select a student...</option>
-                {parentStudents.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} {s.roll_no ? `(#${s.roll_no})` : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="relative mt-3" ref={noteSearchRef}>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={noteStudentSearch}
+                    onFocus={() => setIsNoteSearchOpen(true)}
+                    onChange={(e) => {
+                      setNoteStudentSearch(e.target.value);
+                      setIsNoteSearchOpen(true);
+                    }}
+                    placeholder="Search student by name or roll..."
+                    className="h-8 w-full bg-transparent text-sm font-medium text-gray-700 outline-none placeholder:text-gray-400"
+                    disabled={studentsQuery.isLoading}
+                  />
+                </div>
+                {isNoteSearchOpen ? (
+                  <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                    {filteredNoteStudents.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        No students found.
+                      </div>
+                    ) : (
+                      filteredNoteStudents.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            setStudentId(String(s.id));
+                            setNoteStudentSearch(
+                              `${s.name}${s.roll_no ? ` (#${s.roll_no})` : ""}`,
+                            );
+                            setIsNoteSearchOpen(false);
+                          }}
+                          className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                        >
+                          <span className="text-sm font-semibold text-gray-900">
+                            {s.name}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {s.roll_no ? `#${s.roll_no}` : ""}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                Showing {filteredNoteStudents.length} of {parentStudents.length} students
+              </p>
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

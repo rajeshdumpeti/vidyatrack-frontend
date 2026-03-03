@@ -26,6 +26,7 @@ import { PlatformLayout } from "@/layouts/PlatformLayout";
 import { PlatformDashboardPage } from "@/features/platform/PlatformDashboardPage";
 import { PlatformSchoolsListPage } from "@/features/platform/PlatformSchoolsListPage";
 import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateSchoolPage";
+import { PlatformSchoolDetailPage } from "@/features/platform/PlatformSchoolDetailPage";
 import { ManagementDashboardPage } from "@/features/management/ManagementDashboardPage";
 import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
 export const router = createBrowserRouter([
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <PlatformDashboardPage /> },
       { path: "schools", element: <PlatformSchoolsListPage /> },
+      { path: "schools/:schoolId", element: <PlatformSchoolDetailPage /> },
       { path: "schools/new", element: <PlatformCreateSchoolPage /> },
     ],
   },

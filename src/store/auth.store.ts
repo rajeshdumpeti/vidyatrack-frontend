@@ -89,9 +89,23 @@ const loadActiveSchool = () => {
   return val ? Number(val) : null;
 };
 
+function getInitialRoleFromStorage(): UserRole | null {
+  const token = loadToken();
+  if (!token) return null;
+  try {
+    return deriveClaims(token).role;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+const initialAccessToken = loadToken();
+const initialRole = getInitialRoleFromStorage();
+
 export const useAuthStore = create<AuthState>((set, get) => ({
-  accessToken: loadToken(),
-  role: null, // Populated via setToken or /auth/me
+  accessToken: initialRole ? initialAccessToken : null,
+  role: initialRole, // Rehydrate role on browser refresh from JWT
   schoolId: loadActiveSchool(),
   schools: [],
 

@@ -2,7 +2,6 @@ import type { AttendanceSection } from "@/types/attendance.types";
 import type {
   CreateTeacherInput,
   TeacherDto,
-  Teacher,
   TeacherMeDto,
   TeacherContextDto,
   TeacherReadinessDto,
@@ -24,8 +23,8 @@ export async function getTeachers(): Promise<TeacherDto[]> {
 }
 
 // Add schoolId to the list parameters
-export async function listTeachers(schoolId: number): Promise<Teacher[]> {
-  const res = await apiClient.get<Teacher[]>(API_ENDPOINTS.teachers.list, {
+export async function listTeachers(schoolId: number): Promise<TeacherDto[]> {
+  const res = await apiClient.get<TeacherDto[]>(API_ENDPOINTS.teachers.list, {
     params: { school_id: schoolId }, // Explicitly send school_id
   });
   return res.data;

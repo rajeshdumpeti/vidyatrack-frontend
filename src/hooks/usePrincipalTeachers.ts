@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getTeachers } from "@/api/teachers.api";
+import { listTeachers } from "@/api/teachers.api";
 import type { TeacherDto } from "@/types/teacher.types";
+import { useAuthStore } from "@/store/auth.store";
 
 function normalize(v: string) {
   return v.trim().toLowerCase();
@@ -34,9 +35,12 @@ function filterTeachers(list: TeacherDto[], search: string) {
 }
 
 export function usePrincipalTeachers(search: string) {
+  const schoolId = useAuthStore((s) => s.schoolId);
+
   const q = useQuery({
-    queryKey: ["principal-teachers"],
-    queryFn: getTeachers,
+    queryKey: ["principal-teachers", schoolId],
+    queryFn: () => listTeachers(schoolId!),
+    enabled: !!schoolId,
     retry: 1,
   });
 

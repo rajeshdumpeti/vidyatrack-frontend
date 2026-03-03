@@ -84,8 +84,11 @@ export function EnterMarks() {
   const { submit, isPending: isSubmitting } = useMarksSubmit();
   // 2. If not, default to the first assignment in the list
   const section = useTeacherAttendanceSection();
-  const className =
+  const fallbackClassName =
     location.state?.class_name || section.data?.class_name || "Class";
+  const fallbackSectionName =
+    location.state?.section_name || section.data?.section_name || "";
+  const fallbackSubjectName = location.state?.subject_name || "";
   const [selectedSectionId, setSelectedSectionId] = useState<
     number | undefined
   >(location.state?.section_id || assignments?.[0]?.section_id);
@@ -121,6 +124,13 @@ export function EnterMarks() {
       (a) => `${a.section_id}-${a.subject_id}` === watchAssignmentId,
     );
   }, [assignmentsQuery.data, watchAssignmentId]);
+  const assignmentClassLabel =
+    selectedAssignment?.class_name?.trim() || fallbackClassName;
+  const assignmentSectionLabel = selectedAssignment?.section_name?.trim()
+    ? selectedAssignment.section_name.trim()
+    : fallbackSectionName;
+  const assignmentSubjectLabel =
+    selectedAssignment?.subject_name?.trim() || fallbackSubjectName;
 
   const studentsQuery = useStudentsBySection(selectedAssignment?.section_id);
   const buildBlankMarks = useCallback(
@@ -383,7 +393,9 @@ export function EnterMarks() {
           // Redirect to dashboard with success state
           navigate("/teacher", {
             replace: true,
-            state: { toast: "Marks submitted successfully" },
+            state: {
+              toast: `Marks submitted successfully for the subject ${selectedAssignment.subject_name} - (${selectedAssignment.class_name} ${selectedAssignment.section_name})`,
+            },
           });
         },
         onError: (err) => {
@@ -479,7 +491,15 @@ export function EnterMarks() {
                 </label>
                 <div className="mt-2 flex items-center gap-2 text-base font-semibold text-gray-900 md:text-lg">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-                  <span>{className}</span>
+                  <span>
+                    {assignmentClassLabel}
+                    {assignmentSectionLabel
+                      ? ` - ${assignmentSectionLabel}`
+                      : ""}
+                    {assignmentSubjectLabel
+                      ? ` • ${assignmentSubjectLabel}`
+                      : ""}
+                  </span>
                 </div>
               </div>
 
@@ -864,9 +884,8 @@ export function EnterMarks() {
                     Important Notice
                   </p>
                   <p className="mt-1 text-xs text-amber-700">
-                    Once submitted, marks will be locked. Any future changes
-                    will require a formal correction request with admin
-                    approval.
+                    After submission, marks can be corrected for 7 days. After
+                    that, marks are locked and changes require admin approval.
                   </p>
                 </div>
               </div>

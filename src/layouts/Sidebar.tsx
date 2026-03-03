@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import type { NavItem, NavRole } from "@/navigation/navConfig";
+import { HiAcademicCap } from "react-icons/hi2";
 
 type SidebarProps = {
   role?: NavRole;
@@ -92,15 +93,22 @@ export function Sidebar({
     >
       <div className={collapsed ? "px-3 pb-3 pt-5" : "px-4 pb-3 pt-5"}>
         <div className="flex items-center justify-between">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gray-900 text-xs font-bold text-white">
-            VT
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50">
+              <HiAcademicCap className="h-5 w-5 text-blue-600" />
+            </div>
+            {!collapsed ? (
+              <span className="text-sm font-extrabold tracking-tight text-gray-900">
+                VidyaTrack
+              </span>
+            ) : null}
+          </div>
 
           {showCollapseToggle && onToggleCollapse ? (
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300/80 bg-white text-gray-600 hover:bg-gray-50"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-gray-300/80 bg-white text-gray-600 hover:bg-gray-50"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
@@ -123,16 +131,6 @@ export function Sidebar({
             </button>
           ) : null}
         </div>
-        {!collapsed ? (
-          <>
-            <p className="mt-5 text-[1.75rem] font-bold leading-none tracking-tight text-gray-900">
-              {roleTitle}
-            </p>
-            <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-gray-500">
-              Main Menu
-            </p>
-          </>
-        ) : null}
       </div>
 
       <nav
@@ -142,30 +140,26 @@ export function Sidebar({
         ].join(" ")}
       >
         {items.map((item) => {
-          const isRoot =
-            item.to === "/" || (role && item.to === `/${role}`);
           const ItemIcon = navIcon(item.to);
 
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              end={isRoot}
+              end
               onClick={onClose}
               title={collapsed ? item.label : undefined}
             >
               {({ isActive }) => (
                 <span
-                  className={
-                    [
-                      "group relative",
-                      linkBase,
-                      collapsed ? "justify-center px-0" : "",
-                      isActive
-                        ? "bg-white text-gray-950 shadow-[0_1px_2px_rgba(17,24,39,0.08)]"
-                        : "text-gray-700 hover:bg-white/75 hover:text-gray-900",
-                    ].join(" ")
-                  }
+                  className={[
+                    "group relative",
+                    linkBase,
+                    collapsed ? "justify-center px-0" : "",
+                    isActive
+                      ? "bg-white text-gray-950 shadow-[0_1px_2px_rgba(17,24,39,0.08)]"
+                      : "text-gray-700 hover:bg-white/75 hover:text-gray-900",
+                  ].join(" ")}
                 >
                   {isActive ? (
                     <span
@@ -173,8 +167,16 @@ export function Sidebar({
                       aria-hidden="true"
                     />
                   ) : null}
-                  <ItemIcon className={collapsed ? "h-4 w-4 shrink-0" : "mr-2.5 h-4 w-4 shrink-0"} />
-                  {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
+                  <ItemIcon
+                    className={
+                      collapsed ? "h-4 w-4 shrink-0" : "mr-2.5 h-4 w-4 shrink-0"
+                    }
+                  />
+                  {collapsed ? (
+                    <span className="sr-only">{item.label}</span>
+                  ) : (
+                    item.label
+                  )}
                   {collapsed ? (
                     <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block">
                       {item.label}
@@ -187,17 +189,20 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className={collapsed ? "border-t border-gray-300/60 p-2" : "border-t border-gray-300/60 p-3"}>
+      <div
+        className={
+          collapsed
+            ? "border-t border-gray-300/60 p-2"
+            : "border-t border-gray-300/60 p-3"
+        }
+      >
         {!collapsed ? (
           <>
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-gray-500">
-              Account
-            </p>
             <div className="relative mt-2" ref={accountMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsAccountMenuOpen((prev) => !prev)}
-                className="flex w-full items-center gap-2.5 rounded-xl border border-white/80 bg-white/65 p-2.5 text-left hover:bg-white"
+                className="flex w-full items-center gap-2.5 text-left"
                 aria-haspopup="menu"
                 aria-expanded={isAccountMenuOpen}
               >
@@ -205,8 +210,12 @@ export function Sidebar({
                   {initials}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">Pilot User</p>
-                  <p className="truncate text-xs font-medium text-gray-500">{roleTitle}</p>
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    Pilot User
+                  </p>
+                  <p className="truncate text-xs font-medium text-gray-500">
+                    {roleTitle}
+                  </p>
                 </div>
               </button>
               {isAccountMenuOpen ? (

@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
-import {
-  HiOutlineBookOpen,
-  HiOutlinePlusCircle,
-  HiOutlineSearch,
-  HiOutlineTrash,
-  HiOutlinePlus,
-} from "react-icons/hi";
-
+import { BookText, Plus, Search, Shapes } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useSubjects, useCreateSubject } from "@/hooks/useSubjects";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { logger } from "@/utils/logger";
+import { AcademicSetupShell } from "./AcademicSetupShell";
+import { useAuthStore } from "@/store/auth.store";
+import { listTeachingAssignments } from "@/api/teachingAssignments.api";
+import { useSections } from "@/hooks/useSections";
+import type { TeachingAssignmentDto } from "@/types/teachingAssignment.types";
+import type { SectionDto } from "@/types/section.types";
 
 function normalize(s: string) {
   return s.trim().toLowerCase();
@@ -18,8 +18,17 @@ function normalize(s: string) {
 
 export function SubjectsPage() {
   const trace = useMemo(() => logger.traceId(), []);
-  const { data, isLoading, error, refetch, schoolId } = useSubjects();
+  const { data, isLoading, error, refetch } = useSubjects();
   const createMutation = useCreateSubject();
+  const { schoolId } = useAuthStore();
+  const sections = useSections().list;
+
+  const assignmentsQuery = useQuery({
+    queryKey: ["teaching-assignments", schoolId, "all-subjects"],
+    queryFn: () => listTeachingAssignments(schoolId!),
+    enabled: !!schoolId,
+    retry: 1,
+  });
 
   const [search, setSearch] = useState("");
   const [name, setName] = useState("");
@@ -30,6 +39,47 @@ export function SubjectsPage() {
     if (!q) return data;
     return data.filter((s) => normalize(s.name).includes(q));
   }, [data, search]);
+
+  const sectionsById = useMemo(() => {
+    const map = new Map<number, SectionDto>();
+    (sections.data ?? []).forEach((section) => map.set(section.id, section));
+    return map;
+  }, [sections.data]);
+
+  const subjectUsage = useMemo(() => {
+    const map = new Map<
+      number,
+      { teacherCount: number; classCount: number; sectionCount: number }
+    >();
+    const assignments = (assignmentsQuery.data ?? []) as TeachingAssignmentDto[];
+
+    assignments.forEach((assignment) => {
+      const current = map.get(assignment.subject_id) ?? {
+        teacherCount: 0,
+        classCount: 0,
+        sectionCount: 0,
+      };
+      const teacherSet = new Set<number>();
+      const classSet = new Set<number>();
+      const sectionSet = new Set<number>();
+
+      assignments
+        .filter((row) => row.subject_id === assignment.subject_id)
+        .forEach((row) => {
+          teacherSet.add(row.teacher_id);
+          sectionSet.add(row.section_id);
+          const section = sectionsById.get(row.section_id);
+          if (section?.class_id) classSet.add(section.class_id);
+        });
+
+      current.teacherCount = teacherSet.size;
+      current.classCount = classSet.size;
+      current.sectionCount = sectionSet.size;
+      map.set(assignment.subject_id, current);
+    });
+
+    return map;
+  }, [assignmentsQuery.data, sectionsById]);
 
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -45,16 +95,15 @@ export function SubjectsPage() {
     }
 
     setInlineError(null);
-
     createMutation.mutate(
       { name: trimmed },
       {
         onSuccess: () => {
           setName("");
-          logger.info("[subjects] create success", { trace, name: trimmed });
+          logger.info("[subjects] create_success", { trace, name: trimmed });
         },
         onError: (err) => {
-          logger.warn("[subjects] create failed", { trace, err });
+          logger.warn("[subjects] create_failed", { trace, err });
           setInlineError("Unable to create subject. Please try again.");
         },
       },
@@ -63,160 +112,150 @@ export function SubjectsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f8fafc]">
-        <LoadingState label="Loading subject repository..." />
+      <div className="min-h-screen bg-slate-50 p-6">
+        <LoadingState label="Loading subject catalog..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-xl mx-auto mt-20 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center">
+      <div className="mx-auto mt-16 w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <ErrorState
-          title="Connection Error"
-          message="Unable to load subjects from the server."
+          title="Unable to load subjects"
+          message="Please retry to restore catalog data."
         />
         <button
           type="button"
-          className="mt-6 h-12 px-8 rounded-2xl bg-[#0f172a] text-sm font-bold text-white transition-all hover:bg-black"
+          className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
           onClick={() => refetch()}
         >
-          Retry Connection
+          Retry
         </button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-[#f8fafc] min-h-screen">
-      {/* Header Section */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-          <HiOutlineBookOpen size={24} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">
-            Subject Repository
-          </h1>
-          <p className="text-sm text-slate-500 font-medium">
-            Manage the master list of subjects for School ID:{" "}
-            <span className="text-indigo-600 font-bold">{schoolId}</span>
+    <AcademicSetupShell
+      title="Subject Catalog"
+      description="Maintain the canonical subject list before assigning teaching load."
+      icon={BookText}
+    >
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            Registered Subjects
           </p>
-        </div>
-      </div>
+          <p className="mt-2 text-3xl font-extrabold text-slate-900">
+            {filtered.length}
+          </p>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            Matching current filters.
+          </p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            Data Quality
+          </p>
+          <p className="mt-2 text-3xl font-extrabold text-emerald-700">Ready</p>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            Catalog supports assignment workflows.
+          </p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            Last Update
+          </p>
+          <p className="mt-2 text-3xl font-extrabold text-slate-900">Live</p>
+          <p className="mt-1 text-xs font-medium text-slate-500">
+            Changes appear instantly.
+          </p>
+        </article>
+      </section>
 
-      {/* Horizontal Quick Add Bar */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm transition-all hover:border-slate-300">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">
-          Quick Add: New Subject
-        </div>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <form
           onSubmit={submit}
-          className="flex flex-col md:flex-row items-center gap-4"
+          className="grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]"
         >
-          <div className="relative flex-1 w-full">
-            <HiOutlinePlusCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 size-5" />
+          <div className="relative">
+            <Shapes className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
                 if (inlineError) setInlineError(null);
               }}
-              placeholder="e.g. Advanced Mathematics"
-              className={`w-full h-14 pl-12 pr-4 rounded-2xl border ${
-                inlineError
-                  ? "border-red-200 bg-red-50"
-                  : "border-slate-100 bg-slate-50/50"
-              } text-sm font-medium focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-400`}
+              placeholder="Add subject (e.g. Environmental Science)"
+              className={`h-11 w-full rounded-xl border bg-white pl-10 pr-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${
+                inlineError ? "border-red-300" : "border-slate-200"
+              }`}
               disabled={createMutation.isPending}
             />
           </div>
           <button
             type="submit"
             disabled={createMutation.isPending || !name.trim()}
-            className="w-full md:w-auto h-14 px-10 bg-[#0f172a] hover:bg-black text-white rounded-2xl text-sm font-bold transition-all shadow-xl shadow-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="inline-flex h-11 items-center justify-center gap-1 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
           >
-            {createMutation.isPending ? (
-              "Saving..."
-            ) : (
-              <>
-                <HiOutlinePlus /> Add Subject
-              </>
-            )}
+            <Plus className="h-4 w-4" />
+            {createMutation.isPending ? "Saving..." : "Add Subject"}
           </button>
         </form>
-        {inlineError && (
-          <p className="text-xs text-red-500 mt-2 font-bold px-1">
-            {inlineError}
-          </p>
-        )}
-      </div>
+        {inlineError ? (
+          <p className="mt-2 text-xs font-semibold text-red-600">{inlineError}</p>
+        ) : null}
+      </section>
 
-      {/* Main List Section */}
-      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-        {/* List Filtering Header */}
-        <div className="px-8 py-5 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/30">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-            Registered Subjects ({filtered.length})
-          </span>
-          <div className="relative w-full md:w-80">
-            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 md:flex-row md:items-center md:justify-between">
+          <h3 className="text-sm font-bold text-slate-900">Subject Directory</h3>
+          <div className="relative w-full md:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter subjects by name..."
-              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-white text-xs font-medium focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+              placeholder="Search subject..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
         </div>
-
-        {/* Content Area */}
-        <div className="p-6">
+        <div className="p-4">
           {filtered.length === 0 ? (
-            <div className="py-24 flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-6">
-                <HiOutlineBookOpen size={40} />
-              </div>
-              <h3 className="text-slate-800 font-bold mb-1">
-                No subjects found
-              </h3>
-              <p className="text-slate-400 text-sm max-w-[250px]">
-                {search
-                  ? "Try adjusting your search filters."
-                  : "Start by adding your first school subject above."}
-              </p>
-            </div>
+            <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-10 text-center text-sm font-medium text-slate-500">
+              No subjects found for this filter.
+            </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((s) => (
-                <div
-                  key={s.id}
-                  className="group p-5 rounded-2xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50/40 transition-all flex items-center justify-between"
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((subject) => (
+                <article
+                  key={subject.id}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-3"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                      {s.name.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-700 text-sm">
-                        {s.name}
-                      </h4>
-                      <p className="text-[10px] text-slate-400 font-medium tracking-wide">
-                        Ref ID: VT-{s.id}
-                      </p>
-                    </div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {subject.name}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                      Required for{" "}
+                      {subjectUsage.get(subject.id)?.classCount ?? 0} classes
+                    </span>
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      Assigned to{" "}
+                      {subjectUsage.get(subject.id)?.teacherCount ?? 0} teachers
+                    </span>
+                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                      Used in{" "}
+                      {subjectUsage.get(subject.id)?.sectionCount ?? 0} sections
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 text-slate-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all rounded-lg hover:bg-red-50">
-                      <HiOutlineTrash size={18} />
-                    </button>
-                  </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </section>
+    </AcademicSetupShell>
   );
 }
