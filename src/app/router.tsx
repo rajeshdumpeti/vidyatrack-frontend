@@ -29,6 +29,8 @@ import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateScho
 import { PlatformSchoolDetailPage } from "@/features/platform/PlatformSchoolDetailPage";
 import { ManagementDashboardPage } from "@/features/management/ManagementDashboardPage";
 import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
+import { PrincipalsPage } from "@/features/management/setup/PrincipalsPage";
+import { PrincipalDashboardPage } from "@/features/principal/PrincipalDashboardPage";
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
 
@@ -86,7 +88,7 @@ export const router = createBrowserRouter([
     ),
 
     children: [
-      { index: true, element: <div>Principal Home (UI TBD)</div> },
+      { index: true, element: <PrincipalDashboardPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
       { path: "students", element: <StudentsListPage /> },
@@ -112,6 +114,7 @@ export const router = createBrowserRouter([
       { path: "students", element: <ManagementSetupStudentsPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/academic", element: <ManageSectionsPage /> },
+      { path: "principals", element: <PrincipalsPage /> },
       { path: "setup/students", element: <ManagementSetupStudentsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },

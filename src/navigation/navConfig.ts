@@ -27,6 +27,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
   management: [
     { label: "Overview", to: "/management" },
     { label: "Academic Setup", to: "/management/setup/academic" },
+    { label: "Principals", to: "/management/principals" },
     { label: "Onboard Staff", to: "/management/setup/teachers" },
     { label: "Students", to: "/management/students" },
     { label: "Teachers", to: "/management/teachers" },

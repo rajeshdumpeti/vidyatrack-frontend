@@ -130,7 +130,7 @@ export function TeachersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-4">
+      <div className="mx-auto w-full max-w-6xl px-4 py-2 space-y-4">
         {/* Header Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

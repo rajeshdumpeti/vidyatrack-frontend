@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   Activity,
-  ArrowLeft,
   ArrowRightLeft,
   ShieldCheck,
   Users,
@@ -207,16 +206,18 @@ export function PlatformSchoolDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 max-w-6xl mx-auto space-y-6">
+      <div className="flex justify-center">
+        <Link
+          to="/platform/schools"
+          className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-blue-700 hover:bg-blue-100"
+        >
+          <ArrowRightLeft className="h-4 w-4" />
+          Switch Schools
+        </Link>
+      </div>
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Link
-            to="/platform/schools"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to School Directory
-          </Link>
           <h1 className="text-2xl font-bold text-gray-900 mt-2">
             {school?.name ?? `School #${safeSchoolId}`} Dashboard
           </h1>
@@ -229,15 +230,6 @@ export function PlatformSchoolDetailPage() {
           <Activity className="h-4 w-4" />
           Live Pulse
         </div>
-      </div>
-      <div className="flex justify-end">
-        <Link
-          to="/platform/schools"
-          className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-blue-700 hover:bg-blue-100"
-        >
-          <ArrowRightLeft className="h-4 w-4" />
-          Switch Schools
-        </Link>
       </div>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -361,7 +353,6 @@ export function PlatformSchoolDetailPage() {
                         {row.role ?? "-"}
                       </td>
                       <td className="py-3 px-2 text-gray-700">
-                        <div>{row.email}</div>
                         <div>
                           {row.email !== "-" ? (
                             <a
