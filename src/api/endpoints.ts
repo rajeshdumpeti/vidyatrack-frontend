@@ -83,6 +83,16 @@ export const API_ENDPOINTS = {
 
   management: {
     teachersCreate: "/api/v1/management/teachers",
+    principal: "/api/v1/management/principal",
+    principalRegister: "/api/v1/management/principal/register",
+    principalRetryOtp: "/api/v1/management/principal/retry-otp",
+    principalHistory: "/api/v1/management/principal/history",
+    principalOnboardingStart: "/api/v1/management/principal/onboarding/start",
+    principalOnboardingVerify: "/api/v1/management/principal/onboarding/verify",
+    principalOnboardingResend: "/api/v1/management/principal/onboarding/resend",
+  },
+  principal: {
+    dashboard: "/api/v1/principal/dashboard",
   },
   cms: {
     byContentType: (contentType: string) => `/api/v1/cms/${contentType}`,

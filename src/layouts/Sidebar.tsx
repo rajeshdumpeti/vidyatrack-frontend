@@ -13,6 +13,7 @@ import {
   LayoutGrid,
   LogOut,
   NotebookPen,
+  ShieldCheck,
   UserCog,
   Users,
   X,
@@ -44,6 +45,7 @@ function navIcon(to: string) {
   if (to.includes("/setup/academic")) return LayoutGrid;
   if (to.includes("/setup/subjects")) return BookOpenText;
   if (to.includes("/setup/assign-subjects")) return ClipboardList;
+  if (to.includes("/principals")) return ShieldCheck;
   if (to.includes("/setup/teachers")) return UserCog;
   if (to.includes("/students")) return Users;
   if (to.includes("/teachers")) return UserCog;

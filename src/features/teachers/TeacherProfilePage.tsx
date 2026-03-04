@@ -1,24 +1,15 @@
 import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { logger } from "@/utils/logger";
 import { useTeacherById } from "@/hooks/useTeacherById";
-import { useAuthStore } from "@/store/auth.store";
-import { ArrowLeft, IdCard, Mail, Phone, UserCircle2 } from "lucide-react";
+import { Mail, Phone, UserCircle2 } from "lucide-react";
 
 export function TeacherProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);
   const params = useParams();
   const teacherId = Number(params.teacherId);
-  const role = useAuthStore((s) => s.role);
-  const schoolId = useAuthStore((s) => s.schoolId);
-  const schools = useAuthStore((s) => s.schools);
-  const activeSchoolName =
-    schools.find((school) => school.id === schoolId)?.name ??
-    "Vidyatrack School";
-  const backLink =
-    role === "management" ? "/management/teachers" : `/${role ?? "principal"}/teachers`;
 
   const { teacher, isLoading, error } = useTeacherById(teacherId);
 
@@ -71,13 +62,6 @@ export function TeacherProfilePage() {
       <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-5">
         {/* Header card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <Link
-            to={backLink}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Teachers
-          </Link>
           <div className="text-2xl font-extrabold tracking-tight text-gray-900">
             <UserCircle2 className="mr-2 inline h-6 w-6 text-slate-600" />
             {name}
@@ -139,53 +123,6 @@ export function TeacherProfilePage() {
               </div>
               <div className="mt-1 text-sm font-semibold text-gray-900">
                 {teacher.id}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 p-5 text-white shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-indigo-100">
-                <IdCard className="h-3.5 w-3.5" />
-                Teacher ID Card
-              </div>
-              <h3 className="mt-3 text-2xl font-extrabold tracking-tight">
-                {name}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-indigo-100">
-                {activeSchoolName}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm md:min-w-[360px]">
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-100">
-                  Teacher ID
-                </p>
-                <p className="mt-1 font-bold text-white">{teacher.id}</p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-100">
-                  Employee ID
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {teacher.employee_id ?? "Not Set"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-100">
-                  Primary Section
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {primarySection ?? "Not Assigned"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-100">
-                  Status
-                </p>
-                <p className="mt-1 font-bold text-white">{status ?? "Unknown"}</p>
               </div>
             </div>
           </div>

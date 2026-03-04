@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
@@ -18,9 +18,7 @@ import type {
 } from "@/types/student.types";
 import type { StudentNoteDto } from "@/types/studentNotes.types";
 import {
-  ArrowLeft,
   FileText,
-  IdCard,
   Phone,
   ShieldUser,
   UserCircle2,
@@ -213,17 +211,7 @@ export function StudentProfilePage() {
   const studentId = Number(params.studentId);
   const schoolId = useAuthStore((s) => s.schoolId);
   const schools = useAuthStore((s) => s.schools);
-  const role = useAuthStore((s) => s.role);
   const effectiveSchoolId = schoolId ?? schools[0]?.id ?? null;
-  const activeSchoolName =
-    schools.find((school) => school.id === effectiveSchoolId)?.name ??
-    "Vidyatrack School";
-  const backLink =
-    role === "management"
-      ? "/management/students"
-      : role === "principal"
-        ? "/principal/students"
-        : "/teacher/students";
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const studentQuery = useQuery({
@@ -326,7 +314,9 @@ export function StudentProfilePage() {
       const fallbackRows = recentResults.map((r) => {
         const maxMarks = r.max_marks ?? 100;
         const obtained = r.marks_obtained ?? 0;
-        const pct = maxMarks ? Number(((obtained / maxMarks) * 100).toFixed(2)) : 0;
+        const pct = maxMarks
+          ? Number(((obtained / maxMarks) * 100).toFixed(2))
+          : 0;
         return {
           subject_name: r.subject_name ?? "Subject",
           exam_type: r.exam_type ?? "Exam",
@@ -334,12 +324,28 @@ export function StudentProfilePage() {
           max_marks: maxMarks,
           percentage: pct,
           grade:
-            pct >= 90 ? "A+" : pct >= 80 ? "A" : pct >= 70 ? "B" : pct >= 35 ? "C" : "D",
+            pct >= 90
+              ? "A+"
+              : pct >= 80
+                ? "A"
+                : pct >= 70
+                  ? "B"
+                  : pct >= 35
+                    ? "C"
+                    : "D",
         };
       });
-      const totalObtained = fallbackRows.reduce((sum, row) => sum + row.marks_obtained, 0);
-      const totalMax = fallbackRows.reduce((sum, row) => sum + row.max_marks, 0);
-      const overallPercentage = totalMax ? Number(((totalObtained / totalMax) * 100).toFixed(2)) : 0;
+      const totalObtained = fallbackRows.reduce(
+        (sum, row) => sum + row.marks_obtained,
+        0,
+      );
+      const totalMax = fallbackRows.reduce(
+        (sum, row) => sum + row.max_marks,
+        0,
+      );
+      const overallPercentage = totalMax
+        ? Number(((totalObtained / totalMax) * 100).toFixed(2))
+        : 0;
       const fallbackReport: StudentReportCardDto = {
         student_id: studentId,
         student_name: student.name ?? "Student",
@@ -349,7 +355,8 @@ export function StudentProfilePage() {
         attendance_percentage: attendance?.percentage ?? 0,
         present_days: attendance?.present_days ?? 0,
         absent_days: attendance?.absent_days ?? 0,
-        total_days: (attendance?.present_days ?? 0) + (attendance?.absent_days ?? 0),
+        total_days:
+          (attendance?.present_days ?? 0) + (attendance?.absent_days ?? 0),
         total_obtained: totalObtained,
         total_max: totalMax,
         overall_percentage: overallPercentage,
@@ -379,7 +386,7 @@ export function StudentProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-6">
+      <div className="mx-auto w-full max-w-6xl px-4 py-2 space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
@@ -387,13 +394,6 @@ export function StudentProfilePage() {
                 {student.name?.slice(0, 1) ?? "S"}
               </div>
               <div>
-                <Link
-                  to={backLink}
-                  className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Students
-                </Link>
                 <div className="text-2xl font-extrabold text-gray-900">
                   {formatValue(student.name)}
                 </div>
@@ -404,7 +404,7 @@ export function StudentProfilePage() {
                   <span>•</span>
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
-                      student.status
+                      student.status,
                     )}`}
                   >
                     {formatValue(student.status)}
@@ -421,55 +421,6 @@ export function StudentProfilePage() {
               <FileText className="h-4 w-4" />
               {isGeneratingReport ? "Generating..." : "Generate Report Card"}
             </button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 p-5 text-white shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-100">
-                <IdCard className="h-3.5 w-3.5" />
-                Student ID Card
-              </div>
-              <h3 className="mt-3 text-2xl font-extrabold tracking-tight">
-                {formatValue(student.name)}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-blue-100">
-                {activeSchoolName}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm md:min-w-[360px]">
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Student Code
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(student.student_code)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Class / Section
-                </p>
-                <p className="mt-1 font-bold text-white">{headerClassSection}</p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Status
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(student.status)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Guardian Contact
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(guardians[0]?.phone)}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -583,7 +534,8 @@ export function StudentProfilePage() {
                             {prettyExamType(exam.exam_type)}
                           </span>
                           <span className="text-sm font-semibold text-blue-600">
-                            {formatValue(exam.marks_obtained)}/{formatValue(exam.max_marks)}
+                            {formatValue(exam.marks_obtained)}/
+                            {formatValue(exam.max_marks)}
                           </span>
                         </div>
                       ))}
@@ -662,9 +614,11 @@ export function StudentProfilePage() {
                         <div className="text-xs text-gray-500">
                           {formatValue(n.author_role)}
                         </div>
-                        {(n.class_name || n.section_name || n.subject_name) ? (
+                        {n.class_name || n.section_name || n.subject_name ? (
                           <div className="mt-1 text-xs font-medium text-blue-700">
-                            Class: {formatValue(n.class_name)} • Section: {formatValue(n.section_name)} • Subject: {formatValue(n.subject_name)}
+                            Class: {formatValue(n.class_name)} • Section:{" "}
+                            {formatValue(n.section_name)} • Subject:{" "}
+                            {formatValue(n.subject_name)}
                           </div>
                         ) : null}
                       </div>

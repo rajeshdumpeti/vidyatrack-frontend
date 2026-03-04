@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, Users, GraduationCap, ClipboardCheck } from "lucide-react";
+import {
+  LayoutGrid,
+  Users,
+  GraduationCap,
+  ClipboardCheck,
+  ShieldCheck,
+} from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuthStore } from "@/store/auth.store";
+import { useManagementPrincipal } from "@/hooks/useManagementPrincipal";
 import { getManagementDashboardCmsContent } from "@/cms";
 import {
   MANAGEMENT_DASHBOARD_DEFAULTS,
@@ -52,6 +59,7 @@ function resolveSchoolByCode(
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
+  const principalQuery = useManagementPrincipal();
   const schools = useAuthStore((state) => state.schools);
   const schoolId = useAuthStore((state) => state.schoolId);
   const setActiveSchool = useAuthStore((state) => state.setActiveSchool);
@@ -82,15 +90,15 @@ export function ManagementDashboardPage() {
     if (!activeSchool) return;
 
     const canonicalCode = slugifySchoolName(activeSchool.name);
+    console.log("", canonicalCode);
+
     const currentCode = schoolCodeParam?.trim().toLowerCase() ?? "";
 
     if (!canonicalCode || currentCode === canonicalCode) return;
 
     const next = new URLSearchParams(searchParams);
-    next.set("school_code", canonicalCode);
     setSearchParams(next, { replace: true });
   }, [activeSchool, schoolCodeParam, searchParams, setSearchParams]);
-
   useEffect(() => {
     let isMounted = true;
 
@@ -145,7 +153,20 @@ export function ManagementDashboardPage() {
   ];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto">
+      {schools.length > 1 ? (
+        <div className="space-y-2 flex justify-center ">
+          <label htmlFor="school-switch" className="mr-4 ">
+            {activeSchool?.name}
+          </label>
+          <a
+            className="text-blue-600 hover:text-blue-700 underline"
+            onClick={() => navigate("/auth/select-school")}
+          >
+            Switch Schools
+          </a>
+        </div>
+      ) : null}
       <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -153,55 +174,6 @@ export function ManagementDashboardPage() {
           </h1>
           <p className="text-gray-500">{cmsContent.dashboardSubtitle}</p>
         </div>
-
-        {schools.length > 1 ? (
-          <div className="space-y-2">
-            <label
-              htmlFor="school-switch"
-              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500"
-            >
-              Active School
-            </label>
-            <select
-              id="school-switch"
-              className="h-10 min-w-64 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-900"
-              value={effectiveSchoolId ?? ""}
-              onChange={(event) => {
-                const nextSchoolId = Number(event.target.value);
-                if (!Number.isFinite(nextSchoolId) || nextSchoolId <= 0) return;
-
-                setActiveSchool(nextSchoolId);
-                const selectedSchool = schools.find(
-                  (school) => school.id === nextSchoolId,
-                );
-
-                const next = new URLSearchParams(searchParams);
-                if (selectedSchool) {
-                  next.set(
-                    "school_code",
-                    slugifySchoolName(selectedSchool.name),
-                  );
-                } else {
-                  next.delete("school_code");
-                }
-                setSearchParams(next);
-              }}
-            >
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => navigate("/auth/select-school")}
-              className="inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-            >
-              Switch Schools
-            </button>
-          </div>
-        ) : null}
       </header>
 
       {cmsContent.heroImageUrl ? (
@@ -231,6 +203,44 @@ export function ManagementDashboardPage() {
             <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-6">
+        <Link
+          to="/management/principals"
+          className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Principal Onboarding Status
+              </div>
+              <p className="mt-3 text-base font-bold text-slate-900">
+                {principalQuery.isLoading
+                  ? "Checking principal assignment..."
+                  : principalQuery.data
+                    ? `Assigned: ${principalQuery.data.name}`
+                    : "No principal assigned yet"}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {principalQuery.data
+                  ? "Tap to update principal details or resend OTP."
+                  : "Tap to register and assign principal for OTP login."}
+              </p>
+            </div>
+            <span
+              className={[
+                "rounded-full px-2.5 py-1 text-xs font-semibold",
+                principalQuery.data
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700",
+              ].join(" ")}
+            >
+              {principalQuery.data ? "Configured" : "Pending"}
+            </span>
+          </div>
+        </Link>
       </div>
 
       <div className="mt-12 p-6 bg-blue-600 rounded-2xl text-white flex items-center justify-between gap-4">
