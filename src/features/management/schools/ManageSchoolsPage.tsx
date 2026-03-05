@@ -109,7 +109,7 @@ export function ManageSchoolsPage() {
                   "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
                   errors.admin_phone ? "border-red-500" : "border-gray-200",
                 ].join(" ")}
-                placeholder="+91XXXXXXXXXX"
+                placeholder="+91XXXXXXXXXX or +1XXXXXXXXXX"
                 {...register("admin_phone", {
                   required: "Admin phone is required",
                   validate: (v) =>

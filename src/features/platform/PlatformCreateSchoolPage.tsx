@@ -36,6 +36,7 @@ type OnboardingForm = {
   admin_department: string;
   admin_employee_id: string;
   admin_phone: string;
+  admin_phone_country: string;
   admin_email: string;
   language_preference: string;
   timezone: string;
@@ -90,6 +91,7 @@ export function PlatformCreateSchoolPage() {
       admin_department: "",
       admin_employee_id: "",
       admin_phone: "",
+      admin_phone_country: "+91",
       admin_email: "",
       language_preference: "en",
       timezone: "Asia/Kolkata",
@@ -242,7 +244,7 @@ export function PlatformCreateSchoolPage() {
     if (errors.length > 0) return;
 
     const phoneDigits = extractDigits(form.admin_phone).slice(-10);
-    const fullPhone = `+91${phoneDigits}`;
+    const fullPhone = `${form.admin_phone_country}${phoneDigits}`;
 
     await create.mutateAsync({
       name: form.school_name.trim(),
@@ -415,9 +417,11 @@ export function PlatformCreateSchoolPage() {
         onChange={(value) => updateField("admin_employee_id", value)}
         placeholder="MGT001"
       />
-      <PhoneField
+      <CountryPhoneField
         label="Management Admin Phone"
         value={form.admin_phone}
+        countryCode={form.admin_phone_country}
+        onCountryChange={(value) => updateField("admin_phone_country", value)}
         onChange={(value) => updateField("admin_phone", value)}
       />
       <Field
@@ -665,7 +669,8 @@ export function PlatformCreateSchoolPage() {
         <p className="text-sm font-semibold text-gray-900">Management Admin</p>
         <p className="mt-1 text-sm text-gray-600">
           {form.admin_first_name} {form.admin_last_name} • {form.admin_designation} •{" "}
-          {form.admin_email} • +91 {extractDigits(form.admin_phone).slice(-10)}
+          {form.admin_email} • {form.admin_phone_country}{" "}
+          {extractDigits(form.admin_phone).slice(-10)}
         </p>
       </div>
       <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -870,6 +875,47 @@ function PhoneField({
       <span className="mb-1.5 block text-sm font-semibold text-gray-700">{label}</span>
       <div className="flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2.5">
         <span className="text-sm font-semibold text-gray-700">+91</span>
+        <span className="mx-2 h-5 w-px bg-gray-200" />
+        <input
+          type="tel"
+          inputMode="numeric"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="98765 43210"
+          className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
+        />
+      </div>
+    </label>
+  );
+}
+
+function CountryPhoneField({
+  label,
+  value,
+  countryCode,
+  onCountryChange,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  countryCode: string;
+  onCountryChange: (value: string) => void;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label>
+      <span className="mb-1.5 block text-sm font-semibold text-gray-700">
+        {label}
+      </span>
+      <div className="flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+        <select
+          value={countryCode}
+          onChange={(e) => onCountryChange(e.target.value)}
+          className="bg-transparent text-sm font-semibold text-gray-700 outline-none"
+        >
+          <option value="+91">+91</option>
+          <option value="+1">+1</option>
+        </select>
         <span className="mx-2 h-5 w-px bg-gray-200" />
         <input
           type="tel"
