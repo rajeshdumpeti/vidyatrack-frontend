@@ -21,6 +21,7 @@ export type SchoolDto = {
 export type CreateSchoolPayload = {
   name: string;
   admin_phone: string;
+  admin_email?: string | null;
 };
 
 export type SchoolDashboardDto = {

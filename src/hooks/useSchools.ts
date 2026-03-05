@@ -11,7 +11,7 @@ export function useSchools() {
   });
 
   const create = useMutation({
-    mutationFn: (payload: { name: string; admin_phone: string }) =>
+    mutationFn: (payload: { name: string; admin_phone: string; admin_email?: string | null }) =>
       createSchool(payload),
     onSuccess: async () => {
       // safest: refetch to reflect server truth

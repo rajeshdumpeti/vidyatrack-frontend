@@ -249,6 +249,7 @@ export function PlatformCreateSchoolPage() {
     await create.mutateAsync({
       name: form.school_name.trim(),
       admin_phone: fullPhone,
+      admin_email: form.admin_email.trim() || null,
     });
 
     localStorage.removeItem(draftKey);
