@@ -221,9 +221,14 @@ export function StudentsListPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            })
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            )
                           }
                           className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                         >
@@ -260,9 +265,14 @@ export function StudentsListPage() {
                               trace,
                               studentId: s.id,
                             });
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            });
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            );
                           }}
                         >
                           View
@@ -319,9 +329,14 @@ export function StudentsListPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            })
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            )
                           }
                           className="truncate text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                         >

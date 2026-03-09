@@ -23,6 +23,8 @@ type FormValues = {
   phone: string;
 };
 
+const CMS_ENABLED = false;
+
 export function OtpRequestPage() {
   const navigate = useNavigate();
   const trace = useMemo(() => logger.traceId(), []);
@@ -39,6 +41,7 @@ export function OtpRequestPage() {
   const [countryCode, setCountryCode] = useState<SupportedCountryCode>("+91");
 
   useEffect(() => {
+    if (!CMS_ENABLED) return;
     let isMounted = true;
 
     const loadCms = async () => {

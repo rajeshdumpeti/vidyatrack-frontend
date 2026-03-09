@@ -14,9 +14,9 @@ export const API_ENDPOINTS = {
     list: "/api/v1/students",
     importPreview: "/api/v1/students/import/preview",
     importCommit: "/api/v1/students/import/commit",
-    detail: (studentId: number) => `/api/v1/students/${studentId}`,
-    notes: (studentId: number) => `/api/v1/students/${studentId}/notes`,
-    reportCard: (studentId: number) => `/api/v1/students/${studentId}/report-card`,
+    detail: (studentId: string) => `/api/v1/students/${studentId}`,
+    notes: (studentId: string) => `/api/v1/students/${studentId}/notes`,
+    reportCard: (studentId: string) => `/api/v1/students/${studentId}/report-card`,
   },
   attendance: {
     create: "/api/v1/attendance",
@@ -77,8 +77,8 @@ export const API_ENDPOINTS = {
     create: "/api/v1/teaching-assignments",
   },
   studentNotes: {
-    list: (studentId: number) => `/api/v1/students/${studentId}/notes`,
-    create: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+    list: (studentId: string) => `/api/v1/students/${studentId}/notes`,
+    create: (studentId: string) => `/api/v1/students/${studentId}/notes`,
   },
 
   management: {

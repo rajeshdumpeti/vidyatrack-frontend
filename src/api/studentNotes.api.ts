@@ -6,7 +6,7 @@ import type {
 } from "@/types/studentNotes.types";
 
 export async function getStudentNotes(
-  studentId: number,
+  studentId: string,
   schoolId: number,
 ): Promise<StudentNoteDto[]> {
   const res = await apiClient.get<StudentNoteDto[]>(
@@ -17,7 +17,7 @@ export async function getStudentNotes(
 }
 
 export async function createStudentNote(
-  studentId: number,
+  studentId: string,
   payload: CreateStudentNotePayload,
   schoolId: number,
 ): Promise<StudentNoteDto> {

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
   BookOpen,
@@ -16,8 +16,9 @@ import {
 
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
-import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
-import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
+import { useClasses } from "@/hooks/useClasses";
+import { useSections } from "@/hooks/useSections";
+import { useSubjects } from "@/hooks/useSubjects";
 import { useStudentsBySectionDetailed } from "@/hooks/useStudentsBySectionDetailed";
 import { useSendHomework } from "@/hooks/useSendHomework";
 import { useSendParentMessage } from "@/hooks/useSendParentMessage";
@@ -52,23 +53,22 @@ type ParentStudent = {
   parent_name?: string | null;
 };
 
-export function TeacherCommunicationsPage() {
+export function PrincipalCommunicationsPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const trace = useMemo(() => logger.traceId(), []);
   const schoolId = useAuthStore((s) => s.schoolId);
 
-  const section = useTeacherAttendanceSection();
-  const assignmentsQuery = useMyTeachingAssignments();
-  const assignments = assignmentsQuery.data ?? [];
-  const fallbackClassName =
-    location.state?.class_name || section.data?.class_name || "Class";
-  const fallbackSectionName =
-    location.state?.section_name || section.data?.section_name || "";
-  const fallbackSubjectName = location.state?.subject_name || "";
+  const classesQuery = useClasses();
+  const sectionsQuery = useSections();
+  const subjectsQuery = useSubjects();
+  const classes = classesQuery.list.data ?? [];
+  const sections = sectionsQuery.list.data ?? [];
+  const subjects = subjectsQuery.data ?? [];
 
   const [activeTab, setActiveTab] = useState<TabKey>("homework");
-  const [assignmentKey, setAssignmentKey] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState<number | "">("");
+  const [selectedSectionId, setSelectedSectionId] = useState<number | "">("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | "">("");
 
   const [homeworkTitle, setHomeworkTitle] = useState("");
   const [homeworkDescription, setHomeworkDescription] = useState("");
@@ -99,49 +99,43 @@ export function TeacherCommunicationsPage() {
   const parentMessageMutation = useSendParentMessage();
 
   useEffect(() => {
-    if (!assignmentKey && assignments.length) {
-      const stateSectionId = Number(location.state?.section_id);
-      const stateSubjectId = Number(location.state?.subject_id);
-      const stateSubjectName = String(location.state?.subject_name ?? "").trim();
-
-      const fromState = assignments.find((a) => {
-        const sameSection = a.section_id === stateSectionId;
-        const sameSubjectId =
-          Number.isFinite(stateSubjectId) && a.subject_id === stateSubjectId;
-        const sameSubjectName =
-          stateSubjectName.length > 0 &&
-          String(a.subject_name ?? "").trim() === stateSubjectName;
-        return sameSection && (sameSubjectId || sameSubjectName);
-      });
-
-      const initial = fromState ?? assignments[0];
-      setAssignmentKey(`${initial.section_id}-${initial.subject_id}`);
+    if (!selectedClassId && classes.length) {
+      setSelectedClassId(classes[0].id);
     }
-  }, [assignmentKey, assignments, location.state]);
+  }, [classes, selectedClassId]);
 
-  const selectedAssignment = useMemo(() => {
-    return assignments.find(
-      (a) => `${a.section_id}-${a.subject_id}` === assignmentKey,
+  useEffect(() => {
+    if (!selectedClassId) return;
+    const filteredSections = sections.filter(
+      (sec) => sec.class_id === selectedClassId,
     );
-  }, [assignments, assignmentKey]);
-  const assignmentClassLabel =
-    selectedAssignment?.class_name?.trim() || fallbackClassName;
-  const assignmentSectionLabel = selectedAssignment?.section_name?.trim()
-    ? selectedAssignment.section_name.trim()
-    : fallbackSectionName;
-  const assignmentSubjectLabel =
-    selectedAssignment?.subject_name?.trim() || fallbackSubjectName;
+    if (!filteredSections.length) {
+      setSelectedSectionId("");
+      return;
+    }
+    if (!filteredSections.some((s) => s.id === selectedSectionId)) {
+      setSelectedSectionId(filteredSections[0].id);
+    }
+  }, [sections, selectedClassId, selectedSectionId]);
 
-  const sectionId = selectedAssignment?.section_id;
-  const subjectId = selectedAssignment?.subject_id;
+  useEffect(() => {
+    if (!subjects.length) {
+      setSelectedSubjectId("");
+      return;
+    }
+    if (!selectedSubjectId) {
+      setSelectedSubjectId(subjects[0].id);
+    }
+  }, [subjects, selectedSubjectId]);
+
+  const sectionId =
+    typeof selectedSectionId === "number" ? selectedSectionId : undefined;
+  const subjectId =
+    typeof selectedSubjectId === "number" ? selectedSubjectId : undefined;
+
   const studentsQuery = useStudentsBySectionDetailed(sectionId);
-  const homeworkHistory = useHomeworkHistory(
-    selectedAssignment?.section_id,
-    selectedAssignment?.subject_id,
-  );
-  const parentMessagesHistory = useParentMessagesHistory(
-    selectedAssignment?.section_id,
-  );
+  const homeworkHistory = useHomeworkHistory(sectionId, subjectId);
+  const parentMessagesHistory = useParentMessagesHistory(sectionId);
 
   const parentStudents = useMemo(() => {
     return (studentsQuery.data ?? []) as ParentStudent[];
@@ -199,7 +193,7 @@ export function TeacherCommunicationsPage() {
     setNotes([]);
     setNoteError(null);
     setNoteSuccess(null);
-  }, [assignmentKey]);
+  }, [selectedSectionId, selectedSubjectId]);
 
   const fetchNotes = async () => {
     if (!studentId || !schoolId) return;
@@ -285,17 +279,18 @@ export function TeacherCommunicationsPage() {
   }, [parentMessagesHistory.data]);
 
   const canSendHomework =
-    !!selectedAssignment &&
+    typeof sectionId === "number" &&
+    typeof subjectId === "number" &&
     homeworkTitle.trim().length > 0 &&
     homeworkDescription.trim().length > 0;
 
   const handleSendHomework = () => {
-    if (!selectedAssignment) return;
+    if (typeof sectionId !== "number" || typeof subjectId !== "number") return;
     setHomeworkToast("sending");
     homeworkMutation.mutate(
       {
-        section_id: selectedAssignment.section_id,
-        subject_id: selectedAssignment.subject_id,
+        section_id: sectionId,
+        subject_id: subjectId,
         title: homeworkTitle.trim(),
         description: homeworkDescription.trim(),
         due_date: homeworkDueDate ? homeworkDueDate : null,
@@ -322,7 +317,7 @@ export function TeacherCommunicationsPage() {
 
   const hasParentSelection = selectedParentIds.length > 0;
   const canSendParentMessage =
-    !!selectedAssignment &&
+    typeof sectionId === "number" &&
     hasParentSelection &&
     parentMessage.trim().length > 0;
 
@@ -342,11 +337,11 @@ export function TeacherCommunicationsPage() {
   };
 
   const handleSendParentMessage = () => {
-    if (!selectedAssignment) return;
+    if (typeof sectionId !== "number") return;
     setParentToast("sending");
     parentMessageMutation.mutate(
       {
-        section_id: selectedAssignment.section_id,
+        section_id: sectionId,
         student_ids: selectedParentIds,
         message: parentMessage.trim(),
         subject: parentSubject.trim() || null,
@@ -371,45 +366,31 @@ export function TeacherCommunicationsPage() {
     );
   };
 
-  if (section.isLoading || assignmentsQuery.isLoading) {
-    return <LoadingState label="Loading your teaching tools..." />;
+  if (classesQuery.list.isLoading || sectionsQuery.list.isLoading || subjectsQuery.isLoading) {
+    return <LoadingState label="Loading communication data..." />;
   }
 
-  if (section.error || !section.data?.section_id) {
+  if (classesQuery.list.error || sectionsQuery.list.error || subjectsQuery.error) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto w-full max-w-2xl">
           <ErrorState
-            title="No attendance section assigned"
-            message="Please contact management to assign your attendance section."
+            title="Unable to load academic setup"
+            message="Please try again later."
           />
-          <button
-            type="button"
-            onClick={() => section.refetch()}
-            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Retry
-          </button>
         </div>
       </div>
     );
   }
 
-  if (!assignments.length) {
+  if (!classes.length || !sections.length || !subjects.length) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto w-full max-w-2xl">
           <ErrorState
-            title="No teaching assignments"
-            message="You don't have any assigned classes yet."
+            title="Academic setup incomplete"
+            message="Please ensure classes, sections, and subjects are configured."
           />
-          <button
-            type="button"
-            onClick={() => assignmentsQuery.refetch()}
-            className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            Retry
-          </button>
         </div>
       </div>
     );
@@ -532,11 +513,65 @@ export function TeacherCommunicationsPage() {
               <label className="block text-sm font-semibold text-gray-900">
                 Class & Subject
               </label>
-              <div className="mt-3 flex items-center gap-3 rounded-xl">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                {assignmentClassLabel}
-                {assignmentSectionLabel ? ` - ${assignmentSectionLabel}` : ""}
-                {assignmentSubjectLabel ? ` • ${assignmentSubjectLabel}` : ""}
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <select
+                    value={selectedClassId}
+                    onChange={(e) =>
+                      setSelectedClassId(Number(e.target.value) || "")
+                    }
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                  >
+                    {classes.length === 0 ? (
+                      <option value="">No classes</option>
+                    ) : (
+                      classes.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <select
+                    value={selectedSectionId}
+                    onChange={(e) =>
+                      setSelectedSectionId(Number(e.target.value) || "")
+                    }
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                  >
+                    {sections
+                      .filter((sec) => sec.class_id === selectedClassId)
+                      .map((sec) => (
+                        <option key={sec.id} value={sec.id}>
+                          {sec.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <select
+                    value={selectedSubjectId}
+                    onChange={(e) =>
+                      setSelectedSubjectId(Number(e.target.value) || "")
+                    }
+                    className="w-full bg-transparent text-sm font-semibold text-gray-900 outline-none"
+                  >
+                    {subjects.length === 0 ? (
+                      <option value="">No subjects</option>
+                    ) : (
+                      subjects.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
               </div>
               <p className="mt-2 text-xs text-gray-500">
                 Messages and homework are sent to the selected class & subject.

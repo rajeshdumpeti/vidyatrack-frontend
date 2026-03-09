@@ -205,8 +205,8 @@ export function ManagementSetupStudentsPage() {
   const downloadTemplate = () => {
     const csv = [
       "first_name,last_name,name,parent_phone,parent_name,class_name,section_name,roll_number,date_of_birth,gender,admission_date",
-      "Rahul,Sharma,,9876511111,Suresh Sharma,Grade 6th,A,101,2012-04-10,male,2024-06-10",
-      "Ananya,Verma,,9876522222,Priya Verma,Grade 6th,A,102,2012-08-21,female,2024-06-10",
+      "Rahul,Sharma,,9876511111,Suresh Sharma,Grade 9,A,101,2012-04-10,male,2024-06-10",
+      "Ananya,Verma,,9876522222,Priya Verma,9th,A,102,2012-08-21,female,2024-06-10",
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -239,6 +239,30 @@ export function ManagementSetupStudentsPage() {
       `Student import completed: ${res.created_rows} created, ${res.duplicate_rows} duplicates, ${res.failed_rows} failed.`,
     );
     onCloseImport();
+  };
+
+  const mapImportError = (code: string) => {
+    const key = code.trim();
+    const map: Record<string, string> = {
+      name_or_first_last_required: "Student name is required.",
+      parent_phone_required_or_invalid:
+        "Guardian phone is required and must be 10 digits.",
+      class_name_required: "Class is required.",
+      section_name_required: "Section is required.",
+      class_section_not_found:
+        "Class/Section not found. Check spelling (e.g., Grade 9 / 9th) and section.",
+      date_of_birth_must_be_yyyy_mm_dd:
+        "DOB must be in YYYY-MM-DD format.",
+      admission_date_must_be_yyyy_mm_dd:
+        "Admission date must be in YYYY-MM-DD format.",
+      gender_must_be_male_female_or_other:
+        "Gender must be male, female, or other.",
+      duplicate_in_file: "Duplicate row in this file.",
+      already_exists: "Student already exists in this class/section.",
+      section_not_found_at_commit:
+        "Section not found when importing (update class/section).",
+    };
+    return map[key] ?? key;
   };
 
   const onSubmit = async (values: CreateFormValues) => {
@@ -437,9 +461,14 @@ export function ManagementSetupStudentsPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              navigate(`/management/students/${s.id}`, {
-                                state: { breadcrumbLabel: s.name ?? "Student" },
-                              })
+                              navigate(
+                                `/management/students/${s.public_id ?? s.id}`,
+                                {
+                                  state: {
+                                    breadcrumbLabel: s.name ?? "Student",
+                                  },
+                                },
+                              )
                             }
                             className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                           >
@@ -477,9 +506,14 @@ export function ManagementSetupStudentsPage() {
                             type="button"
                             className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                             onClick={() =>
-                              navigate(`/management/students/${s.id}`, {
-                                state: { breadcrumbLabel: s.name ?? "Student" },
-                              })
+                              navigate(
+                                `/management/students/${s.public_id ?? s.id}`,
+                                {
+                                  state: {
+                                    breadcrumbLabel: s.name ?? "Student",
+                                  },
+                                },
+                              )
                             }
                           >
                             View
@@ -765,7 +799,8 @@ export function ManagementSetupStudentsPage() {
               </div>
               <p className="mt-2 text-xs text-blue-700">
                 CSV rows should include `class_name` and `section_name` to map
-                students correctly.
+                students correctly. Examples: `Grade 9`, `9th`, `Class 9`.
+                Student ID is auto-generated; do not include it in the CSV.
               </p>
             </div>
 
@@ -906,7 +941,9 @@ export function ManagementSetupStudentsPage() {
                               {row.parent_phone || "—"}
                             </td>
                             <td className="px-3 py-2 text-xs text-red-700">
-                              {row.errors.join(", ") || "—"}
+                              {row.errors.length
+                                ? row.errors.map(mapImportError).join(", ")
+                                : "—"}
                             </td>
                           </tr>
                         ))}

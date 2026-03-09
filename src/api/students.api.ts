@@ -77,7 +77,7 @@ export async function createStudent(
  * Fetch a single student profile.
  */
 export async function getStudentProfile(
-  studentId: number,
+  studentId: string,
   schoolId: number, // Added schoolId
 ): Promise<StudentProfileDto> {
   const res = await apiClient.get<StudentProfileDto>(
@@ -90,7 +90,7 @@ export async function getStudentProfile(
 }
 
 export async function getStudentReportCard(
-  studentId: number,
+  studentId: string,
   schoolId: number,
 ): Promise<StudentReportCardDto> {
   const res = await apiClient.get<StudentReportCardDto>(

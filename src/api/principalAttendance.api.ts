@@ -15,8 +15,9 @@ export async function getPrincipalAttendance(params: {
             date: params.date,
             section_id: params.sectionId,
             school_id: params.school_id,
+            include_defaults: false,
           }
-        : { date: params.date, school_id: params.school_id },
+        : { date: params.date, school_id: params.school_id, include_defaults: false },
     },
   );
 

@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import type { AxiosError } from "axios";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -32,9 +31,6 @@ type PrincipalFormValues = {
   email?: string;
 };
 
-type ApiErrorBody = {
-  detail?: string;
-};
 
 type PendingSession = {
   id: number;
@@ -68,13 +64,6 @@ export function PrincipalsPage() {
   const verifyMutation = useVerifyPrincipalOnboarding();
   const resendMutation = useResendPrincipalOnboardingOtp();
 
-  const principalApiError =
-    principalQuery.error as AxiosError<ApiErrorBody> | null;
-  const principalErrorStatus = principalApiError?.response?.status;
-  const principalErrorCode = principalApiError?.response?.data?.detail;
-  const isPrincipalNotFound =
-    principalErrorStatus === 404 &&
-    principalErrorCode === "principal_not_found";
 
   const {
     register,
@@ -187,7 +176,7 @@ export function PrincipalsPage() {
             </div>
           ) : null}
 
-          {!principalQuery.data && isPrincipalNotFound ? (
+          {!principalQuery.data && !principalQuery.isLoading && !principalQuery.error ? (
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-sm font-semibold text-slate-700">
                 No principal assigned yet
@@ -198,7 +187,7 @@ export function PrincipalsPage() {
             </div>
           ) : null}
 
-          {principalQuery.error && !principalQuery.data && !isPrincipalNotFound ? (
+          {principalQuery.error && !principalQuery.data ? (
             <div className="mt-4">
               <ErrorState
                 title="Unable to load principal"

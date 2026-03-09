@@ -15,7 +15,8 @@ export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const schoolId = useAuthStore((s) => s.schoolId);
   const [sectionId, setSectionId] = useState<number | "">("");
-  const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
+  const todayIso = formatIsoDate(new Date());
+  const [dateIso, setDateIso] = useState<string>(todayIso);
   const q = usePrincipalAttendanceHistory(
     dateIso,
     sectionId === "" ? undefined : sectionId,
@@ -36,7 +37,10 @@ export function AttendanceHistoryPage() {
     next: Partial<{ sectionId: number | ""; dateIso: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
-    if (next.dateIso !== undefined) setDateIso(next.dateIso);
+    if (next.dateIso !== undefined) {
+      const safeDate = next.dateIso > todayIso ? todayIso : next.dateIso;
+      setDateIso(safeDate);
+    }
 
     logger.info("[principal][attendance-history] filters_changed", {
       trace,
@@ -151,6 +155,7 @@ export function AttendanceHistoryPage() {
                   type="date"
                   className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   value={dateIso}
+                  max={todayIso}
                   onChange={(e) => onFilterChange({ dateIso: e.target.value })}
                 />
               </div>

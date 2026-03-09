@@ -1,10 +1,13 @@
 export type ManagementPrincipalDto = {
   principal_id: number;
+  principal_public_id?: string;
   user_id: number;
   name: string;
   phone: string;
   email?: string | null;
 };
+
+export type ManagementPrincipalResult = ManagementPrincipalDto | null;
 
 export type ManagementPrincipalRegisterInput = {
   school_id: number;

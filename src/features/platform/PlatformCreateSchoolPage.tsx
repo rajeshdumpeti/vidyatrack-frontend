@@ -184,8 +184,8 @@ export function PlatformCreateSchoolPage() {
       if (!form.state.trim()) errors.push("State is required.");
       if (!/^\d{6}$/.test(extractDigits(form.pin_code)))
         errors.push("Pin code must be 6 digits.");
-      if (extractDigits(form.school_phone).length < 10)
-        errors.push("School phone must be at least 10 digits.");
+      if (extractDigits(form.school_phone).length !== 10)
+        errors.push("School phone must be 10 digits.");
       if (!validateEmail(form.school_email))
         errors.push("School email format is invalid.");
     }
@@ -871,6 +871,12 @@ function PhoneField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const formatPhone10 = (input: string) => {
+    const digits = input.replace(/\D/g, "").slice(0, 10);
+    if (digits.length <= 5) return digits;
+    return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+  };
+
   return (
     <label>
       <span className="mb-1.5 block text-sm font-semibold text-gray-700">{label}</span>
@@ -881,7 +887,8 @@ function PhoneField({
           type="tel"
           inputMode="numeric"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(formatPhone10(e.target.value))}
+          maxLength={11}
           placeholder="98765 43210"
           className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
         />

@@ -1,7 +1,7 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 import type {
-  ManagementPrincipalDto,
+  ManagementPrincipalResult,
   ManagementPrincipalRetryOtpResult,
   PrincipalHistoryItem,
   PrincipalOnboardingResendInput,
@@ -11,16 +11,16 @@ import type {
   PrincipalOnboardingVerifyResult,
 } from "@/types/managementPrincipal.types";
 
-export async function getManagementPrincipal(): Promise<ManagementPrincipalDto> {
-  const res = await apiClient.get<ManagementPrincipalDto>(
+export async function getManagementPrincipal(): Promise<ManagementPrincipalResult> {
+  const res = await apiClient.get<ManagementPrincipalResult>(
     API_ENDPOINTS.management.principal,
   );
   return res.data;
 }
 export async function getManagementPrincipalBySchool(
   schoolId: number,
-): Promise<ManagementPrincipalDto> {
-  const res = await apiClient.get<ManagementPrincipalDto>(
+): Promise<ManagementPrincipalResult> {
+  const res = await apiClient.get<ManagementPrincipalResult>(
     API_ENDPOINTS.management.principal,
     { params: { school_id: schoolId } },
   );

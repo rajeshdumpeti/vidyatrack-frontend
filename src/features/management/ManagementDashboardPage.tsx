@@ -16,6 +16,8 @@ import {
   type ManagementDashboardCmsContent,
 } from "@/cms";
 
+const CMS_ENABLED = false;
+
 type SchoolOption = {
   id: number;
   name: string;
@@ -100,6 +102,7 @@ export function ManagementDashboardPage() {
     setSearchParams(next, { replace: true });
   }, [activeSchool, schoolCodeParam, searchParams, setSearchParams]);
   useEffect(() => {
+    if (!CMS_ENABLED) return;
     let isMounted = true;
 
     const loadCms = async () => {

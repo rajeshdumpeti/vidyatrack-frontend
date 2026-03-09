@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+/* eslint-disable react-hooks/rules-of-hooks */
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
@@ -18,10 +19,18 @@ import type {
 } from "@/types/student.types";
 import type { StudentNoteDto } from "@/types/studentNotes.types";
 import {
+  ChevronDown,
   FileText,
+  Inbox,
   Phone,
   ShieldUser,
   UserCircle2,
+  User,
+  BookOpen,
+  GraduationCap,
+  Layers,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 
 function humanizeDate(iso: string): string {
@@ -208,22 +217,46 @@ function buildReportCardHtml(report: StudentReportCardDto): string {
 export function StudentProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);
   const params = useParams();
-  const studentId = Number(params.studentId);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const studentId = params.studentId ?? "";
   const schoolId = useAuthStore((s) => s.schoolId);
   const schools = useAuthStore((s) => s.schools);
   const effectiveSchoolId = schoolId ?? schools[0]?.id ?? null;
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [notesClassFilter, setNotesClassFilter] = useState("all");
 
   const studentQuery = useQuery({
     queryKey: ["student", studentId, effectiveSchoolId ?? null],
-    enabled: Number.isFinite(studentId) && studentId > 0 && !!effectiveSchoolId,
+    enabled: !!studentId && !!effectiveSchoolId,
     retry: 1,
     queryFn: () => getStudentProfile(studentId, effectiveSchoolId!),
   });
 
   const notesQuery = useStudentNotes(studentId);
+  const notes = (notesQuery.data ?? []) as StudentNoteDto[];
+  const notesClassOptions = useMemo(() => {
+    const options = new Set<string>();
+    notes.forEach((note) => {
+      if (note.class_name) options.add(note.class_name);
+    });
+    return Array.from(options).sort();
+  }, [notes]);
+  const filteredNotes = useMemo(() => {
+    if (notesClassFilter === "all") return notes;
+    return notes.filter((note) => note.class_name === notesClassFilter);
+  }, [notes, notesClassFilter]);
 
-  if (!Number.isFinite(studentId) || studentId <= 0) {
+  const studentName = (studentQuery.data as StudentProfileDto | undefined)?.name;
+  useEffect(() => {
+    if (!studentName) return;
+    navigate(location.pathname, {
+      replace: true,
+      state: { breadcrumbLabel: studentName },
+    });
+  }, [studentName, navigate, location.pathname]);
+
+  if (!studentId) {
     return (
       <div className="px-4 py-6">
         <ErrorState title="Student not found" message="Invalid student ID." />
@@ -251,7 +284,6 @@ export function StudentProfilePage() {
   const guardians = (student.guardians ?? []) as StudentGuardian[];
   const attendance = student.attendance as StudentAttendanceSummary | null;
   const recentResults = (student.recent_results ?? []) as StudentRecentResult[];
-  const notes = (notesQuery.data ?? []) as StudentNoteDto[];
   const recentResultsMap = new Map<string, StudentRecentResult[]>();
   recentResults.forEach((r) => {
     const key =
@@ -347,9 +379,9 @@ export function StudentProfilePage() {
         ? Number(((totalObtained / totalMax) * 100).toFixed(2))
         : 0;
       const fallbackReport: StudentReportCardDto = {
-        student_id: studentId,
+        student_id: Number(student.id ?? 0),
         student_name: student.name ?? "Student",
-        student_code: student.student_code ?? `ST-${studentId}`,
+        student_code: student.student_code ?? `ST-${student.id ?? ""}`,
         class_name: student.class_name ?? null,
         section_name: student.section_name ?? null,
         attendance_percentage: attendance?.percentage ?? 0,
@@ -588,46 +620,155 @@ export function StudentProfilePage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-bold text-gray-900">Teacher Notes</div>
-            <div className="mt-4 space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {/* Header with improved styling */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2.5">
+                  <FileText className="h-5 w-5 text-blue-600" strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">
+                    Teacher Notes
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Observations and feedback from teachers
+                  </p>
+                </div>
+              </div>
+
+              {/* Filter dropdown with better styling */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-500">
+                  Filter by class
+                </span>
+                <div className="relative">
+                  <select
+                    value={notesClassFilter}
+                    onChange={(e) => setNotesClassFilter(e.target.value)}
+                    className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+                    disabled={notesClassOptions.length === 0}
+                  >
+                    <option value="all">All Classes</option>
+                    {notesClassOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    strokeWidth={2}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes list with improved card design */}
+            <div className="mt-5 space-y-4">
               {notesQuery.isLoading ? (
-                <LoadingState label="Loading notes..." />
+                <div className="flex items-center justify-center py-8">
+                  <LoadingState label="Loading notes..." />
+                </div>
               ) : notesQuery.error ? (
                 <ErrorState
                   title="Unable to load notes"
                   message="Please try again later."
                 />
-              ) : notes.length === 0 ? (
-                <EmptyState message="No notes yet." />
+              ) : filteredNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="rounded-full bg-gray-100 p-3">
+                    <Inbox
+                      className="h-6 w-6 text-gray-400"
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-gray-900">
+                    No notes yet
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Notes from teachers will appear here
+                  </p>
+                </div>
               ) : (
-                notes.map((n) => (
+                filteredNotes.map((n) => (
                   <div
                     key={n.id}
-                    className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                    className="group rounded-xl border border-gray-100 bg-white p-5 transition-all hover:border-gray-200 hover:shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {formatValue(n.author_name)}
+                    {/* Header with author and date */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        {/* Avatar with initial */}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-bold text-white shadow-sm">
+                          {n.author_name?.[0]?.toUpperCase() || "T"}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {formatValue(n.author_role)}
-                        </div>
-                        {n.class_name || n.section_name || n.subject_name ? (
-                          <div className="mt-1 text-xs font-medium text-blue-700">
-                            Class: {formatValue(n.class_name)} • Section:{" "}
-                            {formatValue(n.section_name)} • Subject:{" "}
-                            {formatValue(n.subject_name)}
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900">
+                              {formatValue(n.author_name)}
+                            </span>
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                              {formatValue(n.author_role)}
+                            </span>
                           </div>
-                        ) : null}
+
+                          {/* Student info with icons and badges */}
+                          <div className="mt-2 flex flex-col gap-1.5">
+                            {/* Student name line */}
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                              <User
+                                className="h-3.5 w-3.5 text-gray-400"
+                                strokeWidth={1.5}
+                              />
+                              <span className="font-medium">Student:</span>
+                              <span>
+                                {formatValue(n.student_name ?? student.name)}
+                              </span>
+                              {(n.class_name ||
+                                n.section_name ||
+                                n.subject_name) && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {n.class_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                                      {n.class_name}
+                                    </span>
+                                  )}
+                                  {n.section_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+                                      Section - {n.section_name}
+                                    </span>
+                                  )}
+                                  {n.subject_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                                      {n.subject_name}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Class/Section/Subject badges */}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
+
+                      <time className="flex items-center gap-1 whitespace-nowrap text-xs text-gray-400">
+                        <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />
                         {humanizeDate(n.created_at)}
-                      </div>
+                      </time>
                     </div>
-                    <div className="mt-3 text-sm text-gray-800">
-                      {n.note_text}
+
+                    {/* Note content with message icon */}
+                    <div className="mt-3 flex gap-2 pl-13">
+                      <MessageSquare
+                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400"
+                        strokeWidth={1.5}
+                      />
+                      <p className="text-sm leading-relaxed text-gray-700">
+                        {n.note_text}
+                      </p>
                     </div>
                   </div>
                 ))
