@@ -29,12 +29,17 @@ import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateScho
 import { PlatformSchoolDetailPage } from "@/features/platform/PlatformSchoolDetailPage";
 import { ManagementDashboardPage } from "@/features/management/ManagementDashboardPage";
 import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
+import { PrincipalsPage } from "@/features/management/setup/PrincipalsPage";
+import { PrincipalDashboardPage } from "@/features/principal/PrincipalDashboardPage";
+import { PrincipalCommunicationsPage } from "@/features/principal/PrincipalCommunicationsPage";
+import { AppErrorBoundary } from "@/components/feedback/AppErrorBoundary";
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
 
   {
     path: "/auth",
     element: <AuthLayout />,
+    errorElement: <AppErrorBoundary />,
     children: [
       {
         path: "login",
@@ -52,6 +57,7 @@ export const router = createBrowserRouter([
         <PlatformLayout />
       </RoleGuard>
     ),
+    errorElement: <AppErrorBoundary />,
     children: [
       { index: true, element: <PlatformDashboardPage /> },
       { path: "schools", element: <PlatformSchoolsListPage /> },
@@ -67,6 +73,7 @@ export const router = createBrowserRouter([
         <TeacherLayout />
       </RoleGuard>
     ),
+    errorElement: <AppErrorBoundary />,
     children: [
       { index: true, element: <TeacherDashboard /> },
       { path: "attendance", element: <MarkAttendance /> },
@@ -84,11 +91,13 @@ export const router = createBrowserRouter([
         <PrincipalLayout />
       </RoleGuard>
     ),
+    errorElement: <AppErrorBoundary />,
 
     children: [
-      { index: true, element: <div>Principal Home (UI TBD)</div> },
+      { index: true, element: <PrincipalDashboardPage /> },
       { path: "attendance", element: <AttendanceHistoryPage /> },
       { path: "marks", element: <MarksHistoryPage /> },
+      { path: "communication", element: <PrincipalCommunicationsPage /> },
       { path: "students", element: <StudentsListPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
@@ -103,6 +112,7 @@ export const router = createBrowserRouter([
         <ManagementLayout />
       </RoleGuard>
     ),
+    errorElement: <AppErrorBoundary />,
 
     children: [
       { index: true, element: <ManagementDashboardPage /> },
@@ -112,6 +122,7 @@ export const router = createBrowserRouter([
       { path: "students", element: <ManagementSetupStudentsPage /> },
       { path: "teachers", element: <TeachersListPage /> },
       { path: "setup/academic", element: <ManageSectionsPage /> },
+      { path: "principals", element: <PrincipalsPage /> },
       { path: "setup/students", element: <ManagementSetupStudentsPage /> },
       { path: "students/:studentId", element: <StudentProfilePage /> },
       { path: "teachers/:teacherId", element: <TeacherProfilePage /> },

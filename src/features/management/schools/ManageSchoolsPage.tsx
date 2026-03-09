@@ -8,6 +8,7 @@ import type { SchoolDto } from "@/types/school.types";
 type FormValues = {
   name: string;
   admin_phone: string;
+  admin_email: string;
 };
 
 export function ManageSchoolsPage() {
@@ -22,7 +23,7 @@ export function ManageSchoolsPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { name: "", admin_phone: "" },
+    defaultValues: { name: "", admin_phone: "", admin_email: "" },
     mode: "onBlur",
   });
 
@@ -33,11 +34,12 @@ export function ManageSchoolsPage() {
       {
         name: values.name.trim(),
         admin_phone: values.admin_phone.trim(),
+        admin_email: values.admin_email.trim() || null,
       },
       {
         onSuccess: () => {
           setToast("School created successfully.");
-          reset({ name: "", admin_phone: "" });
+          reset({ name: "", admin_phone: "", admin_email: "" });
           logger.info("[management][schools] create_success", { trace });
         },
         onError: (err) => {
@@ -109,7 +111,7 @@ export function ManageSchoolsPage() {
                   "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
                   errors.admin_phone ? "border-red-500" : "border-gray-200",
                 ].join(" ")}
-                placeholder="+91XXXXXXXXXX"
+                placeholder="+91XXXXXXXXXX or +1XXXXXXXXXX"
                 {...register("admin_phone", {
                   required: "Admin phone is required",
                   validate: (v) =>
@@ -121,6 +123,32 @@ export function ManageSchoolsPage() {
               {errors.admin_phone ? (
                 <p className="mt-2 text-sm text-red-600">
                   {errors.admin_phone.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-900">
+                Admin Email
+              </label>
+              <input
+                className={[
+                  "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
+                  "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
+                  errors.admin_email ? "border-red-500" : "border-gray-200",
+                ].join(" ")}
+                placeholder="admin@school.edu"
+                {...register("admin_email", {
+                  required: "Admin email is required",
+                  validate: (v) =>
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
+                      ? true
+                      : "Enter a valid admin email",
+                })}
+              />
+              {errors.admin_email ? (
+                <p className="mt-2 text-sm text-red-600">
+                  {errors.admin_email.message}
                 </p>
               ) : null}
             </div>

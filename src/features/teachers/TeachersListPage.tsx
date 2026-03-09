@@ -20,7 +20,7 @@ export function TeachersListPage() {
   const role = useAuthStore((s) => s.role);
   const navigateRole = role ?? "teacher";
 
-  const q = usePrincipalTeachers(search);
+  const q = usePrincipalTeachers();
   const isManagement = role === "management";
 
   const allAssignments = useMemo(() => {
@@ -35,7 +35,28 @@ export function TeachersListPage() {
 
   const filtered = useMemo(() => {
     const list = q.data ?? [];
+    const qText = search.trim().toLowerCase();
+    const tokens = qText ? qText.split(/\s+/g).filter(Boolean) : [];
+    const matchesSearch = (t: TeacherDto) => {
+      if (!tokens.length) return true;
+      const haystack = [
+        t.name,
+        t.phone,
+        t.email,
+        t.assigned_section_label,
+        t.public_id,
+        t.employee_id,
+        t.status,
+        ...(t.assignments ?? []).map((a) => a.label),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
+    };
+
     return list.filter((t) => {
+      if (!matchesSearch(t)) return false;
       if (statusFilter !== "ALL") {
         const status = (t.status ?? "").toLowerCase();
         if (status !== statusFilter.toLowerCase()) return false;
@@ -46,7 +67,7 @@ export function TeachersListPage() {
       }
       return true;
     });
-  }, [q.data, statusFilter, subjectFilter]);
+  }, [q.data, search, statusFilter, subjectFilter]);
 
   const toggleAssignments = (teacherId: number) => {
     setExpandedAssignments((prev) => ({
@@ -180,8 +201,20 @@ export function TeachersListPage() {
                     const name = t.name ?? `Teacher #${t.id}`;
                     const phone = t.phone ?? "—";
                     const email = t.email ?? "—";
-                    const employeeId = t.employee_id ?? "—";
+                    const employeeId = t.public_id ?? t.employee_id ?? "—";
                     const assignments = t.assignments ?? [];
+                    const normalizeLabel = (value: string) =>
+                      value
+                        .toLowerCase()
+                        .replace(/[\s•.-]+/g, "");
+                    const primaryLabel = t.assigned_section_label?.trim() || "";
+                    const primaryMatches =
+                      primaryLabel &&
+                      assignments.some((a) =>
+                        normalizeLabel(a.label ?? "").includes(
+                          normalizeLabel(primaryLabel),
+                        ),
+                      );
                     const isExpanded = !!expandedAssignments[t.id];
                     const visibleAssignments = isExpanded
                       ? assignments
@@ -209,13 +242,17 @@ export function TeachersListPage() {
                           >
                             {name}
                           </button>
-                          {t.assigned_section_label ? (
+                          {primaryLabel && (primaryMatches || assignments.length === 0) ? (
                             <div className="mt-1 text-xs text-gray-500">
-                              {t.assigned_section_label}
+                              Primary attendance: {primaryLabel}
                             </div>
-                          ) : null}
+                          ) : (
+                            <div className="mt-1 text-xs text-gray-400">
+                              Primary attendance: Not assigned
+                            </div>
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-700">
+                        <td className="px-4 py-3 text-xs font-semibold text-gray-700 whitespace-nowrap">
                           {employeeId}
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-600">

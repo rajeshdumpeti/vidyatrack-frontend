@@ -159,7 +159,9 @@ export function StudentsSetupPage() {
                         trace,
                         studentId: s.id,
                       });
-                      navigate(`/${navigateRole}/students/${s.id}`);
+                      navigate(
+                        `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                      );
                     }}
                   >
                     <div className="min-w-0">

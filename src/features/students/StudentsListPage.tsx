@@ -30,7 +30,7 @@ export function StudentsListPage() {
   const navigateRole = role ?? "teacher";
 
   const onFilterChange = (
-    next: Partial<{ sectionId: string; search: string }>
+    next: Partial<{ sectionId: string; search: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.search !== undefined) setSearch(next.search);
@@ -110,7 +110,9 @@ export function StudentsListPage() {
                 <select
                   className="mt-2 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
                   value={sectionId}
-                  onChange={(e) => onFilterChange({ sectionId: e.target.value })}
+                  onChange={(e) =>
+                    onFilterChange({ sectionId: e.target.value })
+                  }
                   disabled={sectionsList.isLoading}
                 >
                   <option value="">All Classes</option>
@@ -130,13 +132,13 @@ export function StudentsListPage() {
         </div>
       </main>
 
-      {isTeacher
-        ? teacherSection.isLoading || teacherStudents.isLoading
-          ? <LoadingState label="Loading students..." />
-          : null
-        : q.isLoading
-          ? <LoadingState label="Loading students..." />
-          : null}
+      {isTeacher ? (
+        teacherSection.isLoading || teacherStudents.isLoading ? (
+          <LoadingState label="Loading students..." />
+        ) : null
+      ) : q.isLoading ? (
+        <LoadingState label="Loading students..." />
+      ) : null}
 
       {isTeacher ? (
         teacherSection.error || teacherStudents.error ? (
@@ -191,8 +193,8 @@ export function StudentsListPage() {
                   const sectionLabel =
                     s.section_name && s.class_name
                       ? `${s.class_name} - ${s.section_name}`
-                      : sectionLabelById.get(s.section_id) ??
-                        `Section ${s.section_id}`;
+                      : (sectionLabelById.get(s.section_id) ??
+                        `Section ${s.section_id}`);
                   const initials = (s.name ?? "?")
                     .trim()
                     .slice(0, 2)
@@ -219,9 +221,14 @@ export function StudentsListPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            })
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            )
                           }
                           className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                         >
@@ -258,9 +265,14 @@ export function StudentsListPage() {
                               trace,
                               studentId: s.id,
                             });
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            });
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            );
                           }}
                         >
                           View
@@ -299,7 +311,12 @@ export function StudentsListPage() {
               const roll =
                 s.roll_no != null
                   ? String(s.roll_no)
-                  : String((teacherPagination.page - 1) * teacherPagination.pageSize + idx + 1);
+                  : String(
+                      (teacherPagination.page - 1) *
+                        teacherPagination.pageSize +
+                        idx +
+                        1,
+                    );
 
               return (
                 <li key={s.id} className="px-4 py-4">
@@ -312,9 +329,14 @@ export function StudentsListPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            navigate(`/${navigateRole}/students/${s.id}`, {
-                              state: { breadcrumbLabel: s.name ?? "Student" },
-                            })
+                            navigate(
+                              `/${navigateRole}/students/${s.public_id ?? s.id}`,
+                              {
+                                state: {
+                                  breadcrumbLabel: s.name ?? "Student",
+                                },
+                              },
+                            )
                           }
                           className="truncate text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                         >

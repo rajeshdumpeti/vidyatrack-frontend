@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { EmptyState } from "@/components/feedback/EmptyState";
@@ -10,15 +9,14 @@ import { useSections } from "@/hooks/useSections";
 import { useAuthStore } from "@/store/auth.store";
 import type { PrincipalAttendanceRowDto } from "@/types/principalAttendance.types";
 import type { SectionDto } from "@/types/section.types";
-import { ArrowLeft, CalendarDays, FileDown } from "lucide-react";
+import { CalendarDays, FileDown } from "lucide-react";
 
 export function AttendanceHistoryPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const schoolId = useAuthStore((s) => s.schoolId);
-  const role = useAuthStore((s) => s.role);
-  const backLink = role === "management" ? "/management" : "/principal";
   const [sectionId, setSectionId] = useState<number | "">("");
-  const [dateIso, setDateIso] = useState<string>(formatIsoDate(new Date()));
+  const todayIso = formatIsoDate(new Date());
+  const [dateIso, setDateIso] = useState<string>(todayIso);
   const q = usePrincipalAttendanceHistory(
     dateIso,
     sectionId === "" ? undefined : sectionId,
@@ -39,7 +37,10 @@ export function AttendanceHistoryPage() {
     next: Partial<{ sectionId: number | ""; dateIso: string }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
-    if (next.dateIso !== undefined) setDateIso(next.dateIso);
+    if (next.dateIso !== undefined) {
+      const safeDate = next.dateIso > todayIso ? todayIso : next.dateIso;
+      setDateIso(safeDate);
+    }
 
     logger.info("[principal][attendance-history] filters_changed", {
       trace,
@@ -77,7 +78,7 @@ export function AttendanceHistoryPage() {
       const backendLabel =
         r.class_name && r.section_name
           ? `${r.class_name} - ${r.section_name}`
-          : r.class_name ?? r.section_name;
+          : (r.class_name ?? r.section_name);
       if (backendLabel) {
         labels.set(key, backendLabel);
       }
@@ -103,15 +104,8 @@ export function AttendanceHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <header className="px-4 pt-6">
+      <header className="px-4 pt-2">
         <div className="mx-auto w-full max-w-6xl">
-          <Link
-            to={backLink}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to {role === "management" ? "Management" : "Principal"} Overview
-          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Attendance Overview
           </h1>
@@ -161,6 +155,7 @@ export function AttendanceHistoryPage() {
                   type="date"
                   className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-10 pr-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   value={dateIso}
+                  max={todayIso}
                   onChange={(e) => onFilterChange({ dateIso: e.target.value })}
                 />
               </div>

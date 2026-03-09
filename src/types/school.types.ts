@@ -1,5 +1,6 @@
 export type SchoolDto = {
   id: number;
+  public_id?: string;
   name: string;
   code?: string | null;
   board?: string | null;
@@ -20,11 +21,14 @@ export type SchoolDto = {
 
 export type CreateSchoolPayload = {
   name: string;
+  school_code?: string | null;
   admin_phone: string;
+  admin_email?: string | null;
 };
 
 export type SchoolDashboardDto = {
   school_id: number;
+  school_public_id?: string | null;
   teacher_count: number;
   student_count: number;
   staff_count: number;

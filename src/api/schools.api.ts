@@ -16,6 +16,7 @@ export async function getSchools(): Promise<SchoolDto[]> {
 export async function createSchool(payload: {
   name: string;
   admin_phone: string;
+  admin_email?: string | null;
 }): Promise<SchoolDto> {
   const res = await apiClient.post<SchoolDto>(
     API_ENDPOINTS.schools.create,

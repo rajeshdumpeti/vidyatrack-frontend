@@ -52,11 +52,12 @@ export async function listAttendanceByDateAndSection(params: {
   date: string;
   section_id: number;
   school_id: number; // ADDED
+  include_defaults?: boolean;
 }): Promise<AttendanceRecordDto[]> {
   const res = await apiClient.get<AttendanceRecordDto[]>(
     API_ENDPOINTS.attendance.list,
     {
-      params, // This now includes school_id
+      params: { ...params, include_defaults: params.include_defaults ?? true },
     },
   );
   return res.data;

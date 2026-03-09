@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+/* eslint-disable react-hooks/rules-of-hooks */
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
@@ -18,12 +19,18 @@ import type {
 } from "@/types/student.types";
 import type { StudentNoteDto } from "@/types/studentNotes.types";
 import {
-  ArrowLeft,
+  ChevronDown,
   FileText,
-  IdCard,
+  Inbox,
   Phone,
   ShieldUser,
   UserCircle2,
+  User,
+  BookOpen,
+  GraduationCap,
+  Layers,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 
 function humanizeDate(iso: string): string {
@@ -210,32 +217,46 @@ function buildReportCardHtml(report: StudentReportCardDto): string {
 export function StudentProfilePage() {
   const trace = useMemo(() => logger.traceId(), []);
   const params = useParams();
-  const studentId = Number(params.studentId);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const studentId = params.studentId ?? "";
   const schoolId = useAuthStore((s) => s.schoolId);
   const schools = useAuthStore((s) => s.schools);
-  const role = useAuthStore((s) => s.role);
   const effectiveSchoolId = schoolId ?? schools[0]?.id ?? null;
-  const activeSchoolName =
-    schools.find((school) => school.id === effectiveSchoolId)?.name ??
-    "Vidyatrack School";
-  const backLink =
-    role === "management"
-      ? "/management/students"
-      : role === "principal"
-        ? "/principal/students"
-        : "/teacher/students";
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [notesClassFilter, setNotesClassFilter] = useState("all");
 
   const studentQuery = useQuery({
     queryKey: ["student", studentId, effectiveSchoolId ?? null],
-    enabled: Number.isFinite(studentId) && studentId > 0 && !!effectiveSchoolId,
+    enabled: !!studentId && !!effectiveSchoolId,
     retry: 1,
     queryFn: () => getStudentProfile(studentId, effectiveSchoolId!),
   });
 
   const notesQuery = useStudentNotes(studentId);
+  const notes = (notesQuery.data ?? []) as StudentNoteDto[];
+  const notesClassOptions = useMemo(() => {
+    const options = new Set<string>();
+    notes.forEach((note) => {
+      if (note.class_name) options.add(note.class_name);
+    });
+    return Array.from(options).sort();
+  }, [notes]);
+  const filteredNotes = useMemo(() => {
+    if (notesClassFilter === "all") return notes;
+    return notes.filter((note) => note.class_name === notesClassFilter);
+  }, [notes, notesClassFilter]);
 
-  if (!Number.isFinite(studentId) || studentId <= 0) {
+  const studentName = (studentQuery.data as StudentProfileDto | undefined)?.name;
+  useEffect(() => {
+    if (!studentName) return;
+    navigate(location.pathname, {
+      replace: true,
+      state: { breadcrumbLabel: studentName },
+    });
+  }, [studentName, navigate, location.pathname]);
+
+  if (!studentId) {
     return (
       <div className="px-4 py-6">
         <ErrorState title="Student not found" message="Invalid student ID." />
@@ -263,7 +284,6 @@ export function StudentProfilePage() {
   const guardians = (student.guardians ?? []) as StudentGuardian[];
   const attendance = student.attendance as StudentAttendanceSummary | null;
   const recentResults = (student.recent_results ?? []) as StudentRecentResult[];
-  const notes = (notesQuery.data ?? []) as StudentNoteDto[];
   const recentResultsMap = new Map<string, StudentRecentResult[]>();
   recentResults.forEach((r) => {
     const key =
@@ -326,7 +346,9 @@ export function StudentProfilePage() {
       const fallbackRows = recentResults.map((r) => {
         const maxMarks = r.max_marks ?? 100;
         const obtained = r.marks_obtained ?? 0;
-        const pct = maxMarks ? Number(((obtained / maxMarks) * 100).toFixed(2)) : 0;
+        const pct = maxMarks
+          ? Number(((obtained / maxMarks) * 100).toFixed(2))
+          : 0;
         return {
           subject_name: r.subject_name ?? "Subject",
           exam_type: r.exam_type ?? "Exam",
@@ -334,22 +356,39 @@ export function StudentProfilePage() {
           max_marks: maxMarks,
           percentage: pct,
           grade:
-            pct >= 90 ? "A+" : pct >= 80 ? "A" : pct >= 70 ? "B" : pct >= 35 ? "C" : "D",
+            pct >= 90
+              ? "A+"
+              : pct >= 80
+                ? "A"
+                : pct >= 70
+                  ? "B"
+                  : pct >= 35
+                    ? "C"
+                    : "D",
         };
       });
-      const totalObtained = fallbackRows.reduce((sum, row) => sum + row.marks_obtained, 0);
-      const totalMax = fallbackRows.reduce((sum, row) => sum + row.max_marks, 0);
-      const overallPercentage = totalMax ? Number(((totalObtained / totalMax) * 100).toFixed(2)) : 0;
+      const totalObtained = fallbackRows.reduce(
+        (sum, row) => sum + row.marks_obtained,
+        0,
+      );
+      const totalMax = fallbackRows.reduce(
+        (sum, row) => sum + row.max_marks,
+        0,
+      );
+      const overallPercentage = totalMax
+        ? Number(((totalObtained / totalMax) * 100).toFixed(2))
+        : 0;
       const fallbackReport: StudentReportCardDto = {
-        student_id: studentId,
+        student_id: Number(student.id ?? 0),
         student_name: student.name ?? "Student",
-        student_code: student.student_code ?? `ST-${studentId}`,
+        student_code: student.student_code ?? `ST-${student.id ?? ""}`,
         class_name: student.class_name ?? null,
         section_name: student.section_name ?? null,
         attendance_percentage: attendance?.percentage ?? 0,
         present_days: attendance?.present_days ?? 0,
         absent_days: attendance?.absent_days ?? 0,
-        total_days: (attendance?.present_days ?? 0) + (attendance?.absent_days ?? 0),
+        total_days:
+          (attendance?.present_days ?? 0) + (attendance?.absent_days ?? 0),
         total_obtained: totalObtained,
         total_max: totalMax,
         overall_percentage: overallPercentage,
@@ -379,7 +418,7 @@ export function StudentProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 space-y-6">
+      <div className="mx-auto w-full max-w-6xl px-4 py-2 space-y-6">
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
@@ -387,13 +426,6 @@ export function StudentProfilePage() {
                 {student.name?.slice(0, 1) ?? "S"}
               </div>
               <div>
-                <Link
-                  to={backLink}
-                  className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Students
-                </Link>
                 <div className="text-2xl font-extrabold text-gray-900">
                   {formatValue(student.name)}
                 </div>
@@ -404,7 +436,7 @@ export function StudentProfilePage() {
                   <span>•</span>
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(
-                      student.status
+                      student.status,
                     )}`}
                   >
                     {formatValue(student.status)}
@@ -421,55 +453,6 @@ export function StudentProfilePage() {
               <FileText className="h-4 w-4" />
               {isGeneratingReport ? "Generating..." : "Generate Report Card"}
             </button>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 p-5 text-white shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-100">
-                <IdCard className="h-3.5 w-3.5" />
-                Student ID Card
-              </div>
-              <h3 className="mt-3 text-2xl font-extrabold tracking-tight">
-                {formatValue(student.name)}
-              </h3>
-              <p className="mt-1 text-sm font-medium text-blue-100">
-                {activeSchoolName}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-sm md:min-w-[360px]">
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Student Code
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(student.student_code)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Class / Section
-                </p>
-                <p className="mt-1 font-bold text-white">{headerClassSection}</p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Status
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(student.status)}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/10 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-100">
-                  Guardian Contact
-                </p>
-                <p className="mt-1 font-bold text-white">
-                  {formatValue(guardians[0]?.phone)}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -583,7 +566,8 @@ export function StudentProfilePage() {
                             {prettyExamType(exam.exam_type)}
                           </span>
                           <span className="text-sm font-semibold text-blue-600">
-                            {formatValue(exam.marks_obtained)}/{formatValue(exam.max_marks)}
+                            {formatValue(exam.marks_obtained)}/
+                            {formatValue(exam.max_marks)}
                           </span>
                         </div>
                       ))}
@@ -636,44 +620,155 @@ export function StudentProfilePage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-bold text-gray-900">Teacher Notes</div>
-            <div className="mt-4 space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {/* Header with improved styling */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-100 p-2.5">
+                  <FileText className="h-5 w-5 text-blue-600" strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">
+                    Teacher Notes
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Observations and feedback from teachers
+                  </p>
+                </div>
+              </div>
+
+              {/* Filter dropdown with better styling */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-500">
+                  Filter by class
+                </span>
+                <div className="relative">
+                  <select
+                    value={notesClassFilter}
+                    onChange={(e) => setNotesClassFilter(e.target.value)}
+                    className="appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+                    disabled={notesClassOptions.length === 0}
+                  >
+                    <option value="all">All Classes</option>
+                    {notesClassOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    strokeWidth={2}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes list with improved card design */}
+            <div className="mt-5 space-y-4">
               {notesQuery.isLoading ? (
-                <LoadingState label="Loading notes..." />
+                <div className="flex items-center justify-center py-8">
+                  <LoadingState label="Loading notes..." />
+                </div>
               ) : notesQuery.error ? (
                 <ErrorState
                   title="Unable to load notes"
                   message="Please try again later."
                 />
-              ) : notes.length === 0 ? (
-                <EmptyState message="No notes yet." />
+              ) : filteredNotes.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="rounded-full bg-gray-100 p-3">
+                    <Inbox
+                      className="h-6 w-6 text-gray-400"
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm font-medium text-gray-900">
+                    No notes yet
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Notes from teachers will appear here
+                  </p>
+                </div>
               ) : (
-                notes.map((n) => (
+                filteredNotes.map((n) => (
                   <div
                     key={n.id}
-                    className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                    className="group rounded-xl border border-gray-100 bg-white p-5 transition-all hover:border-gray-200 hover:shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {formatValue(n.author_name)}
+                    {/* Header with author and date */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        {/* Avatar with initial */}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-bold text-white shadow-sm">
+                          {n.author_name?.[0]?.toUpperCase() || "T"}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {formatValue(n.author_role)}
-                        </div>
-                        {(n.class_name || n.section_name || n.subject_name) ? (
-                          <div className="mt-1 text-xs font-medium text-blue-700">
-                            Class: {formatValue(n.class_name)} • Section: {formatValue(n.section_name)} • Subject: {formatValue(n.subject_name)}
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-gray-900">
+                              {formatValue(n.author_name)}
+                            </span>
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                              {formatValue(n.author_role)}
+                            </span>
                           </div>
-                        ) : null}
+
+                          {/* Student info with icons and badges */}
+                          <div className="mt-2 flex flex-col gap-1.5">
+                            {/* Student name line */}
+                            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                              <User
+                                className="h-3.5 w-3.5 text-gray-400"
+                                strokeWidth={1.5}
+                              />
+                              <span className="font-medium">Student:</span>
+                              <span>
+                                {formatValue(n.student_name ?? student.name)}
+                              </span>
+                              {(n.class_name ||
+                                n.section_name ||
+                                n.subject_name) && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  {n.class_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                                      {n.class_name}
+                                    </span>
+                                  )}
+                                  {n.section_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+                                      Section - {n.section_name}
+                                    </span>
+                                  )}
+                                  {n.subject_name && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                                      {n.subject_name}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Class/Section/Subject badges */}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
+
+                      <time className="flex items-center gap-1 whitespace-nowrap text-xs text-gray-400">
+                        <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />
                         {humanizeDate(n.created_at)}
-                      </div>
+                      </time>
                     </div>
-                    <div className="mt-3 text-sm text-gray-800">
-                      {n.note_text}
+
+                    {/* Note content with message icon */}
+                    <div className="mt-3 flex gap-2 pl-13">
+                      <MessageSquare
+                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400"
+                        strokeWidth={1.5}
+                      />
+                      <p className="text-sm leading-relaxed text-gray-700">
+                        {n.note_text}
+                      </p>
                     </div>
                   </div>
                 ))

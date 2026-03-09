@@ -3,12 +3,12 @@ import { getStudentNotes, createStudentNote } from "@/api/studentNotes.api";
 import type { CreateStudentNotePayload } from "@/types/studentNotes.types";
 import { useAuthStore } from "@/store/auth.store";
 
-export function useStudentNotes(studentId: number) {
+export function useStudentNotes(studentId: string) {
   const schoolId = useAuthStore((s) => s.schoolId);
   const query = useQuery({
     queryKey: ["student-notes", studentId, schoolId ?? null],
     queryFn: () => getStudentNotes(studentId, schoolId!),
-    enabled: Number.isFinite(studentId) && studentId > 0 && !!schoolId,
+    enabled: !!studentId && !!schoolId,
     retry: 1,
   });
 
@@ -20,7 +20,7 @@ export function useStudentNotes(studentId: number) {
   };
 }
 
-export function useCreateStudentNote(studentId: number) {
+export function useCreateStudentNote(studentId: string) {
   const qc = useQueryClient();
   const schoolId = useAuthStore((s) => s.schoolId);
 

@@ -53,10 +53,10 @@ export function ManagementSetupStudentsPage() {
   const [search, setSearch] = useState("");
   const [sectionId, setSectionId] = useState<string>("");
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [previewData, setPreviewData] = useState<StudentImportPreviewResponse | null>(null);
-  const [commitResult, setCommitResult] = useState<StudentImportCommitResponse | null>(
-    null,
-  );
+  const [previewData, setPreviewData] =
+    useState<StudentImportPreviewResponse | null>(null);
+  const [commitResult, setCommitResult] =
+    useState<StudentImportCommitResponse | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -114,7 +114,8 @@ export function ManagementSetupStudentsPage() {
   const sectionLabelById = useMemo(() => {
     const map = new Map<number, string>();
     (sectionsList.data ?? []).forEach((s: any) => {
-      const classLabel = classLabelById.get(s.class_id) ?? `Class ${s.class_id}`;
+      const classLabel =
+        classLabelById.get(s.class_id) ?? `Class ${s.class_id}`;
       map.set(s.id, `${classLabel} - ${s.name ?? `Section ${s.id}`}`);
     });
     return map;
@@ -150,9 +151,11 @@ export function ManagementSetupStudentsPage() {
       };
     }
 
-    const section = (sectionsList.data ?? []).find((s: any) => s.id === sectionIdNumber);
+    const section = (sectionsList.data ?? []).find(
+      (s: any) => s.id === sectionIdNumber,
+    );
     const className = section?.class_id
-      ? classLabelById.get(section.class_id) ?? `Class ${section.class_id}`
+      ? (classLabelById.get(section.class_id) ?? `Class ${section.class_id}`)
       : "Unknown Class";
     const sectionName = section?.name ?? `Section ${sectionIdNumber}`;
 
@@ -202,8 +205,8 @@ export function ManagementSetupStudentsPage() {
   const downloadTemplate = () => {
     const csv = [
       "first_name,last_name,name,parent_phone,parent_name,class_name,section_name,roll_number,date_of_birth,gender,admission_date",
-      "Rahul,Sharma,,9876511111,Suresh Sharma,Grade 6th,A,101,2012-04-10,male,2024-06-10",
-      "Ananya,Verma,,9876522222,Priya Verma,Grade 6th,A,102,2012-08-21,female,2024-06-10",
+      "Rahul,Sharma,,9876511111,Suresh Sharma,Grade 9,A,101,2012-04-10,male,2024-06-10",
+      "Ananya,Verma,,9876522222,Priya Verma,9th,A,102,2012-08-21,female,2024-06-10",
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -215,7 +218,8 @@ export function ManagementSetupStudentsPage() {
   };
 
   const handlePreviewImport = async () => {
-    if (previewImportMutation.isPending || commitImportMutation.isPending) return;
+    if (previewImportMutation.isPending || commitImportMutation.isPending)
+      return;
     if (!importFile) return;
     const data = await previewImportMutation.mutateAsync(importFile);
     setPreviewData(data);
@@ -223,7 +227,8 @@ export function ManagementSetupStudentsPage() {
   };
 
   const handleCommitImport = async () => {
-    if (commitImportMutation.isPending || previewImportMutation.isPending) return;
+    if (commitImportMutation.isPending || previewImportMutation.isPending)
+      return;
     if (!previewData?.import_token) return;
     const res = await commitImportMutation.mutateAsync({
       import_token: previewData.import_token,
@@ -234,6 +239,30 @@ export function ManagementSetupStudentsPage() {
       `Student import completed: ${res.created_rows} created, ${res.duplicate_rows} duplicates, ${res.failed_rows} failed.`,
     );
     onCloseImport();
+  };
+
+  const mapImportError = (code: string) => {
+    const key = code.trim();
+    const map: Record<string, string> = {
+      name_or_first_last_required: "Student name is required.",
+      parent_phone_required_or_invalid:
+        "Guardian phone is required and must be 10 digits.",
+      class_name_required: "Class is required.",
+      section_name_required: "Section is required.",
+      class_section_not_found:
+        "Class/Section not found. Check spelling (e.g., Grade 9 / 9th) and section.",
+      date_of_birth_must_be_yyyy_mm_dd:
+        "DOB must be in YYYY-MM-DD format.",
+      admission_date_must_be_yyyy_mm_dd:
+        "Admission date must be in YYYY-MM-DD format.",
+      gender_must_be_male_female_or_other:
+        "Gender must be male, female, or other.",
+      duplicate_in_file: "Duplicate row in this file.",
+      already_exists: "Student already exists in this class/section.",
+      section_not_found_at_commit:
+        "Section not found when importing (update class/section).",
+    };
+    return map[key] ?? key;
   };
 
   const onSubmit = async (values: CreateFormValues) => {
@@ -330,8 +359,7 @@ export function ManagementSetupStudentsPage() {
             >
               <option value="">All Sections</option>
               {(sectionsList.data ?? []).map((s: any) => {
-                const label =
-                  sectionLabelById.get(s.id) ?? `Section ${s.id}`;
+                const label = sectionLabelById.get(s.id) ?? `Section ${s.id}`;
                 return (
                   <option key={s.id} value={s.id}>
                     {label}
@@ -397,12 +425,16 @@ export function ManagementSetupStudentsPage() {
                   {studentsPagination.pagedItems.map((s: StudentDto) => {
                     const classLabel =
                       s.class_name ??
-                      ((sectionsList.data ?? []).find((section: any) => section.id === s.section_id)
-                        ?.class_name ?? "—");
+                      (sectionsList.data ?? []).find(
+                        (section: any) => section.id === s.section_id,
+                      )?.class_name ??
+                      "—";
                     const onlySectionLabel =
                       s.section_name ??
-                      ((sectionsList.data ?? []).find((section: any) => section.id === s.section_id)
-                        ?.name ?? `Section ${s.section_id ?? "—"}`);
+                      (sectionsList.data ?? []).find(
+                        (section: any) => section.id === s.section_id,
+                      )?.name ??
+                      `Section ${s.section_id ?? "—"}`;
                     const initials = (s.name ?? "?")
                       .trim()
                       .slice(0, 2)
@@ -421,7 +453,7 @@ export function ManagementSetupStudentsPage() {
                     return (
                       <tr key={s.id} className="align-middle">
                         <td className="px-4 py-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-zinc-400">
                             {initials}
                           </div>
                         </td>
@@ -429,9 +461,14 @@ export function ManagementSetupStudentsPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              navigate(`/management/students/${s.id}`, {
-                                state: { breadcrumbLabel: s.name ?? "Student" },
-                              })
+                              navigate(
+                                `/management/students/${s.public_id ?? s.id}`,
+                                {
+                                  state: {
+                                    breadcrumbLabel: s.name ?? "Student",
+                                  },
+                                },
+                              )
                             }
                             className="text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                           >
@@ -469,9 +506,14 @@ export function ManagementSetupStudentsPage() {
                             type="button"
                             className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                             onClick={() =>
-                              navigate(`/management/students/${s.id}`, {
-                                state: { breadcrumbLabel: s.name ?? "Student" },
-                              })
+                              navigate(
+                                `/management/students/${s.public_id ?? s.id}`,
+                                {
+                                  state: {
+                                    breadcrumbLabel: s.name ?? "Student",
+                                  },
+                                },
+                              )
                             }
                           >
                             View
@@ -725,7 +767,10 @@ export function ManagementSetupStudentsPage() {
 
       {isImportOpen ? (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/40" onClick={onCloseImport} />
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={onCloseImport}
+          />
           <div className="absolute inset-x-0 bottom-0 max-h-[92vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-lg md:inset-10 md:mx-auto md:max-w-5xl md:rounded-2xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -753,7 +798,9 @@ export function ManagementSetupStudentsPage() {
                 </span>
               </div>
               <p className="mt-2 text-xs text-blue-700">
-                CSV rows should include `class_name` and `section_name` to map students correctly.
+                CSV rows should include `class_name` and `section_name` to map
+                students correctly. Examples: `Grade 9`, `9th`, `Class 9`.
+                Student ID is auto-generated; do not include it in the CSV.
               </p>
             </div>
 
@@ -769,7 +816,10 @@ export function ManagementSetupStudentsPage() {
                 type="file"
                 accept=".csv"
                 className="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
-                disabled={previewImportMutation.isPending || commitImportMutation.isPending}
+                disabled={
+                  previewImportMutation.isPending ||
+                  commitImportMutation.isPending
+                }
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
                   setImportFile(file);
@@ -878,12 +928,22 @@ export function ManagementSetupStudentsPage() {
                                 {row.status}
                               </span>
                             </td>
-                            <td className="px-3 py-2">{row.student_name || "—"}</td>
-                            <td className="px-3 py-2">{row.class_name || "—"}</td>
-                            <td className="px-3 py-2">{row.section_name || "—"}</td>
-                            <td className="px-3 py-2">{row.parent_phone || "—"}</td>
+                            <td className="px-3 py-2">
+                              {row.student_name || "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {row.class_name || "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {row.section_name || "—"}
+                            </td>
+                            <td className="px-3 py-2">
+                              {row.parent_phone || "—"}
+                            </td>
                             <td className="px-3 py-2 text-xs text-red-700">
-                              {row.errors.join(", ") || "—"}
+                              {row.errors.length
+                                ? row.errors.map(mapImportError).join(", ")
+                                : "—"}
                             </td>
                           </tr>
                         ))}

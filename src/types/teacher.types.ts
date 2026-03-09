@@ -1,5 +1,6 @@
 export type TeacherDto = {
   id: number;
+  public_id?: string;
   school_id: number;
 
   name?: string | null;
@@ -23,6 +24,7 @@ export type TeacherMeDto = TeacherDto & {
 
 export type Teacher = {
   id: number;
+  public_id?: string;
   name: string;
   phone?: string;
   email?: string | null;

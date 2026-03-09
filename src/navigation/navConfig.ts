@@ -19,6 +19,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
   ],
   principal: [
     { label: "Overview", to: "/principal" },
+    { label: "Communication", to: "/principal/communication" },
     { label: "Attendance", to: "/principal/attendance" },
     { label: "Exams", to: "/principal/marks" },
     { label: "Students", to: "/principal/students" },
@@ -27,6 +28,7 @@ export const NAV_ITEMS: Record<NavRole, NavItem[]> = {
   management: [
     { label: "Overview", to: "/management" },
     { label: "Academic Setup", to: "/management/setup/academic" },
+    { label: "Principals", to: "/management/principals" },
     { label: "Onboard Staff", to: "/management/setup/teachers" },
     { label: "Students", to: "/management/students" },
     { label: "Teachers", to: "/management/teachers" },

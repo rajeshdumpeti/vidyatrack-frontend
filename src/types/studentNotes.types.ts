@@ -2,6 +2,9 @@ export type StudentNoteDto = {
   id: number;
   school_id: number;
   student_id: number;
+  student_name?: string | null;
+  section_id?: number | null;
+  subject_id?: number | null;
   author_user_id: number | null;
   author_name?: string | null;
   author_role?: string | null;
@@ -14,4 +17,6 @@ export type StudentNoteDto = {
 
 export type CreateStudentNotePayload = {
   note_text: string;
+  section_id?: number | null;
+  subject_id?: number | null;
 };

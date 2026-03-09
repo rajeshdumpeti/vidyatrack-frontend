@@ -14,9 +14,9 @@ export const API_ENDPOINTS = {
     list: "/api/v1/students",
     importPreview: "/api/v1/students/import/preview",
     importCommit: "/api/v1/students/import/commit",
-    detail: (studentId: number) => `/api/v1/students/${studentId}`,
-    notes: (studentId: number) => `/api/v1/students/${studentId}/notes`,
-    reportCard: (studentId: number) => `/api/v1/students/${studentId}/report-card`,
+    detail: (studentId: string) => `/api/v1/students/${studentId}`,
+    notes: (studentId: string) => `/api/v1/students/${studentId}/notes`,
+    reportCard: (studentId: string) => `/api/v1/students/${studentId}/report-card`,
   },
   attendance: {
     create: "/api/v1/attendance",
@@ -77,12 +77,22 @@ export const API_ENDPOINTS = {
     create: "/api/v1/teaching-assignments",
   },
   studentNotes: {
-    list: (studentId: number) => `/api/v1/students/${studentId}/notes`,
-    create: (studentId: number) => `/api/v1/students/${studentId}/notes`,
+    list: (studentId: string) => `/api/v1/students/${studentId}/notes`,
+    create: (studentId: string) => `/api/v1/students/${studentId}/notes`,
   },
 
   management: {
     teachersCreate: "/api/v1/management/teachers",
+    principal: "/api/v1/management/principal",
+    principalRegister: "/api/v1/management/principal/register",
+    principalRetryOtp: "/api/v1/management/principal/retry-otp",
+    principalHistory: "/api/v1/management/principal/history",
+    principalOnboardingStart: "/api/v1/management/principal/onboarding/start",
+    principalOnboardingVerify: "/api/v1/management/principal/onboarding/verify",
+    principalOnboardingResend: "/api/v1/management/principal/onboarding/resend",
+  },
+  principal: {
+    dashboard: "/api/v1/principal/dashboard",
   },
   cms: {
     byContentType: (contentType: string) => `/api/v1/cms/${contentType}`,

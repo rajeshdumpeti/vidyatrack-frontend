@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { Pagination } from "@/components/ui/Pagination";
@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/auth.store";
 import type { PrincipalMarksRowDto } from "@/types/principalMarks.types";
 import type { SectionDto } from "@/types/section.types";
 import { InsightState } from "@/components/feedback/InsightState";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { FileDown } from "lucide-react";
 
 const EXAM_TYPES = [
   { value: "UNIT_TEST", label: "Unit Test" },
@@ -32,8 +32,6 @@ export function MarksHistoryPage() {
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.role);
   const navigateRole = role ?? "principal";
-  const backLink =
-    navigateRole === "management" ? "/management" : `/${navigateRole}`;
   const sections = useSections().list;
   const subjects = useSubjects();
   const [sectionId, setSectionId] = useState<number | "">("");
@@ -82,9 +80,14 @@ export function MarksHistoryPage() {
     const totalMax = rows.reduce((sum, r) => sum + r.max_marks, 0);
     const avgScore = total ? totalObtained / total : 0;
     const avgPct = totalMax ? (totalObtained / totalMax) * 100 : 0;
-    const passCount = rows.filter((r) => (r.marks_obtained / r.max_marks) * 100 >= 35).length;
+    const passCount = rows.filter(
+      (r) => (r.marks_obtained / r.max_marks) * 100 >= 35,
+    ).length;
     const belowThreshold = total - passCount;
-    const topScore = rows.reduce((max, r) => Math.max(max, r.marks_obtained), 0);
+    const topScore = rows.reduce(
+      (max, r) => Math.max(max, r.marks_obtained),
+      0,
+    );
     return {
       total,
       avgScore: Math.round(avgScore * 10) / 10,
@@ -143,7 +146,17 @@ export function MarksHistoryPage() {
   const exportCsv = () => {
     if (!filteredRows.length) return;
     const lines = [
-      ["student_id", "student_name", "roll_no", "class_name", "section_name", "subject", "exam_type", "marks_obtained", "max_marks"].join(","),
+      [
+        "student_id",
+        "student_name",
+        "roll_no",
+        "class_name",
+        "section_name",
+        "subject",
+        "exam_type",
+        "marks_obtained",
+        "max_marks",
+      ].join(","),
       ...filteredRows.map((r) =>
         [
           r.student_id,
@@ -158,7 +171,9 @@ export function MarksHistoryPage() {
         ].join(","),
       ),
     ];
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([lines.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -168,7 +183,11 @@ export function MarksHistoryPage() {
   };
 
   const onFilterChange = (
-    next: Partial<{ sectionId: number | ""; subjectId: number | ""; examType: string }>,
+    next: Partial<{
+      sectionId: number | "";
+      subjectId: number | "";
+      examType: string;
+    }>,
   ) => {
     if (next.sectionId !== undefined) setSectionId(next.sectionId);
     if (next.subjectId !== undefined) setSubjectId(next.subjectId);
@@ -188,13 +207,6 @@ export function MarksHistoryPage() {
     <div className="min-h-screen bg-gray-50 pb-10">
       <header className="px-4 pt-6">
         <div className="mx-auto w-full max-w-6xl">
-          <Link
-            to={backLink}
-            className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to {navigateRole === "management" ? "Management" : "Overview"}
-          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Marks Overview
           </h1>
@@ -235,8 +247,14 @@ export function MarksHistoryPage() {
               </label>
               <select
                 className="mt-2 h-12 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                value={subjectId === "" ? String(selectedSubjectId || "") : String(subjectId)}
-                onChange={(e) => onFilterChange({ subjectId: Number(e.target.value) })}
+                value={
+                  subjectId === ""
+                    ? String(selectedSubjectId || "")
+                    : String(subjectId)
+                }
+                onChange={(e) =>
+                  onFilterChange({ subjectId: Number(e.target.value) })
+                }
                 disabled={subjects.isLoading || !subjects.data.length}
               >
                 {(subjects.data ?? []).map((s) => (
@@ -278,7 +296,10 @@ export function MarksHistoryPage() {
 
         {loading ? <LoadingState label="Loading marks..." /> : null}
         {!loading && q.error ? (
-          <ErrorState title="Unable to load marks" message="Please try again." />
+          <ErrorState
+            title="Unable to load marks"
+            message="Please try again."
+          />
         ) : null}
         {!loading && !q.error && rows.length === 0 ? (
           <InsightState
@@ -291,30 +312,54 @@ export function MarksHistoryPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-gray-500">Average Score</div>
-                <div className="mt-2 text-2xl font-extrabold text-blue-600">{totals.avgPct}%</div>
-                <div className="text-xs text-gray-500">{totals.avgScore} marks avg</div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Average Score
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-blue-600">
+                  {totals.avgPct}%
+                </div>
+                <div className="text-xs text-gray-500">
+                  {totals.avgScore} marks avg
+                </div>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-gray-500">Pass Rate</div>
-                <div className="mt-2 text-2xl font-extrabold text-green-600">{totals.passPct}%</div>
-                <div className="text-xs text-gray-500">{totals.passCount}/{totals.total} students</div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Pass Rate
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-green-600">
+                  {totals.passPct}%
+                </div>
+                <div className="text-xs text-gray-500">
+                  {totals.passCount}/{totals.total} students
+                </div>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-gray-500">Top Score</div>
-                <div className="mt-2 text-2xl font-extrabold text-indigo-600">{totals.topScore}</div>
-                <div className="text-xs text-gray-500">out of 100-scale equivalent</div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Top Score
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-indigo-600">
+                  {totals.topScore}
+                </div>
+                <div className="text-xs text-gray-500">
+                  out of 100-scale equivalent
+                </div>
               </div>
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="text-xs font-semibold text-gray-500">Below Threshold</div>
-                <div className="mt-2 text-2xl font-extrabold text-red-600">{totals.belowThreshold}</div>
+                <div className="text-xs font-semibold text-gray-500">
+                  Below Threshold
+                </div>
+                <div className="mt-2 text-2xl font-extrabold text-red-600">
+                  {totals.belowThreshold}
+                </div>
                 <div className="text-xs text-gray-500">needs improvement</div>
               </div>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="border-b border-gray-200 px-4 py-3">
-                <div className="text-sm font-semibold text-gray-900">Class-wise Breakdown</div>
+                <div className="text-sm font-semibold text-gray-900">
+                  Class-wise Breakdown
+                </div>
               </div>
               <div className="w-full overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
@@ -331,17 +376,26 @@ export function MarksHistoryPage() {
                   <tbody className="divide-y divide-gray-100">
                     {classBreakdown.map((row) => (
                       <tr key={row.label}>
-                        <td className="px-4 py-3 font-semibold text-gray-900">{row.label}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900">
+                          {row.label}
+                        </td>
                         <td className="px-4 py-3">{row.total}</td>
-                        <td className="px-4 py-3 text-blue-600">{row.avgPct}%</td>
+                        <td className="px-4 py-3 text-blue-600">
+                          {row.avgPct}%
+                        </td>
                         <td className="px-4 py-3 text-green-600">{row.pass}</td>
                         <td className="px-4 py-3 text-red-600">{row.fail}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-2 w-full max-w-[160px] rounded-full bg-gray-100">
-                              <div className="h-2 rounded-full bg-blue-500" style={{ width: `${row.avgPct}%` }} />
+                              <div
+                                className="h-2 rounded-full bg-blue-500"
+                                style={{ width: `${row.avgPct}%` }}
+                              />
                             </div>
-                            <div className="text-xs font-semibold text-gray-600">{row.avgPct}%</div>
+                            <div className="text-xs font-semibold text-gray-600">
+                              {row.avgPct}%
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -349,15 +403,21 @@ export function MarksHistoryPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 text-xs text-gray-500">Showing {classBreakdown.length} classes</div>
+              <div className="px-4 py-3 text-xs text-gray-500">
+                Showing {classBreakdown.length} classes
+              </div>
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="border-b border-gray-200 px-4 py-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">Student Results</div>
-                    <div className="mt-1 text-xs text-gray-500">Search and open student profile or export current list.</div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      Student Results
+                    </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      Search and open student profile or export current list.
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -394,21 +454,30 @@ export function MarksHistoryPage() {
                       const classLabel =
                         r.class_name && r.section_name
                           ? `${r.class_name} - ${r.section_name}`
-                          : (r.section_id ? sectionLabelById.get(r.section_id) : undefined) ?? "—";
-                      const percent = pct((r.marks_obtained / r.max_marks) * 100);
+                          : ((r.section_id
+                              ? sectionLabelById.get(r.section_id)
+                              : undefined) ?? "—");
+                      const percent = pct(
+                        (r.marks_obtained / r.max_marks) * 100,
+                      );
                       return (
                         <tr key={r.id}>
-                          <td className="px-4 py-3">{r.roll_no ?? r.student_id}</td>
+                          <td className="px-4 py-3">
+                            {r.roll_no ?? r.student_id}
+                          </td>
                           <td className="px-4 py-3 font-semibold text-gray-900">
                             <button
                               type="button"
                               onClick={() =>
-                                navigate(`/${navigateRole}/students/${r.student_id}`, {
-                                  state: {
-                                    breadcrumbLabel:
-                                      r.student_name ?? "Student Profile",
+                                navigate(
+                                  `/${navigateRole}/students/${r.student_id}`,
+                                  {
+                                    state: {
+                                      breadcrumbLabel:
+                                        r.student_name ?? "Student Profile",
+                                    },
                                   },
-                                })
+                                )
                               }
                               className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                             >
@@ -416,7 +485,9 @@ export function MarksHistoryPage() {
                             </button>
                           </td>
                           <td className="px-4 py-3">{classLabel}</td>
-                          <td className="px-4 py-3">{r.marks_obtained}/{r.max_marks}</td>
+                          <td className="px-4 py-3">
+                            {r.marks_obtained}/{r.max_marks}
+                          </td>
                           <td className="px-4 py-3">
                             <span
                               className={[
@@ -435,12 +506,15 @@ export function MarksHistoryPage() {
                             <button
                               type="button"
                               onClick={() =>
-                                navigate(`/${navigateRole}/students/${r.student_id}`, {
-                                  state: {
-                                    breadcrumbLabel:
-                                      r.student_name ?? "Student Profile",
+                                navigate(
+                                  `/${navigateRole}/students/${r.student_id}`,
+                                  {
+                                    state: {
+                                      breadcrumbLabel:
+                                        r.student_name ?? "Student Profile",
+                                    },
                                   },
-                                })
+                                )
                               }
                               className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                             >
