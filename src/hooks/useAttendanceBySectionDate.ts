@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/queryKeys";
 import axios from "axios";
 import { listAttendanceByDateAndSection } from "../api/attendance.api";
 
@@ -8,7 +9,7 @@ export function useAttendanceBySectionDate(
   schoolId?: number | null,
 ) {
   return useQuery({
-    queryKey: ["attendance", "section", sectionId, date, schoolId ?? null],
+    queryKey: queryKeys.attendanceBySectionDate(sectionId, date, schoolId),
     enabled: Boolean(sectionId && date && schoolId),
     queryFn: async () => {
       try {

@@ -1,27 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
-import {
-  ChevronLeft,
-  ChevronRight,
-  BookOpenText,
-  Building2,
-  CalendarClock,
-  CirclePlus,
-  ClipboardList,
-  GraduationCap,
-  House,
-  LayoutGrid,
-  LogOut,
-  NotebookPen,
-  ShieldCheck,
-  UserCog,
-  Users,
-  X,
-} from "lucide-react";
 import type { NavItem, NavRole } from "@/navigation/navConfig";
-import { HiAcademicCap } from "react-icons/hi2";
 
-type SidebarProps = {
+import { SidebarAccountMenu } from "./sidebar/components/SidebarAccountMenu";
+import { SidebarHeader } from "./sidebar/components/SidebarHeader";
+import {
+  getSidebarNavIcon,
+  sidebarLinkBase,
+  sidebarRoleTitleMap,
+} from "./sidebar/helpers/sidebar.helpers";
+
+export type SidebarProps = {
   role?: NavRole;
   items: NavItem[];
   onClose?: () => void;
@@ -30,32 +19,6 @@ type SidebarProps = {
   collapsed?: boolean;
   showCollapseToggle?: boolean;
 };
-
-const linkBase = "flex h-11 items-center rounded-xl px-3 text-sm font-semibold";
-const roleTitleMap: Record<NavRole, string> = {
-  management: "Management",
-  principal: "Principal",
-  teacher: "Teacher",
-  super_admin: "Platform",
-};
-
-function navIcon(to: string) {
-  if (to === "/management" || to === "/principal" || to === "/platform")
-    return House;
-  if (to.includes("/setup/academic")) return LayoutGrid;
-  if (to.includes("/setup/subjects")) return BookOpenText;
-  if (to.includes("/setup/assign-subjects")) return ClipboardList;
-  if (to.includes("/principals")) return ShieldCheck;
-  if (to.includes("/setup/teachers")) return UserCog;
-  if (to.includes("/students")) return Users;
-  if (to.includes("/teachers")) return UserCog;
-  if (to.includes("/attendance")) return CalendarClock;
-  if (to.includes("/marks")) return GraduationCap;
-  if (to.includes("/notes")) return NotebookPen;
-  if (to.includes("/platform/schools/new")) return CirclePlus;
-  if (to.includes("/platform/schools")) return Building2;
-  return House;
-}
 
 export function Sidebar({
   role,
@@ -66,8 +29,9 @@ export function Sidebar({
   collapsed = false,
   showCollapseToggle = true,
 }: SidebarProps) {
-  const roleTitle = role ? roleTitleMap[role] : "Menu";
-  const initials = roleTitle.slice(0, 2).toUpperCase();
+  const roleTitle = role ? sidebarRoleTitleMap[role] : "Menu";
+  const linkBase =
+    "flex h-11 items-center rounded-xl px-3 text-sm font-semibold";
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,186 +53,73 @@ export function Sidebar({
   return (
     <aside
       className={[
-        "flex h-full flex-col overflow-hidden rounded-r-[2rem] border-r border-gray-200/80 bg-[#eef3f1] text-gray-800 md:rounded-3xl md:border md:border-white/70 md:shadow-[0_10px_28px_rgba(15,23,42,0.08)]",
+        "flex h-full flex-col bg-white border-r border-gray-200",
         collapsed ? "w-20" : "w-72",
+        "transition-all duration-200 ease-in-out",
       ].join(" ")}
     >
-      <div className={collapsed ? "px-3 pb-3 pt-5" : "px-4 pb-3 pt-5"}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50">
-              <HiAcademicCap className="h-5 w-5 text-blue-600" />
-            </div>
-            {!collapsed ? (
-              <span className="text-sm font-extrabold tracking-tight text-gray-900">
-                VidyaTrack
-              </span>
-            ) : null}
-          </div>
-
-          {showCollapseToggle && onToggleCollapse ? (
-            <button
-              type="button"
-              onClick={onToggleCollapse}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-gray-300/80 bg-white text-gray-600 hover:bg-gray-50"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </button>
-          ) : null}
-
-          {!showCollapseToggle && onClose ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300/80 bg-white text-gray-600 hover:bg-gray-50"
-              aria-label="Close menu"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <SidebarHeader
+        collapsed={collapsed}
+        showCollapseToggle={showCollapseToggle}
+        onToggleCollapse={onToggleCollapse}
+        onClose={onClose}
+      />
 
       <nav
         className={[
-          "flex flex-1 flex-col gap-1.5 overflow-y-auto pb-3",
-          collapsed ? "px-2" : "px-3",
+          "flex-1 overflow-y-auto py-3",
+          collapsed ? "px-2" : "px-2",
         ].join(" ")}
       >
-        {items.map((item) => {
-          const ItemIcon = navIcon(item.to);
+        <ul className="space-y-0.5">
+          {items.map((item) => {
+            const ItemIcon = getSidebarNavIcon(item.to);
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end
-              onClick={onClose}
-              title={collapsed ? item.label : undefined}
-            >
-              {({ isActive }) => (
-                <span
-                  className={[
-                    "group relative",
-                    linkBase,
-                    collapsed ? "justify-center px-0" : "",
-                    isActive
-                      ? "bg-white text-gray-950 shadow-[0_1px_2px_rgba(17,24,39,0.08)]"
-                      : "text-gray-700 hover:bg-white/75 hover:text-gray-900",
-                  ].join(" ")}
+            return (
+              <li key={item.to}>
+                <NavLink
+                  to={item.to}
+                  end
+                  onClick={onClose}
+                  title={collapsed ? item.label : undefined}
                 >
-                  {isActive ? (
+                  {({ isActive }) => (
                     <span
-                      className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gray-900"
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                  <ItemIcon
-                    className={
-                      collapsed ? "h-4 w-4 shrink-0" : "mr-2.5 h-4 w-4 shrink-0"
-                    }
-                  />
-                  {collapsed ? (
-                    <span className="sr-only">{item.label}</span>
-                  ) : (
-                    item.label
-                  )}
-                  {collapsed ? (
-                    <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white shadow-lg group-hover:block">
-                      {item.label}
+                      className={[
+                        sidebarLinkBase,
+                        collapsed ? "justify-center px-0" : "",
+                        isActive
+                          ? `bg-gray-100 text-gray-900 font-medium`
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                      ].join(" ")}
+                    >
+                      <ItemIcon
+                        className={[
+                          "shrink-0",
+                          collapsed ? "h-4 w-4" : "mr-3 h-4 w-4",
+                          isActive ? "text-gray-900" : "text-gray-500",
+                        ].join(" ")}
+                      />
+                      {!collapsed && (
+                        <span className="truncate">{item.label}</span>
+                      )}
                     </span>
-                  ) : null}
-                </span>
-              )}
-            </NavLink>
-          );
-        })}
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      <div
-        className={
-          collapsed
-            ? "border-t border-gray-300/60 p-2"
-            : "border-t border-gray-300/60 p-3"
-        }
-      >
-        {!collapsed ? (
-          <>
-            <div className="relative mt-2" ref={accountMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsAccountMenuOpen((prev) => !prev)}
-                className="flex w-full items-center gap-2.5 text-left"
-                aria-haspopup="menu"
-                aria-expanded={isAccountMenuOpen}
-              >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white">
-                  {initials}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">
-                    Pilot User
-                  </p>
-                  <p className="truncate text-xs font-medium text-gray-500">
-                    {roleTitle}
-                  </p>
-                </div>
-              </button>
-              {isAccountMenuOpen ? (
-                <div
-                  className="absolute bottom-[calc(100%+0.5rem)] left-0 z-30 w-full rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
-                  role="menu"
-                >
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="inline-flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
-                    role="menuitem"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Logout
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          </>
-        ) : (
-          <div className="relative" ref={accountMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsAccountMenuOpen((prev) => !prev)}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-white/80 bg-white/65 text-sm font-bold text-gray-700 hover:bg-white"
-              aria-label="Account menu"
-              title="Account menu"
-              aria-haspopup="menu"
-              aria-expanded={isAccountMenuOpen}
-            >
-              {initials}
-            </button>
-            {isAccountMenuOpen ? (
-              <div
-                className="absolute bottom-[calc(100%+0.5rem)] left-full z-30 ml-2 w-40 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg"
-                role="menu"
-              >
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex h-9 w-full items-center gap-2 rounded-lg px-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100"
-                  role="menuitem"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Logout
-                </button>
-              </div>
-            ) : null}
-          </div>
-        )}
+      <div className="relative" ref={accountMenuRef}>
+        <SidebarAccountMenu
+          collapsed={collapsed}
+          roleTitle={roleTitle}
+          isOpen={isAccountMenuOpen}
+          onToggle={() => setIsAccountMenuOpen((prev) => !prev)}
+          onLogout={onLogout}
+        />
       </div>
     </aside>
   );

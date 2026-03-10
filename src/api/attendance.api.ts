@@ -1,5 +1,6 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
+import { schoolParams } from "./helpers/schoolParams";
 import type {
   CreateAttendanceRequest,
   SubmitAttendanceRequest,
@@ -16,7 +17,7 @@ export async function createAttendanceRecord(
   const res = await apiClient.post(
     API_ENDPOINTS.attendance.create,
     payload,
-    { params: { school_id: schoolId } }, // Force school_id into the query string
+    { params: schoolParams(schoolId) },
   );
   return res.data;
 }
@@ -26,7 +27,7 @@ export async function submitAttendance(
   schoolId: number,
 ) {
   const res = await apiClient.post(API_ENDPOINTS.attendance.submit, payload, {
-    params: { school_id: schoolId }, // Axios serializes this correctly
+    params: schoolParams(schoolId),
   });
   return res.data;
 }

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listHomework } from "@/api/communications.api";
+import { queryKeys } from "@/constants/queryKeys";
 import type { HomeworkRecordDto } from "@/types/communications.types";
 import { useAuthStore } from "@/store/auth.store";
 import axios from "axios";
@@ -8,7 +9,7 @@ export function useHomeworkHistory(sectionId?: number, subjectId?: number) {
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const query = useQuery({
-    queryKey: ["communications", "homework", sectionId, subjectId, schoolId],
+    queryKey: queryKeys.homeworkHistory(sectionId, subjectId, schoolId),
     queryFn: async () => {
       if (!schoolId) return [];
       try {

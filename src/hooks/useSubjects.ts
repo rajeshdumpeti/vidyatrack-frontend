@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAcademicSetup } from "@/api/academicSetup.api";
 import { createSubject } from "@/api/subjects.api";
+import { queryKeys } from "@/constants/queryKeys";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useSubjects() {
   const { schoolId } = useAuthStore();
   const q = useQuery({
-    queryKey: ["academic-setup", schoolId],
+    queryKey: queryKeys.academicSetup(schoolId),
     queryFn: () => getAcademicSetup(schoolId!),
     select: (data) => data.subjects,
     enabled: !!schoolId,
@@ -30,8 +31,8 @@ export function useCreateSubject() {
     mutationFn: (payload: { name: string }) =>
       createSubject({ ...payload, school_id: schoolId! }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["academic-setup", schoolId] });
-      qc.invalidateQueries({ queryKey: ["subjects", schoolId] });
+      qc.invalidateQueries({ queryKey: queryKeys.academicSetup(schoolId) });
+      qc.invalidateQueries({ queryKey: queryKeys.subjects(schoolId) });
     },
   });
 }

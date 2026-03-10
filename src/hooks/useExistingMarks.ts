@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/api/apiClient";
 import { API_ENDPOINTS } from "@/api/endpoints";
+import { queryKeys } from "@/constants/queryKeys";
 import { useAuthStore } from "@/store/auth.store";
 
 type ExistingMarksData = {
   marksMap: Record<string, string>;
   maxMarks: number | null;
+};
+
+type ExistingMarksRecord = {
+  student_id?: number | string | null;
+  marks_obtained?: number | string | null;
+  max_marks?: number | null;
 };
 
 export function useExistingMarks(
@@ -16,13 +23,12 @@ export function useExistingMarks(
   const schoolId = useAuthStore((s) => s.schoolId);
 
   return useQuery({
-    queryKey: [
-      "existing-marks",
+    queryKey: queryKeys.existingMarks({
       sectionId,
       subjectId,
       examType,
-      schoolId ?? null,
-    ],
+      schoolId,
+    }),
     queryFn: async () => {
       if (!sectionId || !subjectId || !examType || !schoolId) {
         return { marksMap: {}, maxMarks: null } satisfies ExistingMarksData;
@@ -42,8 +48,8 @@ export function useExistingMarks(
         const marksMap: Record<string, string> = {};
         let maxMarks: number | null = null;
 
-        (response.data || []).forEach((record: any) => {
-          if (record.student_id && record.marks_obtained !== undefined) {
+        ((response.data || []) as ExistingMarksRecord[]).forEach((record) => {
+          if (record.student_id && record.marks_obtained != null) {
             marksMap[record.student_id.toString()] =
               record.marks_obtained.toString();
           }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyAttendanceSection, getTeacherMe } from "@/api/teachers.api";
+import { queryKeys } from "@/constants/queryKeys";
 import type { AttendanceSection } from "@/types/attendance.types";
 import { useAuthStore } from "@/store/auth.store";
 import { useTeacherContext } from "@/hooks/useTeacherContext";
@@ -28,7 +29,7 @@ export function useTeacherAttendanceSection() {
   const didFallbackRef = useRef(false);
   const teacherContext = useTeacherContext();
   const query = useQuery({
-    queryKey: ["teacher", "me", "attendance-section"],
+    queryKey: queryKeys.attendanceSection(),
     queryFn: getMyAttendanceSection,
     // Do not block on schoolId; this endpoint is the source of truth for teacher context.
     enabled: true,

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getStudents } from "@/api/students.api";
+import { queryKeys } from "@/constants/queryKeys";
+import { requireSchoolId } from "@/helpers/requireSchoolId";
 import type {
   StudentCreateInput,
   StudentImportCommitInput,
@@ -14,7 +16,7 @@ import { useAuthStore } from "@/store/auth.store";
 export function useStudents() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const query = useQuery({
-    queryKey: ["students", schoolId ?? null],
+    queryKey: queryKeys.students(schoolId),
     queryFn: () => getStudents(schoolId!),
     enabled: !!schoolId,
   });
@@ -32,14 +34,10 @@ export function useCreateStudent() {
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const mutation = useMutation({
-    mutationFn: (payload: StudentCreateInput) => {
-      if (!schoolId) {
-        throw new Error("Missing school context. Please log in again.");
-      }
-      return createStudent(payload, schoolId);
-    },
+    mutationFn: (payload: StudentCreateInput) =>
+      createStudent(payload, requireSchoolId(schoolId)),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["students"] });
+      await qc.invalidateQueries({ queryKey: queryKeys.students(schoolId) });
     },
   });
 
@@ -57,12 +55,8 @@ export function useCreateStudent() {
 export function usePreviewStudentsImport() {
   const schoolId = useAuthStore((s) => s.schoolId);
   return useMutation({
-    mutationFn: (file: File) => {
-      if (!schoolId) {
-        throw new Error("Missing school context. Please log in again.");
-      }
-      return previewStudentsImport(file, schoolId);
-    },
+    mutationFn: (file: File) =>
+      previewStudentsImport(file, requireSchoolId(schoolId)),
   });
 }
 
@@ -70,14 +64,10 @@ export function useCommitStudentsImport() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: StudentImportCommitInput) => {
-      if (!schoolId) {
-        throw new Error("Missing school context. Please log in again.");
-      }
-      return commitStudentsImport(payload, schoolId);
-    },
+    mutationFn: (payload: StudentImportCommitInput) =>
+      commitStudentsImport(payload, requireSchoolId(schoolId)),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["students"] });
+      await qc.invalidateQueries({ queryKey: queryKeys.students(schoolId) });
     },
   });
 }

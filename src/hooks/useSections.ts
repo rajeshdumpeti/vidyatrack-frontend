@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAcademicSetup } from "@/api/academicSetup.api";
 import { createSection } from "@/api/sections.api";
-import { useAuthStore } from "@/store/auth.store"; // Import the store
+import { queryKeys } from "@/constants/queryKeys";
+import { useAuthStore } from "@/store/auth.store";
 
 export function useSections() {
   const qc = useQueryClient();
   const { schoolId } = useAuthStore();
 
   const list = useQuery({
-    queryKey: ["academic-setup", schoolId],
+    queryKey: queryKeys.academicSetup(schoolId),
     queryFn: () => getAcademicSetup(schoolId!),
     select: (data) => data.sections,
     enabled: !!schoolId,
@@ -20,11 +21,10 @@ export function useSections() {
       class_id: number;
       name: string;
       school_id: number;
-    }) => createSection({ ...payload, school_id: schoolId! }), // Inject schoolId here
+    }) => createSection({ ...payload, school_id: schoolId! }),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["academic-setup", schoolId] });
-      // Only invalidate the cache for the current school
-      await qc.invalidateQueries({ queryKey: ["sections", schoolId] });
+      await qc.invalidateQueries({ queryKey: queryKeys.academicSetup(schoolId) });
+      await qc.invalidateQueries({ queryKey: queryKeys.sections(schoolId) });
     },
   });
 
