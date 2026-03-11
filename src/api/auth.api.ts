@@ -5,6 +5,7 @@ import type {
   OtpVerifyBody,
   OtpVerifyResponse,
 } from "@/types/auth.types";
+import axios from "axios";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 import { logger } from "@/utils/logger";
@@ -26,11 +27,11 @@ export async function requestOtp(phone: string): Promise<OtpRequestResponse> {
       });
     }
     return res.data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (import.meta.env.DEV) {
       logger.warn("[auth][otp-request][api] error", {
-        status: err?.response?.status,
-        data: err?.response?.data,
+        status: axios.isAxiosError(err) ? err.response?.status : undefined,
+        data: axios.isAxiosError(err) ? err.response?.data : undefined,
       });
     }
     throw err;
@@ -57,11 +58,11 @@ export async function verifyOtp(
       });
     }
     return res.data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (import.meta.env.DEV) {
       logger.warn("[auth][otp-verify][api] error", {
-        status: err?.response?.status,
-        data: err?.response?.data,
+        status: axios.isAxiosError(err) ? err.response?.status : undefined,
+        data: axios.isAxiosError(err) ? err.response?.data : undefined,
       });
     }
     throw err;

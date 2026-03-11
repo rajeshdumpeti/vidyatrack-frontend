@@ -2,6 +2,7 @@ export type StudentListItem = {
   id: number;
   name: string;
   roll_no?: string | number | null;
+  public_id?: string | number | null;
 };
 
 export type StudentDto = {

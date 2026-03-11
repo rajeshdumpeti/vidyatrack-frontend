@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/queryKeys";
 import {
   getSchoolDashboard,
   getSchoolStaff,
@@ -10,28 +11,28 @@ export function usePlatformSchoolDashboard(schoolId: number | null) {
   const enabled = typeof schoolId === "number" && schoolId > 0;
 
   const dashboard = useQuery({
-    queryKey: ["platform-school-dashboard", schoolId],
+    queryKey: queryKeys.platformSchoolDashboard(schoolId),
     queryFn: () => getSchoolDashboard(schoolId!),
     enabled,
     retry: 1,
   });
 
   const teachers = useQuery({
-    queryKey: ["platform-school-teachers", schoolId],
+    queryKey: queryKeys.platformSchoolTeachers(schoolId),
     queryFn: () => getSchoolTeachers(schoolId!),
     enabled,
     retry: 1,
   });
 
   const students = useQuery({
-    queryKey: ["platform-school-students", schoolId],
+    queryKey: queryKeys.platformSchoolStudents(schoolId),
     queryFn: () => getSchoolStudents(schoolId!),
     enabled,
     retry: 1,
   });
 
   const staff = useQuery({
-    queryKey: ["platform-school-staff", schoolId],
+    queryKey: queryKeys.platformSchoolStaff(schoolId),
     queryFn: () => getSchoolStaff(schoolId!),
     enabled,
     retry: 1,

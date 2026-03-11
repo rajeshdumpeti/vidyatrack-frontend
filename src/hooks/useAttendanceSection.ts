@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMyAttendanceSection } from "@/api/teachers.api";
+import { queryKeys } from "@/constants/queryKeys";
 
 /**
  * Single source of truth for teacher's primary attendance section context.
@@ -7,7 +8,7 @@ import { getMyAttendanceSection } from "@/api/teachers.api";
  */
 export function useAttendanceSection() {
   return useQuery({
-    queryKey: ["teacher", "me", "attendance-section"],
+    queryKey: queryKeys.attendanceSection(),
     queryFn: getMyAttendanceSection,
   });
 }

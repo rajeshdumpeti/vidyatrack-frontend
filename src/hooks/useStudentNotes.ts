@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStudentNotes, createStudentNote } from "@/api/studentNotes.api";
+import { queryKeys } from "@/constants/queryKeys";
+import { requireSchoolId } from "@/helpers/requireSchoolId";
 import type { CreateStudentNotePayload } from "@/types/studentNotes.types";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useStudentNotes(studentId: string) {
   const schoolId = useAuthStore((s) => s.schoolId);
   const query = useQuery({
-    queryKey: ["student-notes", studentId, schoolId ?? null],
+    queryKey: queryKeys.studentNotes(studentId, schoolId),
     queryFn: () => getStudentNotes(studentId, schoolId!),
     enabled: !!studentId && !!schoolId,
     retry: 1,
@@ -25,14 +27,12 @@ export function useCreateStudentNote(studentId: string) {
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const mutation = useMutation({
-    mutationFn: (payload: CreateStudentNotePayload) => {
-      if (!schoolId) {
-        throw new Error("Missing school context. Please log in again.");
-      }
-      return createStudentNote(studentId, payload, schoolId);
-    },
+    mutationFn: (payload: CreateStudentNotePayload) =>
+      createStudentNote(studentId, payload, requireSchoolId(schoolId)),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["student-notes", studentId] });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.studentNotes(studentId, schoolId),
+      });
     },
   });
 

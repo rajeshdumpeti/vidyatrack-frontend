@@ -10,6 +10,7 @@ import type {
 } from "@/types/student.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
+import { schoolParams } from "./helpers/schoolParams";
 
 /**
  * Fetch students for a specific section within a school.
@@ -23,7 +24,7 @@ export async function getStudentsBySection(
     {
       params: {
         section_id: sectionId,
-        school_id: schoolId, // Pass to backend
+        ...schoolParams(schoolId),
       },
     },
   );
@@ -35,7 +36,7 @@ export async function getStudentsBySection(
  */
 export async function getStudents(schoolId: number): Promise<StudentDto[]> {
   const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
-    params: { school_id: schoolId }, // Ensure all sections are scoped to school
+    params: schoolParams(schoolId),
   });
   return res.data;
 }
@@ -50,7 +51,7 @@ export async function getStudentsBySectionId(
   const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
     params: {
       section_id: sectionId,
-      school_id: schoolId,
+      ...schoolParams(schoolId),
     },
   });
   return res.data;
@@ -67,7 +68,7 @@ export async function createStudent(
     API_ENDPOINTS.students.create,
     payload,
     {
-      params: { school_id: schoolId }, // Post requests also need school_id query param
+      params: schoolParams(schoolId),
     },
   );
   return res.data;
@@ -83,7 +84,7 @@ export async function getStudentProfile(
   const res = await apiClient.get<StudentProfileDto>(
     API_ENDPOINTS.students.detail(studentId),
     {
-      params: { school_id: schoolId },
+      params: schoolParams(schoolId),
     },
   );
   return res.data;
@@ -96,7 +97,7 @@ export async function getStudentReportCard(
   const res = await apiClient.get<StudentReportCardDto>(
     API_ENDPOINTS.students.reportCard(studentId),
     {
-      params: { school_id: schoolId },
+      params: schoolParams(schoolId),
     },
   );
   return res.data;
@@ -112,7 +113,7 @@ export async function previewStudentsImport(
     API_ENDPOINTS.students.importPreview,
     formData,
     {
-      params: { school_id: schoolId },
+      params: schoolParams(schoolId),
       headers: { "Content-Type": "multipart/form-data" },
     },
   );
@@ -127,7 +128,7 @@ export async function commitStudentsImport(
     API_ENDPOINTS.students.importCommit,
     payload,
     {
-      params: { school_id: schoolId },
+      params: schoolParams(schoolId),
     },
   );
   return res.data;

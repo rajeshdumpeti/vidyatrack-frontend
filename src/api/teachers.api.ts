@@ -9,6 +9,7 @@ import type {
 import type { TeachingAssignmentMeDto } from "@/types/teachingAssignment.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
+import { schoolParams } from "./helpers/schoolParams";
 
 export async function getMyAttendanceSection(): Promise<AttendanceSection> {
   const res = await apiClient.get<AttendanceSection>(
@@ -25,7 +26,7 @@ export async function getTeachers(): Promise<TeacherDto[]> {
 // Add schoolId to the list parameters
 export async function listTeachers(schoolId: number): Promise<TeacherDto[]> {
   const res = await apiClient.get<TeacherDto[]>(API_ENDPOINTS.teachers.list, {
-    params: { school_id: schoolId }, // Explicitly send school_id
+    params: schoolParams(schoolId),
   });
   return res.data;
 }
@@ -58,7 +59,7 @@ export async function getTeacherContext(
   const res = await apiClient.get<TeacherContextDto>(
     API_ENDPOINTS.teachers.meContext,
     {
-      params: { school_id: schoolId },
+      params: schoolParams(schoolId),
     },
   );
   return res.data;

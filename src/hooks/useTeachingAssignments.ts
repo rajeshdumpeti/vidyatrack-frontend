@@ -3,6 +3,7 @@ import {
   createTeachingAssignment,
   getTeachingAssignmentsBySection,
 } from "@/api/teachingAssignments.api";
+import { queryKeys } from "@/constants/queryKeys";
 import type { TeachingAssignmentCreatePayload } from "@/types/teachingAssignment.types";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -10,7 +11,7 @@ export function useTeachingAssignments(sectionId: number | null) {
   const { schoolId } = useAuthStore(); // Ensure school context is available
 
   const query = useQuery({
-    queryKey: ["teaching-assignments", schoolId, { sectionId }],
+    queryKey: queryKeys.teachingAssignments(schoolId, sectionId),
     queryFn: () =>
       getTeachingAssignmentsBySection(schoolId!, sectionId as number),
     enabled: !!schoolId && typeof sectionId === "number" && sectionId > 0,
@@ -33,13 +34,8 @@ export function useCreateTeachingAssignment() {
     mutationFn: (payload: TeachingAssignmentCreatePayload) =>
       createTeachingAssignment({ ...payload, school_id: schoolId! }),
     onSuccess: (_data, variables) => {
-      // Invalidate with the specific schoolId key to keep cache clean
       qc.invalidateQueries({
-        queryKey: [
-          "teaching-assignments",
-          schoolId,
-          { sectionId: variables.section_id },
-        ],
+        queryKey: queryKeys.teachingAssignments(schoolId, variables.section_id),
       });
     },
   });

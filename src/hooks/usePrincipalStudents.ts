@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/queryKeys";
 import type { StudentDto } from "@/types/student.types";
 import { getStudents, getStudentsBySectionId } from "@/api/students.api";
 import { useAuthStore } from "@/store/auth.store";
@@ -27,10 +28,7 @@ export function usePrincipalStudents(params: {
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const query = useQuery({
-    queryKey: [
-      "principal-students",
-      { sectionId: sectionId ?? null, schoolId: schoolId ?? null },
-    ],
+    queryKey: queryKeys.principalStudents(sectionId, schoolId),
     queryFn: () =>
       sectionId
         ? getStudentsBySectionId(sectionId, schoolId!)

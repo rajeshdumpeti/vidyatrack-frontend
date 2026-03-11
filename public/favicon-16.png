@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#eff6ff"></rect>
+
+  <!-- Graduation cap -->
+  <polygon points="32 14 10 26 32 38 54 26" fill="#2563eb"></polygon>
+
+  <!-- Cap base -->
+  <rect x="20" y="38" width="24" height="6" rx="2" fill="#2563eb"></rect>
+
+</svg>
