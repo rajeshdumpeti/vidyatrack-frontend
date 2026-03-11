@@ -110,7 +110,7 @@ export function AuthTopBar({
                 <div className="text-left">
                   <p className="font-medium text-gray-900">Call Us</p>
                   <p className="text-xs text-gray-500">
-                    +91 98765 43210 • 9 AM - 5 PM
+                    +91 86868 66818 • 9 AM - 5 PM
                   </p>
                 </div>
               </button>
