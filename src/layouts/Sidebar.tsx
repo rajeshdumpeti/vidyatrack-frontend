@@ -30,8 +30,6 @@ export function Sidebar({
   showCollapseToggle = true,
 }: SidebarProps) {
   const roleTitle = role ? sidebarRoleTitleMap[role] : "Menu";
-  const linkBase =
-    "flex h-11 items-center rounded-xl px-3 text-sm font-semibold";
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
 

@@ -7,6 +7,7 @@ import { AttendanceHistoryFilters } from "./history/components/AttendanceHistory
 import { AttendanceHistoryHeader } from "./history/components/AttendanceHistoryHeader";
 import { AttendanceHistorySummaryCards } from "./history/components/AttendanceHistorySummaryCards";
 import { useAttendanceHistoryPage } from "./history/hooks/useAttendanceHistoryPage";
+import { InsightState } from "@/components/feedback/InsightState";
 
 export function AttendanceHistoryPage() {
   const page = useAttendanceHistoryPage();
@@ -26,7 +27,9 @@ export function AttendanceHistoryPage() {
           onFilterChange={page.onFilterChange}
         />
 
-        {page.query.isLoading ? <LoadingState label="Loading attendance..." /> : null}
+        {page.query.isLoading ? (
+          <LoadingState label="Loading attendance..." />
+        ) : null}
 
         {page.query.error ? (
           <ErrorState
@@ -35,8 +38,15 @@ export function AttendanceHistoryPage() {
           />
         ) : null}
 
-        {!page.query.isLoading && !page.query.error && page.rows.length === 0 ? (
-          <EmptyState message="No records for the selected date/section." />
+        {!page.query.isLoading &&
+        !page.query.error &&
+        page.rows.length === 0 ? (
+          <div className="mt-8">
+            <InsightState
+              title="No records for the selected date/section."
+              description="Try a different selecting section and date to view performance insights. "
+            />
+          </div>
         ) : null}
 
         {!page.query.isLoading && !page.query.error && page.rows.length > 0 ? (

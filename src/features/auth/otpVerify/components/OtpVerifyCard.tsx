@@ -137,7 +137,7 @@ export function OtpVerifyCard({
               isLoading={isResending}
               loadingText="Resending..."
             >
-              {deliveryChannel === "email" ? "Resend code" : "Resend on WhatsApp"}
+              Resend code
             </LoadingButton>
             {resendError ? (
               <div className="mt-4">
@@ -149,15 +149,6 @@ export function OtpVerifyCard({
             ) : null}
           </div>
         </form>
-
-        <button
-          type="button"
-          className="mx-auto mt-10 flex items-center justify-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-          onClick={onNeedHelp}
-        >
-          <FiHelpCircle className="h-4 w-4" />
-          Need help?
-        </button>
       </div>
     </main>
   );
