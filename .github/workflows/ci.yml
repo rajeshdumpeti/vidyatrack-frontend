@@ -49,20 +49,27 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          # Current Active Environment
+          # Essential Build Context
           VITE_BUILD_ENVIRONMENT: ${{ env.BUILD_ENV }}
+          VITE_FALLBACK_ENVIRONMENT: ${{ env.BUILD_ENV }}
+          # Verified Backend URL
           VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
-          VITE_APP_HOST_DEV: vidyatrack-frontend.vercel.app
-
-          # Placeholders to satisfy the validator
           VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-dev.onrender.com
-          VITE_APP_HOST_STAGE: vidyatrack-frontend.vercel.app
           VITE_API_BASE_URL_PROD: https://vidyatrack-backend-dev.onrender.com
+          # Application Hosts
+          VITE_APP_HOST_DEV: vidyatrack-frontend.vercel.app
+          VITE_APP_HOST_STAGE: vidyatrack-frontend.vercel.app
           VITE_APP_HOST_PROD: vidyatrack-frontend.vercel.app
-
-          # Add any Feature Flags if your validator checks for them
+          # Feature Flags (Restored)
           VITE_FEATURE_PLATFORM_MANAGEMENT_DEV: "true"
-          VITE_FEATURE_TEACHER_COMMUNICATIONS_DEV: "true"
+          VITE_FEATURE_PLATFORM_MANAGEMENT_STAGE: "true"
+          VITE_FEATURE_PLATFORM_MANAGEMENT_PROD: "true"
+          的高级 VITE_FEATURE_TEACHER_COMMUNICATIONS_DEV: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_STAGE: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_PROD: "true"
+          VITE_FEATURE_STUDENT_NOTES_DEV: "true"
+          VITE_FEATURE_STUDENT_NOTES_STAGE: "true"
+          VITE_FEATURE_STUDENT_NOTES_PROD: "true"
         run: |
           if [ "${{ env.BUILD_ENV }}" = "prod" ]; then
             vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
