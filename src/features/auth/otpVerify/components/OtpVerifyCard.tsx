@@ -1,4 +1,3 @@
-import { FiHelpCircle } from "react-icons/fi";
 import { HiLockClosed } from "react-icons/hi2";
 import type { UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 
@@ -50,7 +49,6 @@ export function OtpVerifyCard({
   onResend,
   deliveryChannel,
   maskedPhone,
-  onNeedHelp,
 }: OtpVerifyCardProps) {
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
