@@ -43,6 +43,8 @@ export default defineConfig(({ mode }) => {
 
             if (
               id.includes("react-dom") ||
+              id.includes("react-router") ||
+              id.includes("@remix-run") ||
               id.includes("/react/") ||
               id.includes("\\react\\")
             ) {
