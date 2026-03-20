@@ -58,12 +58,12 @@ jobs:
         env:
           VITE_BUILD_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
           VITE_FALLBACK_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
-          VITE_APP_HOST_DEV: vidyatrack-dev.vercel.app
-          VITE_APP_HOST_STAGE: vidyatrack-stage.vercel.app
-          VITE_APP_HOST_PROD: vidyatrack.vercel.app
+          VITE_APP_HOST_DEV: dev.vidyatrack.in
+          VITE_APP_HOST_STAGE: stage.vidyatrack.in
+          VITE_APP_HOST_PROD: vidyatrack.in
           VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
           VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-stage.onrender.com
-          VITE_API_BASE_URL_PROD: https://vidyatrack-backend.onrender.com
+          VITE_API_BASE_URL_PROD: https://vidyatrack-backend-prod.onrender.com
           VITE_LOCAL_API_PROXY_TARGET: http://127.0.0.1:8000
           VITE_FEATURE_PLATFORM_MANAGEMENT_DEV: "true"
           VITE_FEATURE_PLATFORM_MANAGEMENT_STAGE: "true"
@@ -136,12 +136,12 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_BUILD_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
           VITE_FALLBACK_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
-          VITE_APP_HOST_DEV: vidyatrack-dev.vercel.app
-          VITE_APP_HOST_STAGE: vidyatrack-stage.vercel.app
-          VITE_APP_HOST_PROD: vidyatrack.vercel.app
+          VITE_APP_HOST_DEV: dev.vidyatrack.in
+          VITE_APP_HOST_STAGE: stage.vidyatrack.in
+          VITE_APP_HOST_PROD: vidyatrack.in
           VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
           VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-stage.onrender.com
-          VITE_API_BASE_URL_PROD: https://vidyatrack-backend.onrender.com
+          VITE_API_BASE_URL_PROD: https://vidyatrack-backend-prod.onrender.com
           VITE_LOCAL_API_PROXY_TARGET: http://127.0.0.1:8000
           VITE_FEATURE_PLATFORM_MANAGEMENT_DEV: "true"
           VITE_FEATURE_PLATFORM_MANAGEMENT_STAGE: "true"
