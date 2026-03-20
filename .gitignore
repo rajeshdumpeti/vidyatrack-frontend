@@ -32,3 +32,4 @@ dist-ssr
 !.env.dev.example
 !.env.stage.example
 !.env.prod.example
+.vercel

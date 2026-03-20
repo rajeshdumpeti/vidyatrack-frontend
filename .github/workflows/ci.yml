@@ -1,32 +1,117 @@
 name: Frontend CI/CD
 
 on:
+  pull_request:
+    branches: [stage, main]
   push:
-    branches: ["dev", "stage", "main"]
+    branches: [dev, stage, main]
 
 concurrency:
-  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  group: frontend-${{ github.ref }}
   cancel-in-progress: true
 
+# ─────────────────────────────────────────────
+# JOB 1 — CI: Lint + Typecheck + Build
+# Runs on every push AND every PR to stage/main.
+# Nothing deploys until this job is green.
+# ─────────────────────────────────────────────
 jobs:
-  deploy:
+  ci:
+    name: CI — Lint, Typecheck & Build
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v3
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
 
-      - name: Select target environment
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select build environment
+        id: env_select
+        run: |
+          # For PRs, use the target branch to select the right build config
+          REF="${GITHUB_REF_NAME}"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            REF="${GITHUB_BASE_REF}"
+          fi
+          case "$REF" in
+            dev)   echo "build_env=dev"   >> "$GITHUB_OUTPUT" ;;
+            stage) echo "build_env=stage" >> "$GITHUB_OUTPUT" ;;
+            main)  echo "build_env=prod"  >> "$GITHUB_OUTPUT" ;;
+            *)     echo "build_env=dev"   >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Typecheck (TypeScript)
+        run: npx tsc -p tsconfig.app.json --noEmit
+
+      - name: Build check
+        env:
+          VITE_BUILD_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
+          VITE_FALLBACK_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
+          VITE_APP_HOST_DEV: vidyatrack-dev.vercel.app
+          VITE_APP_HOST_STAGE: vidyatrack-stage.vercel.app
+          VITE_APP_HOST_PROD: vidyatrack.vercel.app
+          VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
+          VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-stage.onrender.com
+          VITE_API_BASE_URL_PROD: https://vidyatrack-backend.onrender.com
+          VITE_LOCAL_API_PROXY_TARGET: http://127.0.0.1:8000
+          VITE_FEATURE_PLATFORM_MANAGEMENT_DEV: "true"
+          VITE_FEATURE_PLATFORM_MANAGEMENT_STAGE: "true"
+          VITE_FEATURE_PLATFORM_MANAGEMENT_PROD: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_DEV: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_STAGE: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_PROD: "true"
+          VITE_FEATURE_STUDENT_NOTES_DEV: "true"
+          VITE_FEATURE_STUDENT_NOTES_STAGE: "true"
+          VITE_FEATURE_STUDENT_NOTES_PROD: "true"
+        run: npm run build:${{ steps.env_select.outputs.build_env }}
+
+  # ─────────────────────────────────────────────
+  # JOB 2 — Deploy: Build with Vercel + Deploy
+  # Only runs on a direct push (not PRs).
+  # Only runs if CI job above is green.
+  # Uses GitHub Environment scoped secrets so
+  # dev/stage/prod each get their own credentials.
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy — ${{ github.ref_name }}
+    needs: ci
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'stage' && 'staging' || 'development' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select build environment
+        id: env_select
         run: |
           case "${GITHUB_REF_NAME}" in
-            dev) echo "BUILD_ENV=dev" >> "$GITHUB_ENV" ;;
-            stage) echo "BUILD_ENV=stage" >> "$GITHUB_ENV" ;;
-            main) echo "BUILD_ENV=prod" >> "$GITHUB_ENV" ;;
+            dev)   echo "build_env=dev"   >> "$GITHUB_OUTPUT" ;;
+            stage) echo "build_env=stage" >> "$GITHUB_OUTPUT" ;;
+            main)  echo "build_env=prod"  >> "$GITHUB_OUTPUT" ;;
+            *)     echo "Unknown branch: ${GITHUB_REF_NAME}" >&2; exit 1 ;;
           esac
 
       - name: Install Vercel CLI
@@ -34,11 +119,11 @@ jobs:
 
       - name: Pull Vercel environment
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          if [ "${{ env.BUILD_ENV }}" = "prod" ]; then
+          if [ "${{ steps.env_select.outputs.build_env }}" = "prod" ]; then
             vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           else
             vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
@@ -46,32 +131,29 @@ jobs:
 
       - name: Build with Vercel
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          # Essential Build Context
-          VITE_BUILD_ENVIRONMENT: ${{ env.BUILD_ENV }}
-          VITE_FALLBACK_ENVIRONMENT: ${{ env.BUILD_ENV }}
-          # Verified Backend URL
+          VITE_BUILD_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
+          VITE_FALLBACK_ENVIRONMENT: ${{ steps.env_select.outputs.build_env }}
+          VITE_APP_HOST_DEV: vidyatrack-dev.vercel.app
+          VITE_APP_HOST_STAGE: vidyatrack-stage.vercel.app
+          VITE_APP_HOST_PROD: vidyatrack.vercel.app
           VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
-          VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-dev.onrender.com
-          VITE_API_BASE_URL_PROD: https://vidyatrack-backend-dev.onrender.com
-          # Application Hosts
-          VITE_APP_HOST_DEV: vidyatrack-frontend.vercel.app
-          VITE_APP_HOST_STAGE: vidyatrack-frontend.vercel.app
-          VITE_APP_HOST_PROD: vidyatrack-frontend.vercel.app
-          # Feature Flags (Restored)
+          VITE_API_BASE_URL_STAGE: https://vidyatrack-backend-stage.onrender.com
+          VITE_API_BASE_URL_PROD: https://vidyatrack-backend.onrender.com
+          VITE_LOCAL_API_PROXY_TARGET: http://127.0.0.1:8000
           VITE_FEATURE_PLATFORM_MANAGEMENT_DEV: "true"
           VITE_FEATURE_PLATFORM_MANAGEMENT_STAGE: "true"
           VITE_FEATURE_PLATFORM_MANAGEMENT_PROD: "true"
-          的高级 VITE_FEATURE_TEACHER_COMMUNICATIONS_DEV: "true"
+          VITE_FEATURE_TEACHER_COMMUNICATIONS_DEV: "true"
           VITE_FEATURE_TEACHER_COMMUNICATIONS_STAGE: "true"
           VITE_FEATURE_TEACHER_COMMUNICATIONS_PROD: "true"
           VITE_FEATURE_STUDENT_NOTES_DEV: "true"
           VITE_FEATURE_STUDENT_NOTES_STAGE: "true"
           VITE_FEATURE_STUDENT_NOTES_PROD: "true"
         run: |
-          if [ "${{ env.BUILD_ENV }}" = "prod" ]; then
+          if [ "${{ steps.env_select.outputs.build_env }}" = "prod" ]; then
             vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
           else
             vercel build --token=${{ secrets.VERCEL_TOKEN }}
@@ -79,11 +161,11 @@ jobs:
 
       - name: Deploy to Vercel
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          if [ "${{ env.BUILD_ENV }}" = "prod" ]; then
+          if [ "${{ steps.env_select.outputs.build_env }}" = "prod" ]; then
             vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
           else
             vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
