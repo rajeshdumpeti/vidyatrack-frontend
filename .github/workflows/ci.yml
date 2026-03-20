@@ -49,9 +49,12 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          # UPDATED URL: Points to the verified Render address
+          # Injecting all required vars for your validatePublicEnv() function
           VITE_BUILD_ENVIRONMENT: ${{ env.BUILD_ENV }}
           VITE_API_BASE_URL_DEV: https://vidyatrack-backend-dev.onrender.com
+          VITE_APP_HOST_DEV: vidyatrack-frontend.vercel.app
+          VITE_APP_HOST_STAGE: vidyatrack-frontend-stage.vercel.app
+          VITE_APP_HOST_PROD: vidyatrack-frontend.vercel.app
         run: |
           if [ "${{ env.BUILD_ENV }}" = "prod" ]; then
             vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
