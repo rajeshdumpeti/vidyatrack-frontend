@@ -1,14 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { listTeachers } from "@/api/teachers.api";
+import { queryKeys } from "@/constants/queryKeys";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useTeachers() {
   const { schoolId } = useAuthStore();
 
   const q = useQuery({
-    queryKey: ["teachers", schoolId], // Multi-tenant query key
+    queryKey: queryKeys.teachers(schoolId),
     queryFn: () => listTeachers(schoolId!),
-    enabled: !!schoolId, // Don't fetch until we have a school context
+    enabled: !!schoolId,
     retry: 1,
   });
 

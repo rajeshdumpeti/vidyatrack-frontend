@@ -20,6 +20,7 @@ type AuthState = {
   role: UserRole | null;
   schoolId: number | null; // This represents the currently "active" school
   schools: School[]; // List of schools returned from /auth/me
+  schoolsLoaded: boolean;
 
   setToken: (token: string) => void;
   setSchools: (schools: School[]) => void;
@@ -108,6 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   role: initialRole, // Rehydrate role on browser refresh from JWT
   schoolId: loadActiveSchool(),
   schools: [],
+  schoolsLoaded: false,
 
   setToken: (token: string) => {
     try {
@@ -125,7 +127,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setSchools: (schools: School[]) => {
-    set({ schools });
+    set({ schools, schoolsLoaded: true });
     // If only one school, make it active immediately
     if (schools.length === 1) {
       get().setActiveSchool(schools[0].id);
@@ -151,6 +153,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_META_KEY);
     localStorage.removeItem("active_school_id");
-    set({ accessToken: null, role: null, schoolId: null, schools: [] });
+    set({
+      accessToken: null,
+      role: null,
+      schoolId: null,
+      schools: [],
+      schoolsLoaded: false,
+    });
   },
 }));

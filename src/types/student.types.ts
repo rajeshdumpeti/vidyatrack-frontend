@@ -2,10 +2,12 @@ export type StudentListItem = {
   id: number;
   name: string;
   roll_no?: string | number | null;
+  public_id?: string | number | null;
 };
 
 export type StudentDto = {
   id: number;
+  public_id?: string;
   school_id: number;
   section_id: number;
   name: string;
@@ -96,6 +98,7 @@ export type StudentRecentResult = {
 
 export type StudentProfileDto = {
   id: number;
+  public_id?: string;
   name?: string | null;
   student_code?: string | null;
   class_name?: string | null;

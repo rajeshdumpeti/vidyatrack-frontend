@@ -1,128 +1,16 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { AuthLayout } from "@/layouts/AuthLayout";
-import { TeacherLayout } from "@/layouts/TeacherLayout";
-import { PrincipalLayout } from "@/layouts/PrincipalLayout";
-import { ManagementLayout } from "@/layouts/ManagementLayout";
-import { OtpRequestPage } from "@/features/auth/OtpRequestPage";
-import { OtpVerifyPage } from "@/features/auth/OtpVerifyPage";
-import { RoleGuard } from "@/hooks/useRoleGuard";
-import { TeacherDashboard } from "@/features/teachers/dashboard/TeacherDashboard";
-import { MarkAttendance } from "@/features/teachers/attendance/MarkAttendance";
-import { EnterMarks } from "@/features/teachers/marks/EnterMarks";
-import { TeacherNotesPage } from "@/features/teachers/TeacherNotesPage";
-import { AttendanceHistoryPage } from "@/features/principal/attendance/AttendanceHistoryPage";
-import { MarksHistoryPage } from "@/features/principal/marks/MarksHistoryPage";
-import { StudentsListPage } from "@/features/students/StudentsListPage";
-import { TeachersListPage } from "@/features/teachers/TeachersListPage";
-import { ManageSchoolsPage } from "@/features/management/schools/ManageSchoolsPage";
-import { ManageSectionsPage } from "@/features/management/sections/ManageSectionsPage";
-import { StudentProfilePage } from "@/features/students/StudentProfilePage";
-import { TeacherProfilePage } from "@/features/teachers/TeacherProfilePage";
-import { AssignSubjectsPage } from "@/features/management/setup/AssignSubjectsPage";
-import { SubjectsPage } from "@/features/management/setup/SubjectsPage";
-import { TeachersPage } from "@/features/management/setup/TeachersPage";
-import { ManagementSetupStudentsPage } from "@/features/management/setup/StudentsPage";
-import { PlatformLayout } from "@/layouts/PlatformLayout";
-import { PlatformDashboardPage } from "@/features/platform/PlatformDashboardPage";
-import { PlatformSchoolsListPage } from "@/features/platform/PlatformSchoolsListPage";
-import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateSchoolPage";
-import { PlatformSchoolDetailPage } from "@/features/platform/PlatformSchoolDetailPage";
-import { ManagementDashboardPage } from "@/features/management/ManagementDashboardPage";
-import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
-import { PrincipalsPage } from "@/features/management/setup/PrincipalsPage";
-import { PrincipalDashboardPage } from "@/features/principal/PrincipalDashboardPage";
+import { authRoutes } from "./routes/auth.routes";
+import { managementRoutes } from "./routes/management.routes";
+import { platformRoutes } from "./routes/platform.routes";
+import { principalRoutes } from "./routes/principal.routes";
+import { teacherRoutes } from "./routes/teacher.routes";
+
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/auth/login" replace /> },
-
-  {
-    path: "/auth",
-    element: <AuthLayout />,
-    children: [
-      {
-        path: "login",
-        element: <OtpRequestPage />,
-      },
-      { path: "verify", element: <OtpVerifyPage /> },
-      // New Route for Multi-School Selection
-      { path: "select-school", element: <SelectSchoolPage /> },
-    ],
-  },
-  {
-    path: "/platform",
-    element: (
-      <RoleGuard allowed="super_admin">
-        <PlatformLayout />
-      </RoleGuard>
-    ),
-    children: [
-      { index: true, element: <PlatformDashboardPage /> },
-      { path: "schools", element: <PlatformSchoolsListPage /> },
-      { path: "schools/:schoolId", element: <PlatformSchoolDetailPage /> },
-      { path: "schools/new", element: <PlatformCreateSchoolPage /> },
-    ],
-  },
-
-  {
-    path: "/teacher",
-    element: (
-      <RoleGuard allowed="teacher">
-        <TeacherLayout />
-      </RoleGuard>
-    ),
-    children: [
-      { index: true, element: <TeacherDashboard /> },
-      { path: "attendance", element: <MarkAttendance /> },
-      { path: "marks", element: <EnterMarks /> },
-      { path: "notes", element: <TeacherNotesPage /> },
-      { path: "students", element: <StudentsListPage /> },
-      { path: "students/:studentId", element: <StudentProfilePage /> },
-    ],
-  },
-
-  {
-    path: "/principal",
-    element: (
-      <RoleGuard allowed="principal">
-        <PrincipalLayout />
-      </RoleGuard>
-    ),
-
-    children: [
-      { index: true, element: <PrincipalDashboardPage /> },
-      { path: "attendance", element: <AttendanceHistoryPage /> },
-      { path: "marks", element: <MarksHistoryPage /> },
-      { path: "students", element: <StudentsListPage /> },
-      { path: "teachers", element: <TeachersListPage /> },
-      { path: "students/:studentId", element: <StudentProfilePage /> },
-      { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
-    ],
-  },
-
-  {
-    path: "/management",
-    element: (
-      <RoleGuard allowed="management">
-        <ManagementLayout />
-      </RoleGuard>
-    ),
-
-    children: [
-      { index: true, element: <ManagementDashboardPage /> },
-      { path: "setup/schools", element: <ManageSchoolsPage /> },
-      { path: "attendance", element: <AttendanceHistoryPage /> },
-      { path: "marks", element: <MarksHistoryPage /> },
-      { path: "students", element: <ManagementSetupStudentsPage /> },
-      { path: "teachers", element: <TeachersListPage /> },
-      { path: "setup/academic", element: <ManageSectionsPage /> },
-      { path: "principals", element: <PrincipalsPage /> },
-      { path: "setup/students", element: <ManagementSetupStudentsPage /> },
-      { path: "students/:studentId", element: <StudentProfilePage /> },
-      { path: "teachers/:teacherId", element: <TeacherProfilePage /> },
-      { path: "setup/assign-subjects", element: <AssignSubjectsPage /> },
-      { path: "setup/subjects", element: <SubjectsPage /> },
-      { path: "setup/teachers", element: <TeachersPage /> },
-    ],
-  },
-
+  authRoutes,
+  platformRoutes,
+  teacherRoutes,
+  principalRoutes,
+  managementRoutes,
   { path: "*", element: <div>404</div> },
 ]);

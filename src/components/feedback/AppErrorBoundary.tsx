@@ -1,37 +1,40 @@
-import { Component, type ReactNode } from "react";
-import { ErrorState } from "./ErrorState";
+import { AlertTriangle } from "lucide-react";
+import { useRouteError, isRouteErrorResponse, Link } from "react-router-dom";
+import { HardStop } from "./HardStop";
 
-export class AppErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
+export function AppErrorBoundary() {
+  const error = useRouteError();
+  let description = "An unexpected error occurred.";
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  if (isRouteErrorResponse(error)) {
+    description = error.statusText || "Unable to load this page.";
+  } else if (error instanceof Error) {
+    description = error.message;
   }
 
-  override render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-gray-50 p-6">
-          <div className="mx-auto w-full max-w-lg">
-            <ErrorState
-              title="Something went wrong"
-              message="Please refresh the page and try again."
-            />
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
+  return (
+    <div className="min-h-screen bg-gray-50 px-4 py-16">
+      <HardStop
+        tone="warning"
+        icon={<AlertTriangle className="h-5 w-5" />}
+        title="We hit a snag"
+        description={description}
+        primaryAction={{
+          label: "Reload",
+          onClick: () => window.location.reload(),
+        }}
+        secondaryAction={{
+          label: "Back to Login",
+          onClick: () => {
+            window.location.href = "/auth/login";
+          },
+        }}
+      />
+      <div className="mt-6 text-center text-xs text-gray-400">
+        <Link to="/" className="hover:text-gray-600">
+          Return to home
+        </Link>
+      </div>
+    </div>
+  );
 }

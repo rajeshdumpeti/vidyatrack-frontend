@@ -12,12 +12,13 @@ import type {
   PrincipalOnboardingStartInput,
   PrincipalOnboardingVerifyInput,
 } from "@/types/managementPrincipal.types";
+import { queryKeys } from "@/constants/queryKeys";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useManagementPrincipal() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const query = useQuery({
-    queryKey: ["management-principal", schoolId],
+    queryKey: queryKeys.managementPrincipal(schoolId),
     queryFn: () => getManagementPrincipalBySchool(schoolId!),
     enabled: Boolean(schoolId),
     retry: 1,
@@ -33,7 +34,9 @@ export function useRegisterManagementPrincipal() {
     mutationFn: (payload: PrincipalOnboardingStartInput) =>
       startPrincipalOnboarding(payload),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["management-principal", schoolId] });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.managementPrincipal(schoolId),
+      });
     },
   });
 }
@@ -45,8 +48,12 @@ export function useVerifyPrincipalOnboarding() {
     mutationFn: (payload: PrincipalOnboardingVerifyInput) =>
       verifyPrincipalOnboarding(payload),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["management-principal", schoolId] });
-      await qc.invalidateQueries({ queryKey: ["management-principal-history", schoolId] });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.managementPrincipal(schoolId),
+      });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.managementPrincipalHistory(schoolId),
+      });
     },
   });
 }
@@ -61,7 +68,7 @@ export function useResendPrincipalOnboardingOtp() {
 export function usePrincipalHistory() {
   const schoolId = useAuthStore((s) => s.schoolId);
   return useQuery({
-    queryKey: ["management-principal-history", schoolId],
+    queryKey: queryKeys.managementPrincipalHistory(schoolId),
     queryFn: () => getPrincipalHistory(schoolId!),
     enabled: Boolean(schoolId),
   });

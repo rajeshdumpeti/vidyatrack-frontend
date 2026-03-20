@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPrincipalAttendance } from "@/api/principalAttendance.api";
+import { queryKeys } from "@/constants/queryKeys";
 
 export function usePrincipalAttendanceHistory(
   date: string,
@@ -7,10 +8,7 @@ export function usePrincipalAttendanceHistory(
   schoolId?: number | null,
 ) {
   const query = useQuery({
-    queryKey: [
-      "principal-attendance",
-      { date, sectionId: sectionId ?? null, schoolId: schoolId ?? null },
-    ],
+    queryKey: queryKeys.principalAttendance({ date, sectionId, schoolId }),
     queryFn: () =>
       getPrincipalAttendance({ date, sectionId, school_id: schoolId! }),
     enabled: Boolean(date && schoolId),

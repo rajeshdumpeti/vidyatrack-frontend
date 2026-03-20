@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyTeachingAssignments } from "@/api/teachers.api";
+import { queryKeys } from "@/constants/queryKeys";
 import type { TeachingAssignmentMeDto } from "@/types/teachingAssignment.types";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -25,7 +26,7 @@ export function useMyTeachingAssignments() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const setSchoolId = useAuthStore((s) => s.setSchoolId);
   const query = useQuery({
-    queryKey: ["teacher", "me", "teaching-assignments"],
+    queryKey: queryKeys.teacherMeAssignments(),
     queryFn: getMyTeachingAssignments,
     retry: 1,
   });

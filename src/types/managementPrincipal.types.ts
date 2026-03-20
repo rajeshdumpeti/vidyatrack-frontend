@@ -1,10 +1,13 @@
 export type ManagementPrincipalDto = {
   principal_id: number;
+  principal_public_id?: string;
   user_id: number;
   name: string;
   phone: string;
   email?: string | null;
 };
+
+export type ManagementPrincipalResult = ManagementPrincipalDto | null;
 
 export type ManagementPrincipalRegisterInput = {
   school_id: number;
@@ -69,6 +72,9 @@ export type ManagementPrincipalRetryOtpResult = {
 };
 
 export type PrincipalDashboardDto = {
+  pending_approvals: number;
+  pending_attendance: number;
+  today_events: boolean;
   total_students: number;
   total_teachers: number;
   attendance_today_pct: number;
@@ -76,6 +82,7 @@ export type PrincipalDashboardDto = {
   attendance_today_absent: number;
   attendance_today_total: number;
   notices: Array<{
+    priority: string;
     id: string;
     title: string;
     message: string;

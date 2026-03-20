@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getPrincipalMarks } from "@/api/principalMarks.api";
+import { queryKeys } from "@/constants/queryKeys";
 import { useAuthStore } from "@/store/auth.store";
 
 export function usePrincipalMarksHistory(filters: {
@@ -15,15 +16,12 @@ export function usePrincipalMarksHistory(filters: {
     !!schoolId;
 
   const q = useQuery({
-    queryKey: [
-      "principal-marks",
-      {
-        sectionId: filters.sectionId ?? null,
-        subjectId: filters.subjectId ?? null,
-        examType: filters.examType ?? null,
-        schoolId: schoolId ?? null,
-      },
-    ],
+    queryKey: queryKeys.principalMarks({
+      sectionId: filters.sectionId,
+      subjectId: filters.subjectId,
+      examType: filters.examType,
+      schoolId,
+    }),
     queryFn: () =>
       getPrincipalMarks({
         sectionId: filters.sectionId,

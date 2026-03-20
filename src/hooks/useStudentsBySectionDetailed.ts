@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getStudentsBySectionId } from "@/api/students.api";
+import { queryKeys } from "@/constants/queryKeys";
 import type { StudentDto } from "@/types/student.types";
 import { useAuthStore } from "@/store/auth.store";
 import axios from "axios";
@@ -8,7 +9,7 @@ export function useStudentsBySectionDetailed(sectionId?: number) {
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const query = useQuery({
-    queryKey: ["students", "by-section", "detailed", sectionId, schoolId],
+    queryKey: queryKeys.studentsBySectionDetailed(sectionId, schoolId),
     queryFn: async () => {
       if (typeof sectionId !== "number" || !schoolId) {
         throw new Error("Missing sectionId or schoolId");
