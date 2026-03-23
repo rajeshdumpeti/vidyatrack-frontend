@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createSchool, getSchools } from "@/api/schools.api";
 
-export function useSchools() {
+export function useSchools(search?: string) {
   const qc = useQueryClient();
 
   const list = useQuery({
-    queryKey: ["schools"],
-    queryFn: getSchools,
+    queryKey: ["schools", search ?? ""],
+    queryFn: () => getSchools(search),
     retry: 1,
   });
 

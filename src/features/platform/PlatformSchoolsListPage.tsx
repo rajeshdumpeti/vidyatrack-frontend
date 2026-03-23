@@ -31,17 +31,34 @@ export function PlatformSchoolsListPage() {
     );
   }
 
+  const isEmpty = !page.list.isFetching && page.filteredSchools.length === 0 && page.debouncedSearch;
+
   return (
     <div className="p-4 max-w-5xl mx-auto">
-      <PlatformSchoolsListHeader schoolCount={page.list.data?.length || 0} />
+      <PlatformSchoolsListHeader schoolCount={page.filteredSchools.length} />
       <PlatformSchoolsListSearch
         search={page.search}
         setSearch={page.setSearch}
       />
-      <PlatformSchoolsListGrid
-        schools={page.filteredSchools}
-        fallbackBySchoolId={page.fallbackBySchoolId}
-      />
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
+          <p className="text-gray-500 font-medium">
+            No schools found for &quot;{page.debouncedSearch}&quot;
+          </p>
+          <button
+            type="button"
+            onClick={() => page.setSearch("")}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50"
+          >
+            Clear search
+          </button>
+        </div>
+      ) : (
+        <PlatformSchoolsListGrid
+          schools={page.filteredSchools}
+          fallbackBySchoolId={page.fallbackBySchoolId}
+        />
+      )}
     </div>
   );
 }

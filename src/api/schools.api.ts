@@ -8,8 +8,10 @@ import type {
   SchoolTeacherListItemDto,
 } from "@/types/school.types";
 
-export async function getSchools(): Promise<SchoolDto[]> {
-  const res = await apiClient.get<SchoolDto[]>(API_ENDPOINTS.schools.list);
+export async function getSchools(search?: string): Promise<SchoolDto[]> {
+  const res = await apiClient.get<SchoolDto[]>(API_ENDPOINTS.schools.list, {
+    params: search ? { search } : undefined,
+  });
   return res.data;
 }
 

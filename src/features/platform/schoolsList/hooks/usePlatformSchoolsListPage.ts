@@ -3,13 +3,14 @@ import { useQueries } from "@tanstack/react-query";
 
 import { getSchoolDashboard } from "@/api/schools.api";
 import { queryKeys } from "@/constants/queryKeys";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useSchools } from "@/hooks/useSchools";
 
-import { filterSchoolsBySearch } from "../helpers/platformSchoolsList.helpers";
-
 export function usePlatformSchoolsListPage() {
-  const { list } = useSchools();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const { list } = useSchools(debouncedSearch || undefined);
 
   const schoolMetricsQueries = useQueries({
     queries: (list.data ?? []).map((school) => ({
@@ -33,16 +34,12 @@ export function usePlatformSchoolsListPage() {
     return result;
   }, [list.data, schoolMetricsQueries]);
 
-  const filteredSchools = useMemo(
-    () => filterSchoolsBySearch(list.data ?? [], search),
-    [list.data, search],
-  );
-
   return {
     list,
     search,
     setSearch,
-    filteredSchools,
+    debouncedSearch,
+    filteredSchools: list.data ?? [],
     fallbackBySchoolId,
   };
 }
