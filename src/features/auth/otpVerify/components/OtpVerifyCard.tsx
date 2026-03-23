@@ -24,9 +24,11 @@ type OtpVerifyCardProps = {
   isVerifying: boolean;
   isSubmitting: boolean;
   hasPhone: boolean;
+  isOtpComplete: boolean;
   verifyError: unknown;
   resendError: unknown;
   isResending: boolean;
+  resendCooldown: number;
   onResend: () => void;
   deliveryChannel: "whatsapp" | "email";
   maskedPhone: string;
@@ -43,9 +45,11 @@ export function OtpVerifyCard({
   isVerifying,
   isSubmitting,
   hasPhone,
+  isOtpComplete,
   verifyError,
   resendError,
   isResending,
+  resendCooldown,
   onResend,
   deliveryChannel,
   maskedPhone,
@@ -65,8 +69,8 @@ export function OtpVerifyCard({
 
         <p className="mt-3 text-center text-sm text-gray-600">
           {deliveryChannel === "email"
-            ? "WhatsApp delivery failed. Enter the 4-digit code sent to your email."
-            : "Enter the 4-digit code sent to your WhatsApp"}
+            ? "Enter the 4-digit code sent to your email."
+            : "Enter the 4-digit code sent to your WhatsApp."}
         </p>
         <p className="mt-1 text-center text-sm font-semibold text-gray-900">
           {maskedPhone}
@@ -116,7 +120,7 @@ export function OtpVerifyCard({
           <LoadingButton
             type="submit"
             isLoading={isVerifying}
-            disabled={isSubmitting || !hasPhone}
+            disabled={isSubmitting || !hasPhone || !isOtpComplete}
             loadingText="Verifying..."
             fullWidth
             className="mt-8 rounded-full"
@@ -131,11 +135,11 @@ export function OtpVerifyCard({
               variant="secondary"
               className="ml-2 rounded-full px-3 py-1.5 align-middle text-xs"
               onClick={onResend}
-              disabled={isVerifying}
+              disabled={isVerifying || resendCooldown > 0}
               isLoading={isResending}
               loadingText="Resending..."
             >
-              Resend code
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
             </LoadingButton>
             {resendError ? (
               <div className="mt-4">

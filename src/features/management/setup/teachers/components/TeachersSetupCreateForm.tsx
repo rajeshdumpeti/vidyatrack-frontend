@@ -1,4 +1,5 @@
 import type { UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 
 import { ErrorState } from "@/components/feedback/ErrorState";
 import type { ClassDto } from "@/types/class.types";
@@ -56,15 +57,28 @@ export function TeachersSetupCreateForm({
 
         <div>
           <label className="text-sm font-semibold">Phone</label>
-          <input
-            className="mt-2 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-            placeholder="10-digit mobile number"
-            {...register("phone", {
+          {(() => {
+            const { onChange: rhfOnChange, ...phoneRest } = register("phone", {
               required: "Phone is required",
               validate: (value) =>
                 value.replace(/\D/g, "").length === 10 || "Invalid phone",
-            })}
-          />
+            });
+            return (
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
+                placeholder="98765 43210"
+                className="mt-2 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                {...phoneRest}
+                onChange={(e) => {
+                  e.target.value = formatPhone10(e.target.value);
+                  void rhfOnChange(e);
+                }}
+                onKeyDown={blockNonDigitKeys}
+              />
+            );
+          })()}
         </div>
 
         <div>

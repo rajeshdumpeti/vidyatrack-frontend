@@ -18,9 +18,11 @@ export function OtpVerifyPage() {
         isVerifying={page.isVerifying}
         isSubmitting={page.isSubmitting}
         hasPhone={page.hasPhone}
+        isOtpComplete={page.isOtpComplete}
         verifyError={page.verifyError}
         resendError={page.resendError}
         isResending={page.isResending}
+        resendCooldown={page.resendCooldown}
         onResend={page.onResend}
         deliveryChannel={page.deliveryChannel}
         maskedPhone={page.maskedPhone}

@@ -1,3 +1,4 @@
+import type { PaginatedDto } from "@/types/school.types";
 import type {
   StudentImportCommitInput,
   StudentImportCommitResponse,
@@ -13,48 +14,59 @@ import { API_ENDPOINTS } from "./endpoints";
 import { schoolParams } from "./helpers/schoolParams";
 
 /**
- * Fetch students for a specific section within a school.
+ * Fetch students for a specific section within a school (full list for attendance/marks).
  */
 export async function getStudentsBySection(
   sectionId: number,
-  schoolId: number, // Added schoolId
+  schoolId: number,
 ): Promise<StudentListItem[]> {
-  const res = await apiClient.get<StudentListItem[]>(
+  const res = await apiClient.get<PaginatedDto<StudentListItem>>(
     API_ENDPOINTS.students.list,
     {
       params: {
         section_id: sectionId,
+        limit: 500,
         ...schoolParams(schoolId),
       },
     },
   );
-  return res.data;
+  return res.data.data;
 }
 
 /**
- * Baseline students list for the current school.
+ * Paginated students list for the current school.
  */
-export async function getStudents(schoolId: number): Promise<StudentDto[]> {
-  const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
-    params: schoolParams(schoolId),
-  });
-  return res.data;
-}
-
-/**
- * Scoped list with full Dto details.
- */
-export async function getStudentsBySectionId(
-  sectionId: number,
-  schoolId: number, // Added schoolId
-): Promise<StudentDto[]> {
-  const res = await apiClient.get<StudentDto[]>(API_ENDPOINTS.students.list, {
+export async function getStudents(
+  schoolId: number,
+  params?: { page?: number; limit?: number; search?: string; sectionId?: number | null },
+): Promise<PaginatedDto<StudentDto>> {
+  const res = await apiClient.get<PaginatedDto<StudentDto>>(API_ENDPOINTS.students.list, {
     params: {
-      section_id: sectionId,
       ...schoolParams(schoolId),
+      page: params?.page ?? 1,
+      limit: params?.limit ?? 25,
+      ...(params?.search ? { search: params.search } : {}),
+      ...(params?.sectionId ? { section_id: params.sectionId } : {}),
     },
   });
   return res.data;
+}
+
+/**
+ * Scoped list with full Dto details (full list for attendance/marks).
+ */
+export async function getStudentsBySectionId(
+  sectionId: number,
+  schoolId: number,
+): Promise<StudentDto[]> {
+  const res = await apiClient.get<PaginatedDto<StudentDto>>(API_ENDPOINTS.students.list, {
+    params: {
+      section_id: sectionId,
+      limit: 500,
+      ...schoolParams(schoolId),
+    },
+  });
+  return res.data.data;
 }
 
 /**

@@ -56,15 +56,15 @@ export function ManagementSetupStudentsPage() {
 
         {!page.isBootLoading &&
         !page.hasBootError &&
-        page.filteredBySection.length === 0 ? (
+        page.studentsPagination.pagedItems.length === 0 ? (
           <EmptyState message="Add a student to get started." />
         ) : null}
 
         {!page.isBootLoading &&
         !page.hasBootError &&
-        page.filteredBySection.length > 0 ? (
+        page.studentsPagination.pagedItems.length > 0 ? (
           <ManagementStudentsTable
-            students={page.filteredBySection}
+            students={page.studentsPagination.pagedItems}
             sections={page.sectionsList.data ?? []}
             onViewStudent={page.viewStudent}
             pagination={page.studentsPagination}

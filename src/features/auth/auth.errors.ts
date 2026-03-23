@@ -24,30 +24,15 @@ export function getOtpVerifyErrorMessage(error: unknown): string {
     const status = error.response?.status;
     const code = getBackendErrorCode(error);
 
-    if (
-      status === 429 &&
-      (code === "otp_rate_limited" || code === "otp_too_many_requests")
-    ) {
+    if (status === 429) {
+      if (code === "otp_too_many_attempts") {
+        return "Too many failed attempts. Please request a new code and try again.";
+      }
       return "Too many requests. Please wait and try again.";
     }
 
-    if (status === 503 && code === "whatsapp_delivery_failed") {
-      return "We couldn’t deliver the OTP via WhatsApp. Please try again in a moment.";
-    }
-    if (status === 503 && code === "email_delivery_failed") {
-      return "We couldn’t deliver the OTP via email. Please try again in a moment.";
-    }
-    if (status === 404 && code === "email_not_found_for_phone") {
-      return "No email is linked to this phone number. Contact your administrator.";
-    }
-
-    // Typical invalid OTP responses
     if (status === 400 || status === 401) {
       return "Invalid OTP. Please try again.";
-    }
-
-    if (status === 429) {
-      return "Too many attempts. Please wait a moment and try again.";
     }
 
     if (status && status >= 500) {

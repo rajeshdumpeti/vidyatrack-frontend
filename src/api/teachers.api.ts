@@ -1,3 +1,4 @@
+import type { PaginatedDto } from "@/types/school.types";
 import type { AttendanceSection } from "@/types/attendance.types";
 import type {
   CreateTeacherInput,
@@ -23,10 +24,17 @@ export async function getTeachers(): Promise<TeacherDto[]> {
   return res.data;
 }
 
-// Add schoolId to the list parameters
-export async function listTeachers(schoolId: number): Promise<TeacherDto[]> {
-  const res = await apiClient.get<TeacherDto[]>(API_ENDPOINTS.teachers.list, {
-    params: schoolParams(schoolId),
+export async function listTeachers(
+  schoolId: number,
+  params?: { page?: number; limit?: number; search?: string },
+): Promise<PaginatedDto<TeacherDto>> {
+  const res = await apiClient.get<PaginatedDto<TeacherDto>>(API_ENDPOINTS.teachers.list, {
+    params: {
+      ...schoolParams(schoolId),
+      page: params?.page ?? 1,
+      limit: params?.limit ?? 25,
+      ...(params?.search ? { search: params.search } : {}),
+    },
   });
   return res.data;
 }

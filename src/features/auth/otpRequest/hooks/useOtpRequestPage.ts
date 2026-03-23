@@ -19,6 +19,16 @@ export function useOtpRequestPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const [searchParams] = useSearchParams();
   const schoolId = useAuthStore((state) => state.schoolId);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const role = useAuthStore((state) => state.role);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    if (role === "super_admin") navigate("/platform", { replace: true });
+    else if (role === "management") navigate("/management", { replace: true });
+    else if (role === "principal") navigate("/principal", { replace: true });
+    else if (role === "teacher") navigate("/teacher", { replace: true });
+  }, [accessToken, role, navigate]);
 
   const schoolCodeParam =
     searchParams.get("school_code") ?? searchParams.get("school");

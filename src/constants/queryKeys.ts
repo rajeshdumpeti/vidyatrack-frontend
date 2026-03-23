@@ -20,6 +20,10 @@ export const queryKeys = {
   ) => ["attendance", "section", sectionId ?? null, date ?? null, schoolId ?? null] as const,
   teachers: (schoolId: number | null | undefined) =>
     ["teachers", schoolId ?? null] as const,
+  teachersList: (
+    schoolId: number | null | undefined,
+    params: { page: number; limit: number; search: string },
+  ) => ["teachers", schoolId ?? null, params] as const,
   principalTeachers: (schoolId: number | null | undefined) =>
     ["principal-teachers", schoolId ?? null] as const,
   teachingAssignments: (
@@ -32,10 +36,14 @@ export const queryKeys = {
     ["teacher", "me", "context", schoolId ?? null] as const,
   students: (schoolId: number | null | undefined) =>
     ["students", schoolId ?? null] as const,
-  principalStudents: (
-    sectionId: number | null | undefined,
+  studentsList: (
     schoolId: number | null | undefined,
-  ) => ["principal-students", { sectionId: sectionId ?? null, schoolId: schoolId ?? null }] as const,
+    params: { page: number; limit: number; search: string; sectionId: number | null },
+  ) => ["students", schoolId ?? null, params] as const,
+  principalStudents: (
+    schoolId: number | null | undefined,
+    params: { page: number; limit: number; search: string; sectionId: number | null },
+  ) => ["principal-students", schoolId ?? null, params] as const,
   studentsBySection: (
     sectionId: number | null | undefined,
     schoolId: number | null | undefined,

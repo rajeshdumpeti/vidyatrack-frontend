@@ -31,17 +31,61 @@ export function PlatformSchoolsListPage() {
     );
   }
 
+  const isEmpty = !page.list.isFetching && page.filteredSchools.length === 0 && page.debouncedSearch;
+  const totalPages = page.paginationMeta?.total_pages ?? 1;
+
   return (
     <div className="p-4 max-w-5xl mx-auto">
-      <PlatformSchoolsListHeader schoolCount={page.list.data?.length || 0} />
+      <PlatformSchoolsListHeader schoolCount={page.paginationMeta?.total ?? page.filteredSchools.length} />
       <PlatformSchoolsListSearch
         search={page.search}
-        setSearch={page.setSearch}
+        setSearch={(v) => { page.setSearch(v); page.setPage(1); }}
       />
-      <PlatformSchoolsListGrid
-        schools={page.filteredSchools}
-        fallbackBySchoolId={page.fallbackBySchoolId}
-      />
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 text-center">
+          <p className="text-gray-500 font-medium">
+            No schools found for &quot;{page.debouncedSearch}&quot;
+          </p>
+          <button
+            type="button"
+            onClick={() => page.setSearch("")}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50"
+          >
+            Clear search
+          </button>
+        </div>
+      ) : (
+        <PlatformSchoolsListGrid
+          schools={page.filteredSchools}
+          fallbackBySchoolId={page.fallbackBySchoolId}
+        />
+      )}
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-gray-500">
+            Page {page.page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => page.setPage((p) => Math.max(1, p - 1))}
+              disabled={page.page <= 1}
+              className="px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={() => page.setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page.page >= totalPages}
+              className="px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

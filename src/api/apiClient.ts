@@ -1,7 +1,9 @@
 import axios from "axios";
 import { ENV } from "@/app/env";
+import { router } from "@/app/router";
 import { useAuthStore } from "@/store/auth.store";
 import { useHardStopStore } from "@/store/hardStop.store";
+import { useFlashStore } from "@/store/flash.store";
 
 export const apiClient = axios.create({
   baseURL: ENV.apiBaseUrl,
@@ -46,7 +48,13 @@ apiClient.interceptors.response.use(
     const status = error?.response?.status;
     const detail = error?.response?.data?.detail;
 
-    if (status === 402) {
+    if (status === 401) {
+      const { clearAuth } = useAuthStore.getState();
+      const { setFlash } = useFlashStore.getState();
+      clearAuth();
+      setFlash("Session expired. Please log in again.", "error");
+      void router.navigate("/auth/login", { replace: true });
+    } else if (status === 402) {
       setReason("subscription_expired");
     } else if (status === 403 && detail === "inactive_user") {
       setReason("inactive_user");

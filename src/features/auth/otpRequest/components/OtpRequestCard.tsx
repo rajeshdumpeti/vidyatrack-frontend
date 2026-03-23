@@ -6,6 +6,7 @@ import type {
   FieldErrors,
 } from "react-hook-form";
 
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { LoadingButton } from "@/components/ui/Button";
@@ -45,6 +46,16 @@ export function OtpRequestCard({
   const handleTermsClick = () => {
     window.open("/legal/terms.html", "_blank", "noopener,noreferrer");
   };
+
+  const { onChange: phoneOnChange, ...phoneRest } = register("phone", {
+    required: "Mobile number is required",
+    validate: (value) => {
+      const digits = value.replace(/\D/g, "");
+      if (digits.length < 10) return "Enter a valid 10-digit mobile number";
+      if (digits.length > 10) return "Enter a valid 10-digit mobile number";
+      return true;
+    },
+  });
 
   return (
     <main className="px-6">
@@ -124,22 +135,16 @@ export function OtpRequestCard({
                     id="phone"
                     type="tel"
                     inputMode="numeric"
+                    maxLength={11}
                     autoComplete="tel"
                     placeholder="98765 43210"
                     className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
-                    {...register("phone", {
-                      required: "Mobile number is required",
-                      validate: (value) => {
-                        const digits = value.replace(/\D/g, "");
-                        if (digits.length < 10) {
-                          return "Enter a valid 10-digit mobile number";
-                        }
-                        if (digits.length > 10) {
-                          return "Enter a valid 10-digit mobile number";
-                        }
-                        return true;
-                      },
-                    })}
+                    {...phoneRest}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      e.target.value = formatPhone10(e.target.value);
+                      void phoneOnChange(e);
+                    }}
+                    onKeyDown={blockNonDigitKeys}
                   />
                 </div>
 

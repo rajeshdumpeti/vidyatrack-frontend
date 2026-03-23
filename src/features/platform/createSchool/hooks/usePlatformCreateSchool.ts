@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useSchools } from "@/hooks/useSchools";
@@ -18,8 +18,17 @@ export function usePlatformCreateSchool() {
   const navigate = useNavigate();
   const { create } = useSchools();
 
+  // Generate a stable idempotency key for this wizard session
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Detect whether a draft was found on mount
+  const [showDraftBanner, setShowDraftBanner] = useState(() => {
+    return sessionStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY) !== null;
+  });
+
   const [form, setForm] = useState<OnboardingForm>(() => {
-    const raw = localStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+    const raw = sessionStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
     if (!raw) return INITIAL_PLATFORM_CREATE_SCHOOL_FORM;
     try {
       const parsed = JSON.parse(raw) as OnboardingForm;
@@ -32,7 +41,7 @@ export function usePlatformCreateSchool() {
   const [stepErrors, setStepErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    localStorage.setItem(
+    sessionStorage.setItem(
       PLATFORM_CREATE_SCHOOL_DRAFT_KEY,
       JSON.stringify(form),
     );
@@ -74,33 +83,43 @@ export function usePlatformCreateSchool() {
   };
 
   const progress = useMemo(
-    () => Math.round(((step + 1) / PLATFORM_CREATE_SCHOOL_STEPS.length) * 100),
+    () => Math.round((step / PLATFORM_CREATE_SCHOOL_STEPS.length) * 100),
     [step],
   );
 
   const resetDraft = () => {
-    localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+    sessionStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
     setForm(INITIAL_PLATFORM_CREATE_SCHOOL_FORM);
     setStep(0);
     setStepErrors([]);
+    setShowDraftBanner(false);
   };
+
+  const dismissDraftBanner = () => setShowDraftBanner(false);
 
   const submit = async () => {
     const errors = validatePlatformCreateSchoolStep(form, step);
     setStepErrors(errors);
     if (errors.length > 0) return;
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
     const phoneDigits = extractDigits(form.admin_phone).slice(-10);
     const fullPhone = `${form.admin_phone_country}${phoneDigits}`;
 
-    await create.mutateAsync({
-      name: form.school_name.trim(),
-      admin_phone: fullPhone,
-      admin_email: form.admin_email.trim() || null,
-    });
+    try {
+      await create.mutateAsync({
+        name: form.school_name.trim(),
+        admin_phone: fullPhone,
+        admin_email: form.admin_email.trim() || null,
+        idempotencyKey: idempotencyKey.current,
+      });
 
-    localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
-    navigate("/platform/schools", { replace: true, state: { success: true } });
+      sessionStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+      navigate("/platform/schools", { replace: true, state: { success: true } });
+    } catch {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -110,6 +129,9 @@ export function usePlatformCreateSchool() {
     steps: PLATFORM_CREATE_SCHOOL_STEPS,
     progress,
     create,
+    isSubmitting,
+    showDraftBanner,
+    dismissDraftBanner,
     updateField,
     toggleArrayValue,
     goNext,

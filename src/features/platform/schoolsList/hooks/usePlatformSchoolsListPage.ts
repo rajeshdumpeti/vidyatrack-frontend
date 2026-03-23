@@ -3,16 +3,19 @@ import { useQueries } from "@tanstack/react-query";
 
 import { getSchoolDashboard } from "@/api/schools.api";
 import { queryKeys } from "@/constants/queryKeys";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useSchools } from "@/hooks/useSchools";
 
-import { filterSchoolsBySearch } from "../helpers/platformSchoolsList.helpers";
-
 export function usePlatformSchoolsListPage() {
-  const { list } = useSchools();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  const { list, page, setPage, limit } = useSchools(debouncedSearch || undefined);
+
+  const schools = list.data?.data ?? [];
 
   const schoolMetricsQueries = useQueries({
-    queries: (list.data ?? []).map((school) => ({
+    queries: schools.map((school) => ({
       queryKey: queryKeys.platformSchoolDashboardFallback(school.id),
       queryFn: () => getSchoolDashboard(school.id),
       staleTime: 60_000,
@@ -22,7 +25,7 @@ export function usePlatformSchoolsListPage() {
 
   const fallbackBySchoolId = useMemo(() => {
     const result = new Map<number, { teacher: number; student: number }>();
-    (list.data ?? []).forEach((school, idx) => {
+    schools.forEach((school, idx) => {
       const payload = schoolMetricsQueries[idx]?.data;
       if (!payload) return;
       result.set(school.id, {
@@ -31,18 +34,22 @@ export function usePlatformSchoolsListPage() {
       });
     });
     return result;
-  }, [list.data, schoolMetricsQueries]);
+  }, [schools, schoolMetricsQueries]);
 
-  const filteredSchools = useMemo(
-    () => filterSchoolsBySearch(list.data ?? [], search),
-    [list.data, search],
-  );
+  const paginationMeta = list.data
+    ? { total: list.data.total, total_pages: list.data.total_pages }
+    : null;
 
   return {
     list,
     search,
     setSearch,
-    filteredSchools,
+    debouncedSearch,
+    filteredSchools: list.data?.data ?? [],
     fallbackBySchoolId,
+    page,
+    setPage,
+    limit,
+    paginationMeta,
   };
 }

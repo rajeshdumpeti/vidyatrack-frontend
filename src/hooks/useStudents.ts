@@ -13,11 +13,22 @@ import {
 } from "@/api/students.api";
 import { useAuthStore } from "@/store/auth.store";
 
-export function useStudents() {
+export function useStudents(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sectionId?: number | null;
+}) {
   const schoolId = useAuthStore((s) => s.schoolId);
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 25;
+  const search = params?.search ?? "";
+  const sectionId = params?.sectionId ?? null;
+
   const query = useQuery({
-    queryKey: queryKeys.students(schoolId),
-    queryFn: () => getStudents(schoolId!),
+    queryKey: queryKeys.studentsList(schoolId, { page, limit, search, sectionId }),
+    queryFn: () =>
+      getStudents(schoolId!, { page, limit, search: search || undefined, sectionId }),
     enabled: !!schoolId,
   });
 
@@ -37,6 +48,7 @@ export function useCreateStudent() {
     mutationFn: (payload: StudentCreateInput) =>
       createStudent(payload, requireSchoolId(schoolId)),
     onSuccess: async () => {
+      // Invalidate all students queries for this school (prefix match)
       await qc.invalidateQueries({ queryKey: queryKeys.students(schoolId) });
     },
   });
@@ -71,3 +83,4 @@ export function useCommitStudentsImport() {
     },
   });
 }
+

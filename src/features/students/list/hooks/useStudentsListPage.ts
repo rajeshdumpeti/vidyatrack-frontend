@@ -15,6 +15,7 @@ export function useStudentsListPage() {
   const trace = useMemo(() => logger.traceId(), []);
   const [sectionId, setSectionId] = useState<string>("");
   const [search, setSearch] = useState<string>("");
+  const [principalPage, setPrincipalPage] = useState(1);
   const sectionIdNumber = sectionId ? Number(sectionId) : undefined;
   const role = useAuthStore((state) => state.role);
   const isTeacher = role === "teacher";
@@ -22,15 +23,20 @@ export function useStudentsListPage() {
   const teacherSection = useTeacherAttendanceSection();
   const teacherSectionId = teacherSection.data?.section_id;
   const teacherStudents = useStudentsBySection(teacherSectionId);
-  const principalQuery = usePrincipalStudents({ sectionId: sectionIdNumber, search });
+  const principalQuery = usePrincipalStudents({
+    sectionId: sectionIdNumber,
+    search,
+    page: principalPage,
+    limit: 20,
+  });
   const navigate = useNavigate();
   const navigateRole = role ?? "teacher";
 
   const onFilterChange = (
     next: Partial<{ sectionId: string; search: string }>,
   ) => {
-    if (next.sectionId !== undefined) setSectionId(next.sectionId);
-    if (next.search !== undefined) setSearch(next.search);
+    if (next.sectionId !== undefined) { setSectionId(next.sectionId); setPrincipalPage(1); }
+    if (next.search !== undefined) { setSearch(next.search); setPrincipalPage(1); }
 
     logger.info("[students] filters_changed", {
       trace,
@@ -59,11 +65,18 @@ export function useStudentsListPage() {
     });
   }, [teacherStudents.data, search]);
 
-  const principalStudents = principalQuery.data ?? [];
-  const principalPagination = usePagination(principalStudents, {
-    initialPageSize: 20,
-    resetDeps: [sectionId, search],
-  });
+  const principalStudents = principalQuery.data;
+  const principalPagination = {
+    page: principalPage,
+    setPage: setPrincipalPage,
+    setPageSize: (_: number) => {},
+    totalPages: principalQuery.totalPages,
+    totalItems: principalQuery.total,
+    pagedItems: principalStudents,
+    pageSize: 20,
+    from: principalQuery.total === 0 ? 0 : (principalPage - 1) * 20 + 1,
+    to: principalQuery.total === 0 ? 0 : Math.min(principalPage * 20, principalQuery.total),
+  };
   const teacherPagination = usePagination(teacherFiltered, {
     initialPageSize: 20,
     resetDeps: [search, teacherSectionId],

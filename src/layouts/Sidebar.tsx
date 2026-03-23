@@ -51,7 +51,7 @@ export function Sidebar({
   return (
     <aside
       className={[
-        "flex h-full flex-col bg-white border-r border-gray-200",
+        "flex h-full flex-col bg-gray-100 border-r border-gray-200",
         collapsed ? "w-20" : "w-72",
         "transition-all duration-200 ease-in-out",
       ].join(" ")}
@@ -63,13 +63,8 @@ export function Sidebar({
         onClose={onClose}
       />
 
-      <nav
-        className={[
-          "flex-1 overflow-y-auto py-3",
-          collapsed ? "px-2" : "px-2",
-        ].join(" ")}
-      >
-        <ul className="space-y-0.5">
+      <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <ul className="space-y-2">
           {items.map((item) => {
             const ItemIcon = getSidebarNavIcon(item.to);
 
@@ -84,23 +79,32 @@ export function Sidebar({
                   {({ isActive }) => (
                     <span
                       className={[
-                        sidebarLinkBase,
-                        collapsed ? "justify-center px-0" : "",
+                        "flex items-center rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden",
+                        collapsed ? "justify-center h-12 w-12 mx-auto" : "h-14",
                         isActive
-                          ? `bg-gray-100 text-gray-900 font-medium`
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                          ? "border-l-4 border-l-gray-900 border-t-gray-100 border-r-gray-100 border-b-gray-100"
+                          : "border-l-4 border-l-gray-200 hover:border-l-gray-400 hover:shadow-md",
                       ].join(" ")}
                     >
-                      <ItemIcon
+                      <span
                         className={[
-                          "shrink-0",
-                          collapsed ? "h-4 w-4" : "mr-3 h-4 w-4",
-                          isActive ? "text-gray-900" : "text-gray-500",
+                          sidebarLinkBase,
+                          "w-full",
+                          collapsed ? "justify-center px-0" : "",
+                          isActive ? "text-gray-900" : "text-gray-600 hover:text-gray-900",
                         ].join(" ")}
-                      />
-                      {!collapsed && (
-                        <span className="truncate">{item.label}</span>
-                      )}
+                      >
+                        <ItemIcon
+                          className={[
+                            "shrink-0",
+                            collapsed ? "h-5 w-5" : "mr-3 h-5 w-5",
+                            isActive ? "text-gray-900" : "text-gray-500",
+                          ].join(" ")}
+                        />
+                        {!collapsed && (
+                          <span className="truncate">{item.label}</span>
+                        )}
+                      </span>
                     </span>
                   )}
                 </NavLink>

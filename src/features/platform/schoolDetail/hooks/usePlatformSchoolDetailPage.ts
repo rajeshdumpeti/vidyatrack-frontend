@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { usePlatformSchoolDashboard } from "@/hooks/usePlatformSchoolDashboard";
 import { useSchools } from "@/hooks/useSchools";
+import { queryKeys } from "@/constants/queryKeys";
 
 import {
   filterPlatformSchoolRows,
@@ -20,7 +22,9 @@ export function usePlatformSchoolDetailPage() {
   const { schoolId: schoolIdParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { list } = useSchools();
+  const qc = useQueryClient();
 
   const schoolId = Number(schoolIdParam);
   const safeSchoolId =
@@ -34,12 +38,32 @@ export function usePlatformSchoolDetailPage() {
   };
 
   const school = useMemo(
-    () => list.data?.find((item) => item.id === safeSchoolId) ?? null,
+    () => list.data?.data.find((item) => item.id === safeSchoolId) ?? null,
     [list.data, safeSchoolId],
   );
 
   const useMockData = false;
   const realData = usePlatformSchoolDashboard(useMockData ? null : safeSchoolId);
+
+  // Per-tab pagination
+  const tabPage =
+    activeTab === "teachers"
+      ? realData.teachersPage
+      : activeTab === "students"
+        ? realData.studentsPage
+        : realData.staffPage;
+  const setTabPage =
+    activeTab === "teachers"
+      ? realData.setTeachersPage
+      : activeTab === "students"
+        ? realData.setStudentsPage
+        : realData.setStaffPage;
+  const tabTotalPages =
+    activeTab === "teachers"
+      ? (realData.teachers.data?.total_pages ?? 1)
+      : activeTab === "students"
+        ? (realData.students.data?.total_pages ?? 1)
+        : (realData.staff.data?.total_pages ?? 1);
 
   const metrics = useMemo<PlatformSchoolDashboardMetrics | null>(() => {
     if (!safeSchoolId) return null;
@@ -59,7 +83,7 @@ export function usePlatformSchoolDetailPage() {
   const teachers = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("teachers", safeSchoolId);
-    const list = realData.teachers.data ?? [];
+    const list = realData.teachers.data?.data ?? [];
     return list.map((item) => ({
       id: item.id,
       name: item.name,
@@ -74,7 +98,7 @@ export function usePlatformSchoolDetailPage() {
   const students = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("students", safeSchoolId);
-    const list = realData.students.data ?? [];
+    const list = realData.students.data?.data ?? [];
     return list.map((item) => ({
       id: item.id,
       name: item.name,
@@ -91,10 +115,10 @@ export function usePlatformSchoolDetailPage() {
   const staff = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("staff", safeSchoolId);
-    const list = realData.staff.data ?? [];
+    const list = realData.staff.data?.data ?? [];
     return list.map((item) => ({
       id: item.user_id,
-      name: item.name,
+      name: item.name || "—",
       role: item.role,
       email: item.email ?? "-",
       phone: item.phone ?? "-",
@@ -114,6 +138,18 @@ export function usePlatformSchoolDetailPage() {
     [activeRows, search],
   );
 
+  async function refresh() {
+    if (!safeSchoolId) return;
+    setIsRefreshing(true);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolDashboard(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolTeachers(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolStudents(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolStaff(safeSchoolId) }),
+    ]);
+    setIsRefreshing(false);
+  }
+
   return {
     safeSchoolId,
     activeTab,
@@ -123,5 +159,10 @@ export function usePlatformSchoolDetailPage() {
     school,
     metrics,
     filteredRows,
+    refresh,
+    isRefreshing,
+    tabPage,
+    setTabPage,
+    tabTotalPages,
   };
 }
