@@ -1,10 +1,16 @@
+import * as Sentry from "@sentry/react";
 import { AlertTriangle } from "lucide-react";
+import { useEffect } from "react";
 import { useRouteError, isRouteErrorResponse, Link } from "react-router-dom";
 import { HardStop } from "./HardStop";
 
 export function AppErrorBoundary() {
   const error = useRouteError();
   let description = "An unexpected error occurred.";
+
+  useEffect(() => {
+    if (error) Sentry.captureException(error);
+  }, [error]);
 
   if (isRouteErrorResponse(error)) {
     description = error.statusText || "Unable to load this page.";

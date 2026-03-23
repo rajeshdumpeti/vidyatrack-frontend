@@ -74,6 +74,7 @@ jobs:
           VITE_FEATURE_STUDENT_NOTES_DEV: "true"
           VITE_FEATURE_STUDENT_NOTES_STAGE: "true"
           VITE_FEATURE_STUDENT_NOTES_PROD: "true"
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
         run: npm run build:${{ steps.env_select.outputs.build_env }}
 
   # ─────────────────────────────────────────────
@@ -152,6 +153,7 @@ jobs:
           VITE_FEATURE_STUDENT_NOTES_DEV: "true"
           VITE_FEATURE_STUDENT_NOTES_STAGE: "true"
           VITE_FEATURE_STUDENT_NOTES_PROD: "true"
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
         run: |
           if [ "${{ steps.env_select.outputs.build_env }}" = "prod" ]; then
             vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
