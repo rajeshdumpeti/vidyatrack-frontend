@@ -10,7 +10,12 @@ import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection
 import { logger } from "@/utils/logger";
 import { normalizeExamType } from "@/helpers/exams";
 
-import { buildBlankMarks, filterStudentsByQuery, getAssignmentToken, getCustomChipStorageKey } from "../utils/enterMarks.utils";
+import {
+  buildBlankMarks,
+  filterStudentsByQuery,
+  getAssignmentToken,
+  getCustomChipStorageKey,
+} from "../utils/enterMarks.utils";
 import type { EnterMarksState, FormValues } from "../types/enterMarks.types";
 
 const EMPTY_MARKS: Record<string, string> = {};
@@ -25,7 +30,9 @@ export function useEnterMarksPage(): EnterMarksState & { isDirty: boolean } {
   const [showCustomExamInput, setShowCustomExamInput] = useState(false);
   const [customExamDraft, setCustomExamDraft] = useState("");
   const [customExamChips, setCustomExamChips] = useState<string[]>([]);
-  const [contextMarksMap, setContextMarksMap] = useState<Record<string, string>>({});
+  const [contextMarksMap, setContextMarksMap] = useState<
+    Record<string, string>
+  >({});
   const lastAppliedMarksKeyRef = useRef<string | null>(null);
 
   const location = useLocation();
@@ -60,7 +67,9 @@ export function useEnterMarksPage(): EnterMarksState & { isDirty: boolean } {
   const maxMarksInput = useWatch({ control, name: "maxMarks" }) ?? "100";
   const parsedMaxMarks = Number(maxMarksInput);
   const maxMarks =
-    Number.isFinite(parsedMaxMarks) && parsedMaxMarks > 0 ? parsedMaxMarks : 100;
+    Number.isFinite(parsedMaxMarks) && parsedMaxMarks > 0
+      ? parsedMaxMarks
+      : 100;
   const watchedMarks = useWatch({ control, name: "marks" });
   const marks = watchedMarks ?? EMPTY_MARKS;
 
@@ -68,7 +77,8 @@ export function useEnterMarksPage(): EnterMarksState & { isDirty: boolean } {
     const list = assignmentsQuery.data ?? [];
     return list.find(
       (assignment) =>
-        `${assignment.section_id}-${assignment.subject_id}` === watchAssignmentId,
+        `${assignment.section_id}-${assignment.subject_id}` ===
+        watchAssignmentId,
     );
   }, [assignmentsQuery.data, watchAssignmentId]);
 
@@ -248,8 +258,7 @@ export function useEnterMarksPage(): EnterMarksState & { isDirty: boolean } {
     return () => clearTimeout(timeoutId);
   }, [isDirty, marks, watchAssignmentId, activeExamType]);
 
-  const handleSaveDraft = (values: FormValues) => {
-    console.log("Draft saved:", values);
+  const handleSaveDraft = () => {
     setAutoSaveStatus("saved");
     setTimeout(() => setAutoSaveStatus("idle"), 1500);
   };
@@ -282,7 +291,8 @@ export function useEnterMarksPage(): EnterMarksState & { isDirty: boolean } {
         return { studentId: student.id, marks: numberValue };
       })
       .filter(
-        (entry): entry is { studentId: number; marks: number } => entry !== null,
+        (entry): entry is { studentId: number; marks: number } =>
+          entry !== null,
       );
 
     if (!selectedAssignment.subject_id) {
