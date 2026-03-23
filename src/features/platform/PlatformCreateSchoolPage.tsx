@@ -20,6 +20,30 @@ export function PlatformCreateSchoolPage() {
         <span className="text-sm font-medium">Back to Schools</span>
       </button>
 
+      {page.showDraftBanner && (
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-medium text-amber-800">
+            You have an unsaved draft. Continue where you left off?
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={page.dismissDraftBanner}
+              className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={page.resetDraft}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Register New School</h1>

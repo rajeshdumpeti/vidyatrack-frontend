@@ -22,8 +22,13 @@ export function usePlatformCreateSchool() {
   const idempotencyKey = useRef<string>(crypto.randomUUID());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Detect whether a draft was found on mount
+  const [showDraftBanner, setShowDraftBanner] = useState(() => {
+    return sessionStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY) !== null;
+  });
+
   const [form, setForm] = useState<OnboardingForm>(() => {
-    const raw = localStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+    const raw = sessionStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
     if (!raw) return INITIAL_PLATFORM_CREATE_SCHOOL_FORM;
     try {
       const parsed = JSON.parse(raw) as OnboardingForm;
@@ -36,7 +41,7 @@ export function usePlatformCreateSchool() {
   const [stepErrors, setStepErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    localStorage.setItem(
+    sessionStorage.setItem(
       PLATFORM_CREATE_SCHOOL_DRAFT_KEY,
       JSON.stringify(form),
     );
@@ -83,11 +88,14 @@ export function usePlatformCreateSchool() {
   );
 
   const resetDraft = () => {
-    localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+    sessionStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
     setForm(INITIAL_PLATFORM_CREATE_SCHOOL_FORM);
     setStep(0);
     setStepErrors([]);
+    setShowDraftBanner(false);
   };
+
+  const dismissDraftBanner = () => setShowDraftBanner(false);
 
   const submit = async () => {
     const errors = validatePlatformCreateSchoolStep(form, step);
@@ -107,7 +115,7 @@ export function usePlatformCreateSchool() {
         idempotencyKey: idempotencyKey.current,
       });
 
-      localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+      sessionStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
       navigate("/platform/schools", { replace: true, state: { success: true } });
     } catch {
       setIsSubmitting(false);
@@ -122,6 +130,8 @@ export function usePlatformCreateSchool() {
     progress,
     create,
     isSubmitting,
+    showDraftBanner,
+    dismissDraftBanner,
     updateField,
     toggleArrayValue,
     goNext,
