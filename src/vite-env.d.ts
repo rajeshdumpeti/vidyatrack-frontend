@@ -19,6 +19,7 @@ interface ImportMetaEnv {
   readonly VITE_FEATURE_STUDENT_NOTES_DEV: string;
   readonly VITE_FEATURE_STUDENT_NOTES_STAGE: string;
   readonly VITE_FEATURE_STUDENT_NOTES_PROD: string;
+  readonly VITE_SENTRY_DSN?: string;
 }
 
 interface ImportMeta {
