@@ -1,4 +1,5 @@
 import { AppErrorBoundary } from "@/components/feedback/AppErrorBoundary";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PlatformCreateSchoolPage } from "@/features/platform/PlatformCreateSchoolPage";
 import { PlatformDashboardPage } from "@/features/platform/PlatformDashboardPage";
 import { PlatformSchoolDetailPage } from "@/features/platform/PlatformSchoolDetailPage";
@@ -15,9 +16,9 @@ export const platformRoutes = {
   ),
   errorElement: <AppErrorBoundary />,
   children: [
-    { index: true, element: <PlatformDashboardPage /> },
-    { path: "schools", element: <PlatformSchoolsListPage /> },
-    { path: "schools/:schoolId", element: <PlatformSchoolDetailPage /> },
-    { path: "schools/new", element: <PlatformCreateSchoolPage /> },
+    { index: true, element: <ErrorBoundary><PlatformDashboardPage /></ErrorBoundary> },
+    { path: "schools", element: <ErrorBoundary><PlatformSchoolsListPage /></ErrorBoundary> },
+    { path: "schools/:schoolId", element: <ErrorBoundary><PlatformSchoolDetailPage /></ErrorBoundary> },
+    { path: "schools/new", element: <ErrorBoundary><PlatformCreateSchoolPage /></ErrorBoundary> },
   ],
 };
