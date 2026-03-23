@@ -69,6 +69,7 @@ export function useStudentsListPage() {
   const principalPagination = {
     page: principalPage,
     setPage: setPrincipalPage,
+    setPageSize: (_: number) => {},
     totalPages: principalQuery.totalPages,
     totalItems: principalQuery.total,
     pagedItems: principalStudents,

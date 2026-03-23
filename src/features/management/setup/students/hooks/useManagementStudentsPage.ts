@@ -114,6 +114,7 @@ export function useManagementStudentsPage() {
   const studentsPagination = {
     page,
     setPage: (p: number) => setPage(p),
+    setPageSize: (_: number) => {},
     totalPages,
     totalItems,
     pagedItems: pagedStudents,

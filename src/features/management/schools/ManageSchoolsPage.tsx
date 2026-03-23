@@ -27,7 +27,7 @@ export function ManageSchoolsPage() {
           onSubmit={page.onSubmit}
         />
 
-        <ManageSchoolsList schools={page.list.data ?? []} />
+        <ManageSchoolsList schools={page.list.data?.data ?? []} />
       </main>
     </div>
   );
