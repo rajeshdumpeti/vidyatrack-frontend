@@ -27,6 +27,7 @@ export function SelectSchoolPage() {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsFetching(true);
     setFetchError(null);
 
@@ -40,6 +41,14 @@ export function SelectSchoolPage() {
       })
       .finally(() => setIsFetching(false));
   }, [schoolsLoaded, isFetching, accessToken, navigate, setSchools]);
+
+  // Auto-select and redirect if user has exactly one school
+  useEffect(() => {
+    if (!schoolsLoaded || isFetching) return;
+    if (schools.length !== 1) return;
+    setActiveSchool(schools[0].id);
+    navigate("/management", { replace: true });
+  }, [schoolsLoaded, isFetching, schools, setActiveSchool, navigate]);
 
   // Filter schools based on search query (case-insensitive name match)
   const filteredSchools = useMemo(() => {
@@ -85,7 +94,9 @@ export function SelectSchoolPage() {
           <div className="text-center p-6 bg-red-50 rounded-2xl border border-red-200">
             <p className="text-sm text-red-600">{fetchError}</p>
             <button
-              onClick={() => { setIsFetching(false); }}
+              onClick={() => {
+                setIsFetching(false);
+              }}
               className="mt-3 text-blue-600 font-semibold text-sm"
             >
               Retry
@@ -108,55 +119,57 @@ export function SelectSchoolPage() {
         )}
 
         {/* Scrollable school card list — max 5 cards visible, then scroll */}
-        {!isFetching && !fetchError && <div className="max-h-[420px] overflow-y-auto space-y-4 pr-1">
-          {schools.length > 0 ? (
-            filteredSchools.length > 0 ? (
-              filteredSchools.map((school) => (
-                <button
-                  key={school.id}
-                  onClick={() => handleSelect(school.id)}
-                  className="w-full flex items-center p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-blue-500 hover:ring-4 hover:ring-blue-50 transition-all group text-left"
-                >
-                  <div className="bg-blue-50 p-3 rounded-xl mr-4 group-hover:bg-blue-100 transition-colors">
-                    <HiAcademicCap className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 leading-tight">
-                      {school.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">
-                      Role: {school.role}
-                    </p>
-                  </div>
-                </button>
-              ))
+        {!isFetching && !fetchError && (
+          <div className="max-h-[420px] overflow-y-auto space-y-4 pr-1">
+            {schools.length > 0 ? (
+              filteredSchools.length > 0 ? (
+                filteredSchools.map((school) => (
+                  <button
+                    key={school.id}
+                    onClick={() => handleSelect(school.id)}
+                    className="w-full flex items-center p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-blue-500 hover:ring-4 hover:ring-blue-50 transition-all group text-left"
+                  >
+                    <div className="bg-blue-50 p-3 rounded-xl mr-4 group-hover:bg-blue-100 transition-colors">
+                      <HiAcademicCap className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 leading-tight">
+                        {school.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                        Role: {school.role}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
+                  <p className="text-sm text-gray-500">
+                    No schools match "{searchQuery}".
+                  </p>
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="mt-4 text-blue-600 font-semibold text-sm"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              )
             ) : (
               <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
                 <p className="text-sm text-gray-500">
-                  No schools match "{searchQuery}".
+                  No schools found linked to your account.
                 </p>
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => navigate("/auth/login")}
                   className="mt-4 text-blue-600 font-semibold text-sm"
                 >
-                  Clear search
+                  Go back to Login
                 </button>
               </div>
-            )
-          ) : (
-            <div className="text-center p-8 bg-white rounded-2xl border border-dashed border-gray-300">
-              <p className="text-sm text-gray-500">
-                No schools found linked to your account.
-              </p>
-              <button
-                onClick={() => navigate("/auth/login")}
-                className="mt-4 text-blue-600 font-semibold text-sm"
-              >
-                Go back to Login
-              </button>
-            </div>
-          )}
-        </div>}
+            )}
+          </div>
+        )}
 
         {/* School count hint */}
         {!isFetching && schools.length > 0 && (
