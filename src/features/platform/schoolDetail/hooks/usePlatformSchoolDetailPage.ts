@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { usePlatformSchoolDashboard } from "@/hooks/usePlatformSchoolDashboard";
 import { useSchools } from "@/hooks/useSchools";
+import { queryKeys } from "@/constants/queryKeys";
 
 import {
   filterPlatformSchoolRows,
@@ -20,7 +22,9 @@ export function usePlatformSchoolDetailPage() {
   const { schoolId: schoolIdParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { list } = useSchools();
+  const qc = useQueryClient();
 
   const schoolId = Number(schoolIdParam);
   const safeSchoolId =
@@ -94,7 +98,7 @@ export function usePlatformSchoolDetailPage() {
     const list = realData.staff.data ?? [];
     return list.map((item) => ({
       id: item.user_id,
-      name: item.name,
+      name: item.name && !item.name.includes("@") ? item.name : "Unnamed User",
       role: item.role,
       email: item.email ?? "-",
       phone: item.phone ?? "-",
@@ -114,6 +118,18 @@ export function usePlatformSchoolDetailPage() {
     [activeRows, search],
   );
 
+  async function refresh() {
+    if (!safeSchoolId) return;
+    setIsRefreshing(true);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolDashboard(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolTeachers(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolStudents(safeSchoolId) }),
+      qc.invalidateQueries({ queryKey: queryKeys.platformSchoolStaff(safeSchoolId) }),
+    ]);
+    setIsRefreshing(false);
+  }
+
   return {
     safeSchoolId,
     activeTab,
@@ -123,5 +139,7 @@ export function usePlatformSchoolDetailPage() {
     school,
     metrics,
     filteredRows,
+    refresh,
+    isRefreshing,
   };
 }

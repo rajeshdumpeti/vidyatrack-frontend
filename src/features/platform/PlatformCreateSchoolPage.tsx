@@ -54,7 +54,7 @@ export function PlatformCreateSchoolPage() {
           onBack={page.goBack}
           onNext={page.goNext}
           onSubmit={page.submit}
-          isSubmitting={page.create.isPending}
+          isSubmitting={page.isSubmitting || page.create.isPending}
         />
       </div>
     </div>

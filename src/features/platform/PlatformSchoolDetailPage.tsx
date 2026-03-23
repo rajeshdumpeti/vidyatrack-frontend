@@ -19,6 +19,8 @@ export function PlatformSchoolDetailPage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4">
       <PlatformSchoolDetailHeader
         schoolName={page.school?.name ?? `School #${page.safeSchoolId}`}
+        onRefresh={page.refresh}
+        isRefreshing={page.isRefreshing}
       />
 
       <PlatformSchoolMetricsGrid metrics={page.metrics} />

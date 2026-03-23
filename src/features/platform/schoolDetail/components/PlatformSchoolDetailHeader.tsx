@@ -1,10 +1,14 @@
-import { Activity, ArrowRightLeft } from "lucide-react";
+import { Activity, ArrowRightLeft, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function PlatformSchoolDetailHeader({
   schoolName,
+  onRefresh,
+  isRefreshing,
 }: {
   schoolName: string;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }) {
   return (
     <>
@@ -27,10 +31,20 @@ export function PlatformSchoolDetailHeader({
             distribution.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-green-700">
-          <Activity className="h-4 w-4" />
-          Live Pulse
-        </div>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-green-700 hover:bg-green-100 disabled:opacity-60 transition-colors"
+          title="Refresh school data"
+        >
+          {isRefreshing ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Activity className="h-4 w-4" />
+          )}
+          {isRefreshing ? "Refreshing..." : "Live Pulse"}
+        </button>
       </div>
     </>
   );

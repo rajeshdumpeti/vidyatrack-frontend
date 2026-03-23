@@ -17,10 +17,13 @@ export async function createSchool(payload: {
   name: string;
   admin_phone: string;
   admin_email?: string | null;
+  idempotencyKey?: string;
 }): Promise<SchoolDto> {
+  const { idempotencyKey, ...body } = payload;
   const res = await apiClient.post<SchoolDto>(
     API_ENDPOINTS.schools.create,
-    payload,
+    body,
+    idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined,
   );
   return res.data;
 }

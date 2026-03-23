@@ -33,17 +33,32 @@ export function useOtpVerifyPage() {
   const [deliveryChannel, setDeliveryChannel] = useState<"whatsapp" | "email">(
     locationState.deliveryChannel ?? "whatsapp",
   );
+  const [resendCooldown, setResendCooldown] = useState(0);
   const hasPhone = phoneDigits.trim().length > 0;
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const {
     register,
     handleSubmit,
     setValue,
     getValues,
+    watch,
     formState: { isSubmitting },
   } = useForm<OtpVerifyFormValues>({
     defaultValues: { d1: "", d2: "", d3: "", d4: "" },
   });
+
+  const watchedValues = watch();
+  const isOtpComplete =
+    watchedValues.d1.length === 1 &&
+    watchedValues.d2.length === 1 &&
+    watchedValues.d3.length === 1 &&
+    watchedValues.d4.length === 1;
 
   const maskedPhone = useMemo(
     () => maskPhoneDigits(locationState.phoneDigits, countryCode),
@@ -173,7 +188,7 @@ export function useOtpVerifyPage() {
   };
 
   const onResend = () => {
-    if (!hasPhone) return;
+    if (!hasPhone || resendCooldown > 0) return;
 
     const phoneE164 = `${countryCode}${phoneDigits}`;
     logger.info("[auth][otp-verify] resend clicked", { trace });
@@ -181,6 +196,7 @@ export function useOtpVerifyPage() {
     resendOtp(phoneE164, {
       onSuccess: (result) => {
         setDeliveryChannel(result.delivery_channel);
+        setResendCooldown(45);
         logger.info("[auth][otp-verify] resend success", {
           trace,
           deliveryChannel: result.delivery_channel,
@@ -209,6 +225,8 @@ export function useOtpVerifyPage() {
     deliveryChannel,
     maskedPhone,
     hasPhone,
+    isOtpComplete,
+    resendCooldown,
     onSubmit,
     onResend,
     onNeedHelp,

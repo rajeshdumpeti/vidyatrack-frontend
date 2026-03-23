@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useSchools } from "@/hooks/useSchools";
@@ -17,6 +17,10 @@ import type { OnboardingForm } from "../types/platformCreateSchool.types";
 export function usePlatformCreateSchool() {
   const navigate = useNavigate();
   const { create } = useSchools();
+
+  // Generate a stable idempotency key for this wizard session
+  const idempotencyKey = useRef<string>(crypto.randomUUID());
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState<OnboardingForm>(() => {
     const raw = localStorage.getItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
@@ -89,18 +93,25 @@ export function usePlatformCreateSchool() {
     const errors = validatePlatformCreateSchoolStep(form, step);
     setStepErrors(errors);
     if (errors.length > 0) return;
+    if (isSubmitting) return;
 
+    setIsSubmitting(true);
     const phoneDigits = extractDigits(form.admin_phone).slice(-10);
     const fullPhone = `${form.admin_phone_country}${phoneDigits}`;
 
-    await create.mutateAsync({
-      name: form.school_name.trim(),
-      admin_phone: fullPhone,
-      admin_email: form.admin_email.trim() || null,
-    });
+    try {
+      await create.mutateAsync({
+        name: form.school_name.trim(),
+        admin_phone: fullPhone,
+        admin_email: form.admin_email.trim() || null,
+        idempotencyKey: idempotencyKey.current,
+      });
 
-    localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
-    navigate("/platform/schools", { replace: true, state: { success: true } });
+      localStorage.removeItem(PLATFORM_CREATE_SCHOOL_DRAFT_KEY);
+      navigate("/platform/schools", { replace: true, state: { success: true } });
+    } catch {
+      setIsSubmitting(false);
+    }
   };
 
   return {
@@ -110,6 +121,7 @@ export function usePlatformCreateSchool() {
     steps: PLATFORM_CREATE_SCHOOL_STEPS,
     progress,
     create,
+    isSubmitting,
     updateField,
     toggleArrayValue,
     goNext,
