@@ -1,4 +1,5 @@
 import type { UseFormHandleSubmit, UseFormRegister, FieldErrors } from "react-hook-form";
+import { blockNonPhoneKeys } from "@/helpers/phone";
 
 import { ErrorState } from "@/components/feedback/ErrorState";
 
@@ -55,12 +56,15 @@ export function ManageSchoolsCreateForm({
             Admin Phone
           </label>
           <input
+            type="tel"
+            inputMode="numeric"
             className={[
               "mt-2 h-12 w-full rounded-xl border bg-white px-3 text-sm font-semibold text-gray-900 outline-none",
               "placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100",
               errors.admin_phone ? "border-red-500" : "border-gray-200",
             ].join(" ")}
             placeholder="+91XXXXXXXXXX or +1XXXXXXXXXX"
+            onKeyDown={blockNonPhoneKeys}
             {...register("admin_phone", {
               required: "Admin phone is required",
               validate: (v) =>

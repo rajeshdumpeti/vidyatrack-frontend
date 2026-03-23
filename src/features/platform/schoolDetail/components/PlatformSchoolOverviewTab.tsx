@@ -6,7 +6,7 @@ export function PlatformSchoolOverviewTab({
   metrics: PlatformSchoolDashboardMetrics | null;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3 mt-6">
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
         <p className="text-xs font-semibold uppercase text-blue-700">
           Teachers Mix

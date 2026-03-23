@@ -10,10 +10,12 @@ export function usePlatformSchoolsListPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { list } = useSchools(debouncedSearch || undefined);
+  const { list, page, setPage, limit } = useSchools(debouncedSearch || undefined);
+
+  const schools = list.data?.data ?? [];
 
   const schoolMetricsQueries = useQueries({
-    queries: (list.data ?? []).map((school) => ({
+    queries: schools.map((school) => ({
       queryKey: queryKeys.platformSchoolDashboardFallback(school.id),
       queryFn: () => getSchoolDashboard(school.id),
       staleTime: 60_000,
@@ -23,7 +25,7 @@ export function usePlatformSchoolsListPage() {
 
   const fallbackBySchoolId = useMemo(() => {
     const result = new Map<number, { teacher: number; student: number }>();
-    (list.data ?? []).forEach((school, idx) => {
+    schools.forEach((school, idx) => {
       const payload = schoolMetricsQueries[idx]?.data;
       if (!payload) return;
       result.set(school.id, {
@@ -32,14 +34,22 @@ export function usePlatformSchoolsListPage() {
       });
     });
     return result;
-  }, [list.data, schoolMetricsQueries]);
+  }, [schools, schoolMetricsQueries]);
+
+  const paginationMeta = list.data
+    ? { total: list.data.total, total_pages: list.data.total_pages }
+    : null;
 
   return {
     list,
     search,
     setSearch,
     debouncedSearch,
-    filteredSchools: list.data ?? [],
+    filteredSchools: list.data?.data ?? [],
     fallbackBySchoolId,
+    page,
+    setPage,
+    limit,
+    paginationMeta,
   };
 }

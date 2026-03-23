@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 
 export function Field({
   label,
@@ -39,12 +40,6 @@ export function PhoneField({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const formatPhone10 = (input: string) => {
-    const digits = input.replace(/\D/g, "").slice(0, 10);
-    if (digits.length <= 5) return digits;
-    return `${digits.slice(0, 5)} ${digits.slice(5)}`;
-  };
-
   return (
     <label>
       <span className="mb-1.5 block text-sm font-semibold text-gray-700">{label}</span>
@@ -56,6 +51,7 @@ export function PhoneField({
           inputMode="numeric"
           value={value}
           onChange={(event) => onChange(formatPhone10(event.target.value))}
+          onKeyDown={blockNonDigitKeys}
           maxLength={11}
           placeholder="98765 43210"
           className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"

@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 
 import { useClasses } from "@/hooks/useClasses";
-import { usePagination } from "@/hooks/usePagination";
 import { useSections } from "@/hooks/useSections";
 import {
   useCommitStudentsImport,
@@ -30,6 +29,10 @@ export function useManagementStudentsPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sectionId, setSectionId] = useState<string>("");
+  const [page, setPage] = useState(1);
+
+  const handleSearchChange = (v: string) => { setSearch(v); setPage(1); };
+  const handleSectionChange = (v: string) => { setSectionId(v); setPage(1); };
   const [importFile, setImportFile] = useState<File | null>(null);
   const [previewData, setPreviewData] =
     useState<StudentImportPreviewResponse | null>(null);
@@ -38,7 +41,13 @@ export function useManagementStudentsPage() {
   const [toast, setToast] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const studentsQuery = useStudents();
+  const sectionIdNumber = sectionId ? Number(sectionId) : null;
+  const studentsQuery = useStudents({
+    page,
+    limit: 20,
+    search,
+    sectionId: sectionIdNumber,
+  });
   const classesQuery = useClasses();
   const sectionsQuery = useSections();
   const classesList = classesQuery.list;
@@ -98,30 +107,20 @@ export function useManagementStudentsPage() {
     return map;
   }, [sectionsList.data, classLabelById]);
 
-  const filteredStudents = useMemo(() => {
-    const list = studentsQuery.data ?? [];
-    const query = search.trim().toLowerCase();
-    if (!query) return list;
+  const pagedStudents = studentsQuery.data?.data ?? [];
+  const totalPages = studentsQuery.data?.total_pages ?? 1;
+  const totalItems = studentsQuery.data?.total ?? 0;
 
-    return list.filter((student: StudentDto) => {
-      const name = (student.name ?? "").toLowerCase();
-      const code = String(student.student_code ?? "").toLowerCase();
-      return name.includes(query) || code.includes(query);
-    });
-  }, [studentsQuery.data, search]);
-
-  const sectionIdNumber = sectionId ? Number(sectionId) : null;
-  const filteredBySection = useMemo(() => {
-    if (!sectionIdNumber) return filteredStudents;
-    return filteredStudents.filter(
-      (student) => student.section_id === sectionIdNumber,
-    );
-  }, [filteredStudents, sectionIdNumber]);
-
-  const studentsPagination = usePagination(filteredBySection, {
-    initialPageSize: 20,
-    resetDeps: [search, sectionId],
-  });
+  const studentsPagination = {
+    page,
+    setPage: (p: number) => setPage(p),
+    totalPages,
+    totalItems,
+    pagedItems: pagedStudents,
+    pageSize: 20,
+    from: totalItems === 0 ? 0 : (page - 1) * 20 + 1,
+    to: totalItems === 0 ? 0 : Math.min(page * 20, totalItems),
+  };
 
   const selectedAcademicContext = useMemo(() => {
     if (!sectionIdNumber) {
@@ -265,9 +264,9 @@ export function useManagementStudentsPage() {
     setIsOpen,
     isImportOpen,
     search,
-    setSearch,
+    setSearch: handleSearchChange,
     sectionId,
-    setSectionId,
+    setSectionId: handleSectionChange,
     importFile,
     setImportFile,
     previewData,
@@ -289,7 +288,6 @@ export function useManagementStudentsPage() {
     classLabelById,
     availableSections,
     sectionLabelById,
-    filteredBySection,
     studentsPagination,
     selectedAcademicContext,
     previewAcademicGroups,

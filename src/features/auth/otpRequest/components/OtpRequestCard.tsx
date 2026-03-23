@@ -6,6 +6,7 @@ import type {
   FieldErrors,
 } from "react-hook-form";
 
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { LoadingButton } from "@/components/ui/Button";
@@ -134,16 +135,16 @@ export function OtpRequestCard({
                     id="phone"
                     type="tel"
                     inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={10}
+                    maxLength={11}
                     autoComplete="tel"
                     placeholder="98765 43210"
                     className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
                     {...phoneRest}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      e.target.value = e.target.value.replace(/\D/g, "");
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      e.target.value = formatPhone10(e.target.value);
                       void phoneOnChange(e);
                     }}
+                    onKeyDown={blockNonDigitKeys}
                   />
                 </div>
 

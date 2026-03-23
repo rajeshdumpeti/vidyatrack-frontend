@@ -38,12 +38,32 @@ export function usePlatformSchoolDetailPage() {
   };
 
   const school = useMemo(
-    () => list.data?.find((item) => item.id === safeSchoolId) ?? null,
+    () => list.data?.data.find((item) => item.id === safeSchoolId) ?? null,
     [list.data, safeSchoolId],
   );
 
   const useMockData = false;
   const realData = usePlatformSchoolDashboard(useMockData ? null : safeSchoolId);
+
+  // Per-tab pagination
+  const tabPage =
+    activeTab === "teachers"
+      ? realData.teachersPage
+      : activeTab === "students"
+        ? realData.studentsPage
+        : realData.staffPage;
+  const setTabPage =
+    activeTab === "teachers"
+      ? realData.setTeachersPage
+      : activeTab === "students"
+        ? realData.setStudentsPage
+        : realData.setStaffPage;
+  const tabTotalPages =
+    activeTab === "teachers"
+      ? (realData.teachers.data?.total_pages ?? 1)
+      : activeTab === "students"
+        ? (realData.students.data?.total_pages ?? 1)
+        : (realData.staff.data?.total_pages ?? 1);
 
   const metrics = useMemo<PlatformSchoolDashboardMetrics | null>(() => {
     if (!safeSchoolId) return null;
@@ -63,7 +83,7 @@ export function usePlatformSchoolDetailPage() {
   const teachers = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("teachers", safeSchoolId);
-    const list = realData.teachers.data ?? [];
+    const list = realData.teachers.data?.data ?? [];
     return list.map((item) => ({
       id: item.id,
       name: item.name,
@@ -78,7 +98,7 @@ export function usePlatformSchoolDetailPage() {
   const students = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("students", safeSchoolId);
-    const list = realData.students.data ?? [];
+    const list = realData.students.data?.data ?? [];
     return list.map((item) => ({
       id: item.id,
       name: item.name,
@@ -95,10 +115,10 @@ export function usePlatformSchoolDetailPage() {
   const staff = useMemo<PlatformSchoolPersonRow[]>(() => {
     if (!safeSchoolId) return [];
     if (useMockData) return getMockRows("staff", safeSchoolId);
-    const list = realData.staff.data ?? [];
+    const list = realData.staff.data?.data ?? [];
     return list.map((item) => ({
       id: item.user_id,
-      name: item.name && !item.name.includes("@") ? item.name : "Unnamed User",
+      name: item.name || "—",
       role: item.role,
       email: item.email ?? "-",
       phone: item.phone ?? "-",
@@ -141,5 +161,8 @@ export function usePlatformSchoolDetailPage() {
     filteredRows,
     refresh,
     isRefreshing,
+    tabPage,
+    setTabPage,
+    tabTotalPages,
   };
 }

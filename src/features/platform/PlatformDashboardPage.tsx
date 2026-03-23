@@ -7,7 +7,7 @@ import { InsightState } from "@/components/feedback/InsightState";
 export function PlatformDashboardPage() {
   const { list } = useSchools();
   const metrics = useMemo(() => {
-    const schools = list.data ?? [];
+    const schools = list.data?.data ?? [];
     return schools.reduce(
       (acc, school) => {
         acc.schools += 1;

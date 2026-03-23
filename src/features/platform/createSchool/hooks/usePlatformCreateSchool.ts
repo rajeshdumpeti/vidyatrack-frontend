@@ -83,7 +83,7 @@ export function usePlatformCreateSchool() {
   };
 
   const progress = useMemo(
-    () => Math.round(((step + 1) / PLATFORM_CREATE_SCHOOL_STEPS.length) * 100),
+    () => Math.round((step / PLATFORM_CREATE_SCHOOL_STEPS.length) * 100),
     [step],
   );
 

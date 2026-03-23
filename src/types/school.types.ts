@@ -1,3 +1,11 @@
+export type PaginatedDto<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+};
+
 export type SchoolDto = {
   id: number;
   public_id?: string;

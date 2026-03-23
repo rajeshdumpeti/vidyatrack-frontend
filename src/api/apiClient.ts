@@ -1,5 +1,6 @@
 import axios from "axios";
 import { ENV } from "@/app/env";
+import { router } from "@/app/router";
 import { useAuthStore } from "@/store/auth.store";
 import { useHardStopStore } from "@/store/hardStop.store";
 import { useFlashStore } from "@/store/flash.store";
@@ -52,7 +53,7 @@ apiClient.interceptors.response.use(
       const { setFlash } = useFlashStore.getState();
       clearAuth();
       setFlash("Session expired. Please log in again.", "error");
-      window.location.href = "/auth/login";
+      void router.navigate("/auth/login", { replace: true });
     } else if (status === 402) {
       setReason("subscription_expired");
     } else if (status === 403 && detail === "inactive_user") {

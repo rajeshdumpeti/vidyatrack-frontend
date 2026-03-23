@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 import type {
+  PaginatedDto,
   SchoolDashboardDto,
   SchoolDto,
   SchoolStaffListItemDto,
@@ -8,9 +9,13 @@ import type {
   SchoolTeacherListItemDto,
 } from "@/types/school.types";
 
-export async function getSchools(search?: string): Promise<SchoolDto[]> {
-  const res = await apiClient.get<SchoolDto[]>(API_ENDPOINTS.schools.list, {
-    params: search ? { search } : undefined,
+export async function getSchools(
+  search?: string,
+  page = 1,
+  limit = 25,
+): Promise<PaginatedDto<SchoolDto>> {
+  const res = await apiClient.get<PaginatedDto<SchoolDto>>(API_ENDPOINTS.schools.list, {
+    params: { ...(search ? { search } : {}), page, limit },
   });
   return res.data;
 }
@@ -41,27 +46,36 @@ export async function getSchoolDashboard(
 
 export async function getSchoolTeachers(
   schoolId: number,
-): Promise<SchoolTeacherListItemDto[]> {
-  const res = await apiClient.get<SchoolTeacherListItemDto[]>(
+  page = 1,
+  limit = 25,
+): Promise<PaginatedDto<SchoolTeacherListItemDto>> {
+  const res = await apiClient.get<PaginatedDto<SchoolTeacherListItemDto>>(
     API_ENDPOINTS.schools.teachers(schoolId),
+    { params: { page, limit } },
   );
   return res.data;
 }
 
 export async function getSchoolStudents(
   schoolId: number,
-): Promise<SchoolStudentListItemDto[]> {
-  const res = await apiClient.get<SchoolStudentListItemDto[]>(
+  page = 1,
+  limit = 25,
+): Promise<PaginatedDto<SchoolStudentListItemDto>> {
+  const res = await apiClient.get<PaginatedDto<SchoolStudentListItemDto>>(
     API_ENDPOINTS.schools.students(schoolId),
+    { params: { page, limit } },
   );
   return res.data;
 }
 
 export async function getSchoolStaff(
   schoolId: number,
-): Promise<SchoolStaffListItemDto[]> {
-  const res = await apiClient.get<SchoolStaffListItemDto[]>(
+  page = 1,
+  limit = 25,
+): Promise<PaginatedDto<SchoolStaffListItemDto>> {
+  const res = await apiClient.get<PaginatedDto<SchoolStaffListItemDto>>(
     API_ENDPOINTS.schools.staff(schoolId),
+    { params: { page, limit } },
   );
   return res.data;
 }

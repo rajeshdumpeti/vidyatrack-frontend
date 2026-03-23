@@ -1,49 +1,39 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/queryKeys";
-import type { StudentDto } from "@/types/student.types";
-import { getStudents, getStudentsBySectionId } from "@/api/students.api";
+import { getStudents } from "@/api/students.api";
 import { useAuthStore } from "@/store/auth.store";
-
-function normalize(v: string) {
-  return v.trim().toLowerCase();
-}
-
-function filterStudents(list: StudentDto[], search: string) {
-  const q = normalize(search);
-  if (!q) return list;
-
-  return list.filter((s) => {
-    const name = normalize(s.name ?? "");
-    const code = normalize(String(s.student_code ?? ""));
-    return name.includes(q) || code.includes(q);
-  });
-}
 
 export function usePrincipalStudents(params: {
   sectionId?: number;
   search: string;
+  page?: number;
+  limit?: number;
 }) {
-  const { sectionId, search } = params;
+  const { sectionId, search, page = 1, limit = 20 } = params;
   const schoolId = useAuthStore((s) => s.schoolId);
 
   const query = useQuery({
-    queryKey: queryKeys.principalStudents(sectionId, schoolId),
+    queryKey: queryKeys.principalStudents(schoolId, {
+      page,
+      limit,
+      search,
+      sectionId: sectionId ?? null,
+    }),
     queryFn: () =>
-      sectionId
-        ? getStudentsBySectionId(sectionId, schoolId!)
-        : getStudents(schoolId!),
+      getStudents(schoolId!, {
+        page,
+        limit,
+        search: search || undefined,
+        sectionId: sectionId ?? null,
+      }),
     enabled: !!schoolId,
     retry: 1,
   });
 
-  const filtered = useMemo(
-    () => filterStudents(query.data ?? [], search),
-    [query.data, search]
-  );
-
   return {
-    data: filtered,
+    data: query.data?.data ?? [],
+    totalPages: query.data?.total_pages ?? 1,
+    total: query.data?.total ?? 0,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,

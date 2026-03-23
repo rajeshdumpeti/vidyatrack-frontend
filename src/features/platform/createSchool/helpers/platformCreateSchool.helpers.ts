@@ -8,6 +8,12 @@ export function extractDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
+export function formatPhone10(input: string) {
+  const digits = extractDigits(input).slice(0, 10);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+}
+
 export function validatePlatformCreateSchoolStep(
   form: OnboardingForm,
   index: number,

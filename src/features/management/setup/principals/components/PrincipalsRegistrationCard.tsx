@@ -1,4 +1,5 @@
 import { AlertTriangle, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 
 import { ErrorState } from "@/components/feedback/ErrorState";
@@ -123,25 +124,31 @@ export function PrincipalsRegistrationCard({
               <option value="+1">+1</option>
             </select>
             <span className="mx-3 h-5 w-px bg-slate-200" />
-            <input
-              {...register("phone", {
+            {(() => {
+              const { onChange: rhfOnChange, ...phoneRest } = register("phone", {
                 required: "Phone is required",
                 validate: (value) => {
                   const digits = value.replace(/\D/g, "");
-                  if (digits.length < 10) {
-                    return "Enter a valid 10-digit mobile number";
-                  }
-                  if (digits.length > 10) {
-                    return "Enter a valid 10-digit mobile number";
-                  }
+                  if (digits.length !== 10) return "Enter a valid 10-digit mobile number";
                   return true;
                 },
-              })}
-              inputMode="numeric"
-              type="tel"
-              placeholder="98765 00000"
-              className="h-full w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
-            />
+              });
+              return (
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={11}
+                  placeholder="98765 00000"
+                  className="h-full w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
+                  {...phoneRest}
+                  onChange={(e) => {
+                    e.target.value = formatPhone10(e.target.value);
+                    void rhfOnChange(e);
+                  }}
+                  onKeyDown={blockNonDigitKeys}
+                />
+              );
+            })()}
           </div>
           <p className="mt-1 text-xs font-medium text-slate-500">
             OTP will be sent to this principal number.

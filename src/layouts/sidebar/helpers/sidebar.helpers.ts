@@ -16,7 +16,7 @@ import {
 import type { NavRole } from "@/navigation/navConfig";
 
 export const sidebarLinkBase =
-  "flex h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors duration-150";
+  "flex h-12 items-center px-4 text-sm font-semibold transition-colors duration-150";
 
 export const sidebarRoleTitleMap: Record<NavRole, string> = {
   management: "Management",

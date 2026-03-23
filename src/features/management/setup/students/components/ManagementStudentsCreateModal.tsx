@@ -1,6 +1,7 @@
 import { ErrorState } from "@/components/feedback/ErrorState";
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 
+import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
 import { normalizePhoneDigits } from "../helpers/managementStudents.helpers";
 import type { CreateFormValues } from "../types/managementStudents.types";
 
@@ -140,17 +141,30 @@ export function ManagementStudentsCreateModal({
               </div>
               <div>
                 <label className="text-sm font-semibold text-gray-900">Mobile Number</label>
-                <input
-                  className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none"
-                  placeholder="+91 90000 00000"
-                  {...register("parent_phone", {
+                {(() => {
+                  const { onChange: rhfOnChange, ...phoneRest } = register("parent_phone", {
                     required: "Parent phone is required",
                     validate: (value) => {
                       const digits = normalizePhoneDigits(value);
                       return digits.length >= 10 || "Enter a valid phone number";
                     },
-                  })}
-                />
+                  });
+                  return (
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={11}
+                      placeholder="98765 43210"
+                      className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm outline-none"
+                      {...phoneRest}
+                      onChange={(e) => {
+                        e.target.value = formatPhone10(e.target.value);
+                        void rhfOnChange(e);
+                      }}
+                      onKeyDown={blockNonDigitKeys}
+                    />
+                  );
+                })()}
                 {errors.parent_phone ? (
                   <p className="mt-1 text-sm text-red-600">{errors.parent_phone.message}</p>
                 ) : null}

@@ -8,13 +8,13 @@ export function usePrincipalTeachers() {
 
   const q = useQuery({
     queryKey: queryKeys.principalTeachers(schoolId),
-    queryFn: () => listTeachers(schoolId!),
+    queryFn: () => listTeachers(schoolId!, { page: 1, limit: 200 }),
     enabled: !!schoolId,
     retry: 1,
   });
 
   return {
-    data: q.data ?? [],
+    data: q.data?.data ?? [],
     isLoading: q.isLoading,
     error: q.error,
     refetch: q.refetch,

@@ -39,13 +39,45 @@ export function PlatformSchoolDetailPage() {
           </div>
         </section>
       ) : (
-        <PlatformSchoolPeopleTable
-          activeTab={page.activeTab}
-          setActiveTab={page.setActiveTab}
-          search={page.search}
-          setSearch={page.setSearch}
-          rows={page.filteredRows}
-        />
+        <>
+          <PlatformSchoolPeopleTable
+            activeTab={page.activeTab}
+            setActiveTab={(tab) => {
+              page.setActiveTab(tab);
+              page.setTabPage(1);
+            }}
+            search={page.search}
+            setSearch={page.setSearch}
+            rows={page.filteredRows}
+          />
+          {page.filteredRows.length > 0 && (
+            <div className="flex items-center justify-between gap-4 px-1 mt-3">
+              <p className="text-sm text-gray-500">
+                Page {page.tabPage} of {page.tabTotalPages}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => page.setTabPage((p) => Math.max(1, p - 1))}
+                  disabled={page.tabPage <= 1}
+                  className="px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    page.setTabPage((p) => Math.min(page.tabTotalPages, p + 1))
+                  }
+                  disabled={page.tabPage >= page.tabTotalPages}
+                  className="px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
