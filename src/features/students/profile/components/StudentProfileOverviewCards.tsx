@@ -1,5 +1,5 @@
 import { EmptyState } from "@/components/feedback/EmptyState";
-import { prettyExamType } from "@/helpers/exams";
+import { prettyExamType } from "@/utils/exams";
 import type {
   StudentAttendanceSummary,
   StudentPersonalDetails,

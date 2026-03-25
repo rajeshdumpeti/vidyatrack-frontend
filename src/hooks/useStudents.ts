@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getStudents } from "@/api/students.api";
 import { queryKeys } from "@/constants/queryKeys";
-import { requireSchoolId } from "@/helpers/requireSchoolId";
+import { requireSchoolId } from "@/utils/requireSchoolId";
 import type {
   StudentCreateInput,
   StudentImportCommitInput,

@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createAttendanceRecord, submitAttendance } from "@/api/attendance.api";
-import { requireSchoolId } from "@/helpers/requireSchoolId";
+import { requireSchoolId } from "@/utils/requireSchoolId";
 import type {
   AttendanceStatusDto,
   CreateAttendanceRequest,

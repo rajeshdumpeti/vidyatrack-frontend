@@ -1,7 +1,7 @@
 import { History, Loader2, Search, Users } from "lucide-react";
 import type { FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
 
-import { prettyExamType } from "@/helpers/exams";
+import { prettyExamType } from "@/utils/exams";
 import type { FormValues } from "../types/enterMarks.types";
 import type { StudentListItem } from "@/types/student.types";
 import { isValidMark } from "../helpers/enterMarks.helpers";

@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { recordMark, submitMarks } from "@/api/marks.api";
-import { requireSchoolId } from "@/helpers/requireSchoolId";
+import { requireSchoolId } from "@/utils/requireSchoolId";
 import type {
   MarksExamTypeDto,
   RecordMarkRequest,

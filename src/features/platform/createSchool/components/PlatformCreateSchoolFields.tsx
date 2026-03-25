@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
+import { formatPhone10, blockNonDigitKeys } from "@/utils/phone";
 
 export function Field({
   label,

@@ -1,5 +1,5 @@
 import { AlertTriangle, Phone, ShieldCheck, UserRound } from "lucide-react";
-import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
+import { formatPhone10, blockNonDigitKeys } from "@/utils/phone";
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 
 import { ErrorState } from "@/components/feedback/ErrorState";

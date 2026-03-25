@@ -6,7 +6,7 @@ import type {
   FieldErrors,
 } from "react-hook-form";
 
-import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
+import { formatPhone10, blockNonDigitKeys } from "@/utils/phone";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { getUserFriendlyErrorMessage } from "@/components/feedback/errorMessage";
 import { LoadingButton } from "@/components/ui/Button";

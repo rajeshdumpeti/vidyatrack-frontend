@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getStudentNotes, createStudentNote } from "@/api/studentNotes.api";
 import { queryKeys } from "@/constants/queryKeys";
-import { requireSchoolId } from "@/helpers/requireSchoolId";
+import { requireSchoolId } from "@/utils/requireSchoolId";
 import type { CreateStudentNotePayload } from "@/types/studentNotes.types";
 import { useAuthStore } from "@/store/auth.store";
 

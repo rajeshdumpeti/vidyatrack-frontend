@@ -8,7 +8,7 @@ import { useMyTeachingAssignments } from "@/hooks/useMyTeachingAssignments";
 import { useStudentsBySection } from "@/hooks/useStudentsBySection";
 import { useTeacherAttendanceSection } from "@/hooks/useTeacherAttendanceSection";
 import { logger } from "@/utils/logger";
-import { normalizeExamType } from "@/helpers/exams";
+import { normalizeExamType } from "@/utils/exams";
 
 import {
   buildBlankMarks,
