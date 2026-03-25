@@ -68,11 +68,11 @@ export function useAssignSubjectsPage() {
   const teachersQuery = useQuery({
     queryKey: ["teachers", schoolId],
     queryFn: async () => {
-      const response = await apiClient.get<AssignSubjectsTeacherDto[]>(
-        API_ENDPOINTS.teachers.list,
-        { params: { school_id: schoolId } },
-      );
-      return response.data;
+      const response = await apiClient.get<
+        { data: AssignSubjectsTeacherDto[] } | AssignSubjectsTeacherDto[]
+      >(API_ENDPOINTS.teachers.list, { params: { school_id: schoolId } });
+      const payload = response.data;
+      return Array.isArray(payload) ? payload : (payload.data ?? []);
     },
     enabled: !!schoolId,
   });
@@ -116,9 +116,18 @@ export function useAssignSubjectsPage() {
   const createMutation = useCreateTeachingAssignment();
 
   const classes = useMemo(() => classesQuery.data ?? [], [classesQuery.data]);
-  const sections = useMemo(() => sectionsQuery.data ?? [], [sectionsQuery.data]);
-  const subjects = useMemo(() => subjectsQuery.data ?? [], [subjectsQuery.data]);
-  const teachers = useMemo(() => teachersQuery.data ?? [], [teachersQuery.data]);
+  const sections = useMemo(
+    () => sectionsQuery.data ?? [],
+    [sectionsQuery.data],
+  );
+  const subjects = useMemo(
+    () => subjectsQuery.data ?? [],
+    [subjectsQuery.data],
+  );
+  const teachers = useMemo(
+    () => teachersQuery.data ?? [],
+    [teachersQuery.data],
+  );
   const selectedClass = classes.find((item) => item.id === classId);
   const noSectionsForClass =
     !!classId && !sectionsQuery.isLoading && sections.length === 0;
