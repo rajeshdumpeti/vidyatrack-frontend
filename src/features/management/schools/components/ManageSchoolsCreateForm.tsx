@@ -1,5 +1,5 @@
 import type { UseFormHandleSubmit, UseFormRegister, FieldErrors } from "react-hook-form";
-import { blockNonPhoneKeys } from "@/helpers/phone";
+import { blockNonPhoneKeys } from "@/utils/phone";
 
 import { ErrorState } from "@/components/feedback/ErrorState";
 

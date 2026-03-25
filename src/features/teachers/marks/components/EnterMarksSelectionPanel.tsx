@@ -2,7 +2,7 @@ import { BookOpen, Ruler } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
 import { EXAM_TYPE_PRESETS } from "@/constants/examTypes";
-import { prettyExamType } from "@/helpers/exams";
+import { prettyExamType } from "@/utils/exams";
 import type { FormValues } from "../types/enterMarks.types";
 
 type EnterMarksSelectionPanelProps = {

@@ -1,7 +1,7 @@
 import { ErrorState } from "@/components/feedback/ErrorState";
 import type { FieldErrors, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
 
-import { formatPhone10, blockNonDigitKeys } from "@/helpers/phone";
+import { formatPhone10, blockNonDigitKeys } from "@/utils/phone";
 import { normalizePhoneDigits } from "../helpers/managementStudents.helpers";
 import type { CreateFormValues } from "../types/managementStudents.types";
 

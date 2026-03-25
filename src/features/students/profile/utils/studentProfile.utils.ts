@@ -1,4 +1,4 @@
-import { prettyExamType } from "@/helpers/exams";
+import { prettyExamType } from "@/utils/exams";
 import type { StudentReportCardDto } from "@/types/student.types";
 
 export function humanizeDate(iso: string): string {
