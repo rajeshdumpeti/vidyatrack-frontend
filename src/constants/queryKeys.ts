@@ -30,6 +30,11 @@ export const queryKeys = {
     schoolId: number | null | undefined,
     sectionId: number | null | undefined,
   ) => ["teaching-assignments", schoolId ?? null, { sectionId: sectionId ?? null }] as const,
+  teacherAssignmentHistory: (
+    schoolId: number | null | undefined,
+    sectionId: number | null | undefined,
+    subjectId: number | null | undefined,
+  ) => ["teaching-assignments", "history", schoolId ?? null, sectionId ?? null, subjectId ?? null] as const,
   teacherMeAssignments: () => ["teacher", "me", "teaching-assignments"] as const,
   teacherReadiness: () => ["teacher", "me", "readiness"] as const,
   teacherContext: (schoolId: number | null | undefined) =>

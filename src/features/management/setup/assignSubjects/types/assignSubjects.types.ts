@@ -18,9 +18,16 @@ export type AssignSubjectsTeacherDto = {
   id: number;
   name?: string | null;
   phone?: string | null;
+  status?: string | null;
 };
 
 export type AssignSubjectsRowMessage = Record<
   number,
   { text: string; type: "success" | "error" }
 >;
+
+export type HistoryTarget = {
+  sectionId: number;
+  subjectId: number;
+  subjectName: string;
+};

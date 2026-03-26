@@ -4,8 +4,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { useClasses } from "@/hooks/useClasses";
 import { useCreateManagementTeacher } from "@/hooks/useCreateManagementTeacher";
 import { useSections } from "@/hooks/useSections";
-import { useTeachers } from "@/hooks/useTeachers";
-import type { CreateTeacherInput } from "@/types/teacher.types";
+import { useTeachers, useUpdateTeacherStatus } from "@/hooks/useTeachers";
+import type { CreateTeacherInput, TeacherStatus } from "@/types/teacher.types";
 import type { SectionDto } from "@/types/section.types";
 import { digitsOnly } from "@/utils/phone";
 import { logger } from "@/utils/logger";
@@ -14,10 +14,13 @@ import type { TeachersSetupFormValues } from "../types/teachersSetup.types";
 
 export function useTeachersSetupPage() {
   const trace = useMemo(() => logger.traceId(), []);
-  const { isLoading } = useTeachers();
+  const teachersQuery = useTeachers();
+  const { isLoading } = teachersQuery;
   const classesQuery = useClasses();
   const sectionsQuery = useSections();
   const createMutation = useCreateManagementTeacher();
+  const updateStatusMutation = useUpdateTeacherStatus();
+  const [updatingTeacherId, setUpdatingTeacherId] = useState<number | null>(null);
 
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [inlineError, setInlineError] = useState<string | null>(null);
@@ -62,6 +65,16 @@ export function useTeachersSetupPage() {
     reset({ name: "", phone: "", email: "", class_id: "", section_id: "" });
   };
 
+  const onStatusChange = (teacherId: number, status: TeacherStatus) => {
+    setUpdatingTeacherId(teacherId);
+    updateStatusMutation.mutate(
+      { teacherId, status },
+      {
+        onSettled: () => setUpdatingTeacherId(null),
+      },
+    );
+  };
+
   const onSubmit = (values: TeachersSetupFormValues) => {
     if (!values.section_id) {
       setInlineError("Please select a section.");
@@ -92,6 +105,7 @@ export function useTeachersSetupPage() {
 
   return {
     isLoading,
+    teachers: teachersQuery.data,
     classesQuery,
     createMutation,
     successMsg,
@@ -103,5 +117,8 @@ export function useTeachersSetupPage() {
     availableSections,
     clearForm,
     onSubmit,
+    onStatusChange,
+    isUpdatingStatus: updateStatusMutation.isPending,
+    updatingTeacherId,
   };
 }

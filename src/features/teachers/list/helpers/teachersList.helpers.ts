@@ -40,8 +40,8 @@ export function filterTeachers(args: {
   return args.teachers.filter((teacher) => {
     if (!matchesSearch(teacher)) return false;
     if (args.statusFilter !== "ALL") {
-      const status = (teacher.status ?? "").toLowerCase();
-      if (status !== args.statusFilter.toLowerCase()) return false;
+      const status = (teacher.status ?? "ACTIVE").toUpperCase();
+      if (status !== args.statusFilter.toUpperCase()) return false;
     }
     if (args.subjectFilter !== "ALL") {
       const labels = (teacher.assignments ?? []).map(

@@ -6,6 +6,7 @@ import type {
   TeacherMeDto,
   TeacherContextDto,
   TeacherReadinessDto,
+  TeacherStatus,
 } from "@/types/teacher.types";
 import type { TeachingAssignmentMeDto } from "@/types/teachingAssignment.types";
 import { apiClient } from "./apiClient";
@@ -78,6 +79,19 @@ export async function getMyTeachingAssignments(): Promise<
 > {
   const res = await apiClient.get<TeachingAssignmentMeDto[]>(
     API_ENDPOINTS.teachers.meTeachingAssignments,
+  );
+  return res.data;
+}
+
+export async function updateTeacherStatus(
+  teacherId: number,
+  schoolId: number,
+  status: TeacherStatus,
+): Promise<TeacherDto> {
+  const res = await apiClient.patch<TeacherDto>(
+    API_ENDPOINTS.teachers.updateStatus(teacherId),
+    { status },
+    { params: { school_id: schoolId } },
   );
   return res.data;
 }

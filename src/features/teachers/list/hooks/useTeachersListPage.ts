@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { updateTeacherStatus } from "@/api/teachers.api";
 import { usePrincipalTeachers } from "@/hooks/usePrincipalTeachers";
 import { useAuthStore } from "@/store/auth.store";
-import type { TeacherDto } from "@/types/teacher.types";
+import type { TeacherDto, TeacherStatus } from "@/types/teacher.types";
 import { logger } from "@/utils/logger";
 
 import {
@@ -19,12 +21,29 @@ export function useTeachersListPage() {
   const [subjectFilter, setSubjectFilter] = useState<string>("ALL");
   const [expandedAssignments, setExpandedAssignments] =
     useState<TeachersExpandedAssignments>({});
+  const [updatingTeacherId, setUpdatingTeacherId] = useState<number | null>(null);
+  const [substituteTarget, setSubstituteTarget] = useState<TeacherDto | null>(null);
+
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.role);
+  const schoolId = useAuthStore((state) => state.schoolId);
   const navigateRole = role ?? "teacher";
+  const qc = useQueryClient();
 
   const query = usePrincipalTeachers();
   const isManagement = role === "management";
+
+  const statusMutation = useMutation({
+    mutationFn: ({ teacherId, status }: { teacherId: number; status: TeacherStatus }) =>
+      updateTeacherStatus(teacherId, schoolId!, status),
+    onMutate: ({ teacherId }) => setUpdatingTeacherId(teacherId),
+    onSettled: () => {
+      setUpdatingTeacherId(null);
+      // Invalidate all teacher-related queries
+      void qc.invalidateQueries({ queryKey: ["principal-teachers"] });
+      void qc.invalidateQueries({ queryKey: ["teachers"] });
+    },
+  });
 
   const allAssignments = useMemo(
     () => getAllAssignmentLabels(query.data ?? []),
@@ -44,10 +63,7 @@ export function useTeachersListPage() {
 
   const onSearchChange = (value: string) => {
     setSearch(value);
-    logger.info("[teachers] search_changed", {
-      trace,
-      length: value.length,
-    });
+    logger.info("[teachers] search_changed", { trace, length: value.length });
   };
 
   const toggleAssignments = (teacherId: number) => {
@@ -64,12 +80,9 @@ export function useTeachersListPage() {
     });
   };
 
-  const viewTeacher = (teacher: TeacherDto) => {
-    logger.info("[teachers] row_tap", {
-      trace,
-      teacherId: teacher.id,
-    });
-    openTeacher(teacher);
+  const onStatusChange = (teacherId: number, status: TeacherStatus) => {
+    logger.info("[teachers] status_change", { trace, teacherId, status });
+    statusMutation.mutate({ teacherId, status });
   };
 
   return {
@@ -77,8 +90,11 @@ export function useTeachersListPage() {
     statusFilter,
     subjectFilter,
     expandedAssignments,
+    updatingTeacherId,
     isManagement,
+    schoolId,
     query,
+    allTeachers: query.data ?? [],
     allAssignments,
     filtered,
     setStatusFilter,
@@ -86,7 +102,10 @@ export function useTeachersListPage() {
     onSearchChange,
     toggleAssignments,
     openTeacher,
-    viewTeacher,
+    onStatusChange,
+    substituteTarget,
+    setSubstituteTarget,
+    onAssignSubstitute: (teacher: TeacherDto) => setSubstituteTarget(teacher),
     onAddTeacher: () => navigate("/management/setup/teachers"),
   };
 }

@@ -6,11 +6,14 @@ import type { ClassDto } from "@/types/class.types";
 import type { SectionDto } from "@/types/section.types";
 
 import type { TeachersSetupFormValues } from "../types/teachersSetup.types";
+import type { OtpRequestCountryCode } from "@/features/auth/otpRequest/types/otpRequest.types";
 
 type TeachersSetupCreateFormProps = {
   register: UseFormRegister<TeachersSetupFormValues>;
   handleSubmit: UseFormHandleSubmit<TeachersSetupFormValues>;
   onSubmit: (values: TeachersSetupFormValues) => void;
+  setCountryCode: (value: OtpRequestCountryCode) => void;
+  countryCode: OtpRequestCountryCode;
   watchedClassId: number | "";
   availableSections: SectionDto[];
   classes: ClassDto[];
@@ -24,6 +27,8 @@ export function TeachersSetupCreateForm({
   register,
   handleSubmit,
   onSubmit,
+  setCountryCode,
+  countryCode,
   watchedClassId,
   availableSections,
   classes,
@@ -35,7 +40,9 @@ export function TeachersSetupCreateForm({
   return (
     <div className="rounded-2xl border border-gray-200 p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-extrabold text-gray-900">Add New Teacher</div>
+        <div className="text-sm font-extrabold text-gray-900">
+          Add New Teacher
+        </div>
         <button
           type="button"
           onClick={onClearForm}
@@ -57,30 +64,39 @@ export function TeachersSetupCreateForm({
 
         <div>
           <label className="text-sm font-semibold">Phone</label>
-          {(() => {
-            const { onChange: rhfOnChange, ...phoneRest } = register("phone", {
-              required: "Phone is required",
-              validate: (value) =>
-                value.replace(/\D/g, "").length === 10 || "Invalid phone",
-            });
-            return (
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={11}
-                placeholder="98765 43210"
-                className="mt-2 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                {...phoneRest}
-                onChange={(e) => {
-                  e.target.value = formatPhone10(e.target.value);
-                  void rhfOnChange(e);
-                }}
-                onKeyDown={blockNonDigitKeys}
-              />
-            );
-          })()}
+          <div className="mt-2 flex items-center gap-2">
+            <select className="h-11 w-24 rounded-xl border border-gray-200 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+              <option value="+91">+91</option>
+              <option value="+1">+1</option>
+            </select>
+            <span className="h-5 w-px bg-gray-200" />
+            {(() => {
+              const { onChange: rhfOnChange, ...phoneRest } = register(
+                "phone",
+                {
+                  required: "Phone is required",
+                  validate: (value) =>
+                    value.replace(/\D/g, "").length === 10 || "Invalid phone",
+                },
+              );
+              return (
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={11}
+                  placeholder="98765 43210"
+                  className="h-11 flex-1 rounded-xl border border-gray-200 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  {...phoneRest}
+                  onChange={(e) => {
+                    e.target.value = formatPhone10(e.target.value);
+                    void rhfOnChange(e);
+                  }}
+                  onKeyDown={blockNonDigitKeys}
+                />
+              );
+            })()}
+          </div>
         </div>
-
         <div>
           <label className="text-sm font-semibold">Target Class</label>
           <select
@@ -122,11 +138,13 @@ export function TeachersSetupCreateForm({
         </div>
 
         <div>
-          <label className="text-sm font-semibold">Email (optional)</label>
+          <label className="text-sm font-semibold">Email</label>
           <input
             className="mt-2 h-11 w-full rounded-xl border border-gray-200 px-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
             placeholder="Email"
-            {...register("email")}
+            {...register("email", {
+              required: "Email is required",
+            })}
           />
         </div>
 

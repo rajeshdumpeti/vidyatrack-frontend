@@ -5,6 +5,7 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { AcademicSetupShell } from "./AcademicSetupShell";
 import { AssignSubjectsContextCard } from "./assignSubjects/components/AssignSubjectsContextCard";
 import { AssignSubjectsGrid } from "./assignSubjects/components/AssignSubjectsGrid";
+import { TeacherAssignmentHistoryModal } from "./assignSubjects/components/TeacherAssignmentHistoryModal";
 import { useAssignSubjectsPage } from "./assignSubjects/hooks/useAssignSubjectsPage";
 
 export function AssignSubjectsPage() {
@@ -46,6 +47,7 @@ export function AssignSubjectsPage() {
           teachers={page.teachers}
           selectedTeacherBySubject={page.selectedTeacherBySubject}
           assignedTeacherIdBySubject={page.assignedTeacherIdBySubject}
+          substituteTeacherIdBySubject={page.substituteTeacherIdBySubject}
           rowMessage={page.rowMessage}
           recentlyCompletedSubjectId={page.recentlyCompletedSubjectId}
           bulkSaving={page.bulkSaving}
@@ -57,8 +59,18 @@ export function AssignSubjectsPage() {
           onTeacherChange={page.onTeacherChange}
           onAssign={page.assignForSubject}
           onSaveAll={page.onSaveAll}
+          onViewHistory={page.setHistoryTarget}
         />
       </section>
+
+      {page.historyTarget ? (
+        <TeacherAssignmentHistoryModal
+          target={page.historyTarget}
+          teachers={page.teachers}
+          teacherName={page.teacherName}
+          onClose={() => page.setHistoryTarget(null)}
+        />
+      ) : null}
     </AcademicSetupShell>
   );
 }
