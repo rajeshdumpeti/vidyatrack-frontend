@@ -6,14 +6,11 @@ import type { ClassDto } from "@/types/class.types";
 import type { SectionDto } from "@/types/section.types";
 
 import type { TeachersSetupFormValues } from "../types/teachersSetup.types";
-import type { OtpRequestCountryCode } from "@/features/auth/otpRequest/types/otpRequest.types";
 
 type TeachersSetupCreateFormProps = {
   register: UseFormRegister<TeachersSetupFormValues>;
   handleSubmit: UseFormHandleSubmit<TeachersSetupFormValues>;
   onSubmit: (values: TeachersSetupFormValues) => void;
-  setCountryCode: (value: OtpRequestCountryCode) => void;
-  countryCode: OtpRequestCountryCode;
   watchedClassId: number | "";
   availableSections: SectionDto[];
   classes: ClassDto[];
@@ -27,8 +24,6 @@ export function TeachersSetupCreateForm({
   register,
   handleSubmit,
   onSubmit,
-  setCountryCode,
-  countryCode,
   watchedClassId,
   availableSections,
   classes,
