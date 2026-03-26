@@ -3,6 +3,7 @@ import { LoadingState } from "@/components/feedback/LoadingState";
 import { TeachersSetupCreateForm } from "./teachers/components/TeachersSetupCreateForm";
 import { TeachersSetupHeader } from "./teachers/components/TeachersSetupHeader";
 import { useTeachersSetupPage } from "./teachers/hooks/useTeachersSetupPage";
+import type { OtpRequestCountryCode } from "@/features/auth/otpRequest/types/otpRequest.types";
 
 export function TeachersPage() {
   const page = useTeachersSetupPage();
