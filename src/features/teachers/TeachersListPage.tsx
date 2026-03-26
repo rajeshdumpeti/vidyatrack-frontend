@@ -2,6 +2,7 @@ import { EmptyState } from "@/components/feedback/EmptyState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
 
+import { SubstituteTeacherModal } from "./list/components/SubstituteTeacherModal";
 import { TeachersListFilters } from "./list/components/TeachersListFilters";
 import { TeachersListHeader } from "./list/components/TeachersListHeader";
 import { TeachersListTable } from "./list/components/TeachersListTable";
@@ -42,12 +43,23 @@ export function TeachersListPage() {
           <TeachersListTable
             teachers={page.filtered}
             expandedAssignments={page.expandedAssignments}
+            updatingTeacherId={page.updatingTeacherId}
             toggleAssignments={page.toggleAssignments}
             onOpenTeacher={page.openTeacher}
-            onViewTeacher={page.viewTeacher}
+            onStatusChange={page.onStatusChange}
+            onAssignSubstitute={page.isManagement ? page.onAssignSubstitute : undefined}
           />
         ) : null}
       </main>
+
+      {page.substituteTarget && page.schoolId ? (
+        <SubstituteTeacherModal
+          teacher={page.substituteTarget}
+          allTeachers={page.allTeachers}
+          schoolId={page.schoolId}
+          onClose={() => page.setSubstituteTarget(null)}
+        />
+      ) : null}
     </div>
   );
 }

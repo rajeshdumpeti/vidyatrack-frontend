@@ -1,10 +1,11 @@
-import { ShieldCheck, UserCheck } from "lucide-react";
+import { Clock, ShieldCheck, UserCheck } from "lucide-react";
 
 import type {
   AssignSubjectsSectionDto,
   AssignSubjectsSubjectDto,
   AssignSubjectsTeacherDto,
   AssignSubjectsRowMessage,
+  HistoryTarget,
 } from "../types/assignSubjects.types";
 
 type AssignSubjectsGridProps = {
@@ -14,6 +15,7 @@ type AssignSubjectsGridProps = {
   teachers: AssignSubjectsTeacherDto[];
   selectedTeacherBySubject: Record<number, number | "">;
   assignedTeacherIdBySubject: Record<number, number>;
+  substituteTeacherIdBySubject: Record<number, number>;
   rowMessage: AssignSubjectsRowMessage;
   recentlyCompletedSubjectId: number | null;
   bulkSaving: boolean;
@@ -25,6 +27,7 @@ type AssignSubjectsGridProps = {
   onTeacherChange: (subjectId: number, teacherId: number | "") => void;
   onAssign: (subjectId: number) => void;
   onSaveAll: () => void;
+  onViewHistory: (target: HistoryTarget) => void;
 };
 
 export function AssignSubjectsGrid({
@@ -34,6 +37,7 @@ export function AssignSubjectsGrid({
   teachers,
   selectedTeacherBySubject,
   assignedTeacherIdBySubject,
+  substituteTeacherIdBySubject,
   rowMessage,
   recentlyCompletedSubjectId,
   bulkSaving,
@@ -45,6 +49,7 @@ export function AssignSubjectsGrid({
   onTeacherChange,
   onAssign,
   onSaveAll,
+  onViewHistory,
 }: AssignSubjectsGridProps) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-8">
@@ -88,6 +93,10 @@ export function AssignSubjectsGrid({
           {subjects.map((subject) => {
             const assignedId = assignedTeacherIdBySubject[subject.id];
             const assignedTeacher = teachers.find((teacher) => teacher.id === assignedId);
+            const substituteId = substituteTeacherIdBySubject[subject.id];
+            const substituteTeacher = substituteId
+              ? teachers.find((t) => t.id === substituteId)
+              : null;
             const message = rowMessage[subject.id];
             const isRowSubmitting =
               createMutationPending && createMutationSubjectId === subject.id;
@@ -109,7 +118,7 @@ export function AssignSubjectsGrid({
                       : "border-slate-200 bg-white",
                 ].join(" ")}
               >
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_120px] lg:items-center">
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-[1fr_220px_120px_36px] lg:items-center">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
                       {subject.name}
@@ -120,13 +129,18 @@ export function AssignSubjectsGrid({
                           ? `Assigned: ${teacherName(assignedTeacher)}`
                           : "Not assigned"}
                       </p>
-                      {isAssigned ? (
+                      {substituteTeacher ? (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                          Sub: {teacherName(substituteTeacher)}
+                        </span>
+                      ) : null}
+                      {isAssigned && !substituteTeacher ? (
                         <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                           Completed
                         </span>
                       ) : null}
                       {isPendingChange ? (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                           Pending Save
                         </span>
                       ) : null}
@@ -143,11 +157,13 @@ export function AssignSubjectsGrid({
                     }
                   >
                     <option value="">Select teacher</option>
-                    {teachers.map((teacher) => (
-                      <option key={teacher.id} value={teacher.id}>
-                        {teacherName(teacher)}
-                      </option>
-                    ))}
+                    {teachers
+                      .filter((t) => !t.status || t.status === "ACTIVE")
+                      .map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacherName(teacher)}
+                        </option>
+                      ))}
                   </select>
                   <button
                     type="button"
@@ -158,6 +174,25 @@ export function AssignSubjectsGrid({
                     <ShieldCheck className="h-4 w-4" />
                     {isRowSubmitting ? "Saving..." : "Assign"}
                   </button>
+                  {/* History button — only shown when already assigned */}
+                  {isAssigned && sectionId ? (
+                    <button
+                      type="button"
+                      title="View assignment history"
+                      onClick={() =>
+                        onViewHistory({
+                          sectionId,
+                          subjectId: subject.id,
+                          subjectName: subject.name,
+                        })
+                      }
+                      className="inline-flex h-10 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:border-blue-300 hover:text-blue-600"
+                    >
+                      <Clock className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                 </div>
                 {message ? (
                   <p

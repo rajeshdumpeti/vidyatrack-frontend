@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { listTeachers } from "@/api/teachers.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { listTeachers, updateTeacherStatus } from "@/api/teachers.api";
 import { queryKeys } from "@/constants/queryKeys";
+import type { TeacherStatus } from "@/types/teacher.types";
 import { useAuthStore } from "@/store/auth.store";
 
 export function useTeachers(params?: { page?: number; limit?: number; search?: string }) {
@@ -24,4 +25,23 @@ export function useTeachers(params?: { page?: number; limit?: number; search?: s
     error: q.error,
     refetch: q.refetch,
   };
+}
+
+export function useUpdateTeacherStatus() {
+  const { schoolId } = useAuthStore();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      teacherId,
+      status,
+    }: {
+      teacherId: number;
+      status: TeacherStatus;
+    }) => updateTeacherStatus(teacherId, schoolId!, status),
+    onSuccess: () => {
+      // Invalidate all teacher list queries for this school
+      qc.invalidateQueries({ queryKey: ["teachers", schoolId ?? null] });
+    },
+  });
 }

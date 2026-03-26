@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTeachingAssignment,
+  getTeacherAssignmentHistory,
   getTeachingAssignmentsBySection,
 } from "@/api/teachingAssignments.api";
 import { queryKeys } from "@/constants/queryKeys";
@@ -41,4 +42,18 @@ export function useCreateTeachingAssignment() {
   });
 
   return mutation;
+}
+
+export function useTeacherAssignmentHistory(
+  sectionId: number | null,
+  subjectId: number | null,
+) {
+  const { schoolId } = useAuthStore();
+
+  return useQuery({
+    queryKey: queryKeys.teacherAssignmentHistory(schoolId, sectionId, subjectId),
+    queryFn: () =>
+      getTeacherAssignmentHistory(schoolId!, sectionId!, subjectId!),
+    enabled: !!schoolId && !!sectionId && !!subjectId,
+  });
 }

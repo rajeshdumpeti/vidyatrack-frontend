@@ -1,3 +1,5 @@
+export type TeacherStatus = "ACTIVE" | "ON_LEAVE" | "RESIGNED" | "TRANSFERRED";
+
 export type TeacherDto = {
   id: number;
   public_id?: string;
@@ -7,7 +9,7 @@ export type TeacherDto = {
   phone?: string | null;
   email?: string | null;
   employee_id?: string | null;
-  status?: string | null;
+  status?: TeacherStatus | null;
   assignments?: Array<{
     id?: number | null;
     label: string;

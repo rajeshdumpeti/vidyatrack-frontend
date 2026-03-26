@@ -22,6 +22,7 @@ import type {
   AssignSubjectsSectionDto,
   AssignSubjectsSubjectDto,
   AssignSubjectsTeacherDto,
+  HistoryTarget,
 } from "../types/assignSubjects.types";
 
 export function useAssignSubjectsPage() {
@@ -40,6 +41,7 @@ export function useAssignSubjectsPage() {
   const [recentlyCompletedSubjectId, setRecentlyCompletedSubjectId] = useState<
     number | null
   >(null);
+  const [historyTarget, setHistoryTarget] = useState<HistoryTarget | null>(null);
 
   const classesQuery = useQuery({
     queryKey: ["classes", schoolId],
@@ -136,6 +138,16 @@ export function useAssignSubjectsPage() {
     const map: Record<number, number> = {};
     assignments.forEach((assignment) => {
       map[assignment.subject_id] = assignment.teacher_id;
+    });
+    return map;
+  }, [assignments]);
+
+  const substituteTeacherIdBySubject = useMemo(() => {
+    const map: Record<number, number> = {};
+    assignments.forEach((assignment) => {
+      if (assignment.substitute_teacher_id) {
+        map[assignment.subject_id] = assignment.substitute_teacher_id;
+      }
     });
     return map;
   }, [assignments]);
@@ -293,6 +305,7 @@ export function useAssignSubjectsPage() {
     noSectionsForClass,
     selectedTeacherBySubject,
     assignedTeacherIdBySubject,
+    substituteTeacherIdBySubject,
     rowMessage,
     bulkSaving,
     bulkMessage,
@@ -311,5 +324,7 @@ export function useAssignSubjectsPage() {
     assignForSubject,
     onSaveAll,
     isLoading,
+    historyTarget,
+    setHistoryTarget,
   };
 }

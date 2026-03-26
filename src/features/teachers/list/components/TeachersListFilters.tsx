@@ -59,8 +59,10 @@ export function TeachersListFilters({
             onChange={(event) => setStatusFilter(event.target.value)}
           >
             <option value="ALL">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ON_LEAVE">On Leave</option>
+            <option value="RESIGNED">Resigned</option>
+            <option value="TRANSFERRED">Transferred</option>
           </select>
         </div>
       </div>

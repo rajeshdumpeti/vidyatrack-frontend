@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
   teachers: {
     list: "/api/v1/teachers",
     create: "/api/v1/teachers",
+    updateStatus: (teacherId: number) => `/api/v1/teachers/${teacherId}/status`,
     me: "/api/v1/teachers/me",
     meReadiness: "/api/v1/teachers/me/readiness",
     meContext: "/api/v1/teachers/me/context",
@@ -75,6 +76,8 @@ export const API_ENDPOINTS = {
   teachingAssignments: {
     list: "/api/v1/teaching-assignments",
     create: "/api/v1/teaching-assignments",
+    history: "/api/v1/teaching-assignments/history",
+    substitute: (id: number) => `/api/v1/teaching-assignments/${id}/substitute`,
   },
   studentNotes: {
     list: (studentId: string) => `/api/v1/students/${studentId}/notes`,
