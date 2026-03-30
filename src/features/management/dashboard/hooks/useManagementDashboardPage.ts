@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  GraduationCap,
-  LayoutGrid,
-  Users,
-} from "lucide-react";
+import { GraduationCap, LayoutGrid, Users } from "lucide-react";
 
 import { getManagementDashboardCmsContent } from "@/cms";
 import {

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { RoleOption } from "@/types/auth.types";
 
 type UserRole = "management" | "principal" | "teacher" | "super_admin";
 
@@ -21,6 +22,7 @@ type AuthState = {
   schoolId: number | null; // This represents the currently "active" school
   schools: School[]; // List of schools returned from /auth/me
   schoolsLoaded: boolean;
+  pendingRoles: RoleOption[]; // Available roles after OTP verify, before role selection
 
   setToken: (token: string) => void;
   setSchools: (schools: School[]) => void;
@@ -30,6 +32,7 @@ type AuthState = {
     role?: UserRole | string | null;
     schoolId?: number | string | null;
   }) => void;
+  setPendingRoles: (roles: RoleOption[]) => void;
   clearAuth: () => void;
 };
 
@@ -110,6 +113,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   schoolId: loadActiveSchool(),
   schools: [],
   schoolsLoaded: false,
+  pendingRoles: [],
 
   setToken: (token: string) => {
     try {
@@ -149,6 +153,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (nextSchoolId) get().setActiveSchool(nextSchoolId);
   },
 
+  setPendingRoles: (roles) => set({ pendingRoles: roles }),
+
   clearAuth: () => {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_META_KEY);
@@ -159,6 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       schoolId: null,
       schools: [],
       schoolsLoaded: false,
+      pendingRoles: [],
     });
   },
 }));

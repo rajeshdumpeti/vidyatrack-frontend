@@ -12,7 +12,11 @@ import type {
 } from "@/types/auth.types";
 import { logger } from "@/utils/logger";
 
-import { buildOtpCode, digitsFromInput, maskPhoneDigits } from "../../otp.utils";
+import {
+  buildOtpCode,
+  digitsFromInput,
+  maskPhoneDigits,
+} from "../../otp.utils";
 import { toOtpDigits } from "../helpers/otpVerify.helpers";
 import type { OtpVerifyFormValues } from "../types/otpVerify.types";
 
@@ -26,6 +30,7 @@ export function useOtpVerifyPage() {
   const setAuthMeta = useAuthStore((state) => state.setAuthMeta);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const setSchools = useAuthStore((state) => state.setSchools);
+  const setPendingRoles = useAuthStore((state) => state.setPendingRoles);
 
   const inputs = useRef<Array<HTMLInputElement | null>>([]);
   const phoneDigits = locationState.phoneDigits ?? "";
@@ -123,9 +128,12 @@ export function useOtpVerifyPage() {
 
   const onSubmit = (values: OtpVerifyFormValues) => {
     if (!hasPhone) {
-      logger.warn("[auth][otp-verify] missing phoneDigits in navigation state", {
-        trace,
-      });
+      logger.warn(
+        "[auth][otp-verify] missing phoneDigits in navigation state",
+        {
+          trace,
+        },
+      );
       return;
     }
 
@@ -140,6 +148,16 @@ export function useOtpVerifyPage() {
         onSuccess: async (data) => {
           try {
             setToken(data.access_token);
+
+            // Multi-role: show role picker before loading /auth/me
+            if (
+              data.requires_role_selection &&
+              data.available_roles.length > 1
+            ) {
+              setPendingRoles(data.available_roles);
+              navigate("/auth/select-role", { replace: true });
+              return;
+            }
 
             const me = await getAuthMe();
             setSchools(Array.isArray(me.schools) ? me.schools : []);
@@ -181,7 +199,10 @@ export function useOtpVerifyPage() {
           }
         },
         onError: (error) => {
-          logger.warn("[auth][otp-verify] verify failed", { trace, err: error });
+          logger.warn("[auth][otp-verify] verify failed", {
+            trace,
+            err: error,
+          });
         },
       },
     );

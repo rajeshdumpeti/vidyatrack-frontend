@@ -1,4 +1,5 @@
 import { SelectSchoolPage } from "@/features/auth/SelectSchoolPage";
+import { SelectRolePage } from "@/features/auth/SelectRolePage";
 import { OtpRequestPage } from "@/features/auth/OtpRequestPage";
 import { OtpVerifyPage } from "@/features/auth/OtpVerifyPage";
 import { AppErrorBoundary } from "@/components/feedback/AppErrorBoundary";
@@ -12,5 +13,6 @@ export const authRoutes = {
     { path: "login", element: <OtpRequestPage /> },
     { path: "verify", element: <OtpVerifyPage /> },
     { path: "select-school", element: <SelectSchoolPage /> },
+    { path: "select-role", element: <SelectRolePage /> },
   ],
 };

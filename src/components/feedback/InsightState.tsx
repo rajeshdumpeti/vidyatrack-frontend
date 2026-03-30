@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 
 type InsightStateProps = {
   title: string;
-  description: string;
+  description?: string;
 };
 
 export function InsightState({ title, description }: InsightStateProps) {
