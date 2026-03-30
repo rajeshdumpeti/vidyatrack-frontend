@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     me: "/api/v1/auth/me",
     otpRequest: "/api/v1/auth/otp/request",
     otpVerify: "/api/v1/auth/otp/verify",
+    selectRole: "/api/v1/auth/select-role",
   },
   students: {
     create: "/api/v1/students",

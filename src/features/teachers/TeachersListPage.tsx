@@ -1,4 +1,3 @@
-import { EmptyState } from "@/components/feedback/EmptyState";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
 
@@ -7,6 +6,7 @@ import { TeachersListFilters } from "./list/components/TeachersListFilters";
 import { TeachersListHeader } from "./list/components/TeachersListHeader";
 import { TeachersListTable } from "./list/components/TeachersListTable";
 import { useTeachersListPage } from "./list/hooks/useTeachersListPage";
+import { InsightState } from "@/components/feedback/InsightState";
 
 export function TeachersListPage() {
   const page = useTeachersListPage();
@@ -29,17 +29,23 @@ export function TeachersListPage() {
           setSubjectFilter={page.setSubjectFilter}
         />
 
-        {page.query.isLoading ? <LoadingState label="Loading teachers..." /> : null}
+        {page.query.isLoading ? (
+          <LoadingState label="Loading teachers..." />
+        ) : null}
 
         {page.query.error ? (
           <ErrorState title="Unable to load teachers" message="Please retry." />
         ) : null}
 
-        {!page.query.isLoading && !page.query.error && page.filtered.length === 0 ? (
-          <EmptyState message="No teachers match the current filters." />
+        {!page.query.isLoading &&
+        !page.query.error &&
+        page.filtered.length === 0 ? (
+          <InsightState title="Add a teacher to get started" />
         ) : null}
 
-        {!page.query.isLoading && !page.query.error && page.filtered.length > 0 ? (
+        {!page.query.isLoading &&
+        !page.query.error &&
+        page.filtered.length > 0 ? (
           <TeachersListTable
             teachers={page.filtered}
             expandedAssignments={page.expandedAssignments}
@@ -47,7 +53,9 @@ export function TeachersListPage() {
             toggleAssignments={page.toggleAssignments}
             onOpenTeacher={page.openTeacher}
             onStatusChange={page.onStatusChange}
-            onAssignSubstitute={page.isManagement ? page.onAssignSubstitute : undefined}
+            onAssignSubstitute={
+              page.isManagement ? page.onAssignSubstitute : undefined
+            }
           />
         ) : null}
       </main>

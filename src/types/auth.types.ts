@@ -17,10 +17,21 @@ export type SchoolMapping = {
   role: AuthRole;
 };
 
+export type RoleOption = {
+  school_id: number;
+  school_name: string;
+  role: AuthRole;
+};
+
 export type OtpVerifyResponse = {
   access_token: string;
   token_type: string;
+  requires_role_selection: boolean;
+  available_roles: RoleOption[];
 };
+
+export type SelectRoleBody = { school_id: number; role: string };
+export type SelectRoleResponse = { access_token: string; token_type: string };
 
 export type AuthMeResponse = {
   id: number;

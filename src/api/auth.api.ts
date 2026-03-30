@@ -4,6 +4,8 @@ import type {
   OtpRequestResponse,
   OtpVerifyBody,
   OtpVerifyResponse,
+  SelectRoleBody,
+  SelectRoleResponse,
 } from "@/types/auth.types";
 import axios from "axios";
 import { apiClient } from "./apiClient";
@@ -71,6 +73,18 @@ export async function verifyOtp(
 
 export async function getAuthMe(): Promise<AuthMeResponse> {
   const res = await apiClient.get<AuthMeResponse>(API_ENDPOINTS.auth.me);
+  return res.data;
+}
+
+export async function selectRole(
+  school_id: number,
+  role: string,
+): Promise<SelectRoleResponse> {
+  const body: SelectRoleBody = { school_id, role };
+  const res = await apiClient.post<SelectRoleResponse>(
+    API_ENDPOINTS.auth.selectRole,
+    body,
+  );
   return res.data;
 }
 

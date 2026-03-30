@@ -10,6 +10,7 @@ import { ManagementStudentsImportModal } from "./students/components/ManagementS
 import { ManagementStudentsImportOverlay } from "./students/components/ManagementStudentsImportOverlay";
 import { ManagementStudentsTable } from "./students/components/ManagementStudentsTable";
 import { useManagementStudentsPage } from "./students/hooks/useManagementStudentsPage";
+import { InsightState } from "@/components/feedback/InsightState";
 
 export function ManagementSetupStudentsPage() {
   const page = useManagementStudentsPage();
@@ -57,7 +58,7 @@ export function ManagementSetupStudentsPage() {
         {!page.isBootLoading &&
         !page.hasBootError &&
         page.studentsPagination.pagedItems.length === 0 ? (
-          <EmptyState message="Add a student to get started." />
+          <InsightState title="Add a student to get started" />
         ) : null}
 
         {!page.isBootLoading &&
@@ -106,7 +107,9 @@ export function ManagementSetupStudentsPage() {
         mapImportError={page.mapImportError}
       />
 
-      <ManagementStudentsImportOverlay open={page.commitImportMutation.isPending} />
+      <ManagementStudentsImportOverlay
+        open={page.commitImportMutation.isPending}
+      />
 
       {page.toast ? (
         <Toast
