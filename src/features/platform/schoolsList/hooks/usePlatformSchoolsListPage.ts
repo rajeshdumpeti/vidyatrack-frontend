@@ -10,8 +10,11 @@ export function usePlatformSchoolsListPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { list, page, setPage, limit } = useSchools(debouncedSearch || undefined);
+  const { list, page, setPage, limit } = useSchools(
+    debouncedSearch || undefined,
+  );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const schools = list.data?.data ?? [];
 
   const schoolMetricsQueries = useQueries({
