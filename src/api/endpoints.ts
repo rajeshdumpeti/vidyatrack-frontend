@@ -9,6 +9,14 @@ export const API_ENDPOINTS = {
     otpRequest: "/api/v1/auth/otp/request",
     otpVerify: "/api/v1/auth/otp/verify",
     selectRole: "/api/v1/auth/select-role",
+    // Password login
+    login: "/api/v1/auth/login",
+    verify2fa: "/api/v1/auth/verify-2fa",
+    refresh: "/api/v1/auth/refresh",
+    // Password reset
+    forgotPassword: "/api/v1/auth/forgot-password",
+    verifyResetOtp: "/api/v1/auth/verify-otp",
+    resetPassword: "/api/v1/auth/reset-password",
   },
   students: {
     create: "/api/v1/students",

@@ -9,6 +9,8 @@ export type OtpVerifyFormValues = {
   d2: string;
   d3: string;
   d4: string;
+  d5: string;
+  d6: string;
 };
 
 export type OtpVerifyViewState = {

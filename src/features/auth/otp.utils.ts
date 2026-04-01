@@ -4,7 +4,7 @@ export function isSingleDigit(value: string): boolean {
   return /^[0-9]$/.test(value);
 }
 
-export function digitsFromInput(value: string, max = 4): string[] {
+export function digitsFromInput(value: string, max = 6): string[] {
   return value.replace(/\D/g, "").slice(0, max).split("");
 }
 
