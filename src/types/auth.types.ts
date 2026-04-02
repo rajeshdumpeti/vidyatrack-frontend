@@ -1,6 +1,6 @@
 export type AuthRole = "teacher" | "principal" | "management" | "super_admin";
 
-export type OtpCodeDigits = [string, string, string, string];
+export type OtpCodeDigits = [string, string, string, string, string, string];
 
 export type SupportedCountryCode = "+91" | "+1";
 

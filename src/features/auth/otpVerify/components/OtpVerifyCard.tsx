@@ -14,11 +14,11 @@ type OtpVerifyCardProps = {
   onSubmit: (values: OtpVerifyFormValues) => void;
   setInputRef: (index: number, element: HTMLInputElement | null) => void;
   onDigitChange: (
-    index: 0 | 1 | 2 | 3,
+    index: 0 | 1 | 2 | 3 | 4 | 5,
     key: keyof OtpVerifyFormValues,
   ) => (event: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (
-    index: 0 | 1 | 2 | 3,
+    index: 0 | 1 | 2 | 3 | 4 | 5,
     key: keyof OtpVerifyFormValues,
   ) => (event: React.KeyboardEvent<HTMLInputElement>) => void;
   isVerifying: boolean;
@@ -69,34 +69,39 @@ export function OtpVerifyCard({
 
         <p className="mt-3 text-center text-sm text-gray-600">
           {deliveryChannel === "email"
-            ? "Enter the 4-digit code sent to your email."
-            : "Enter the 4-digit code sent to your WhatsApp."}
+            ? "Enter the 6-digit code sent to your email."
+            : "Enter the 6-digit code sent to your WhatsApp."}
         </p>
         <p className="mt-1 text-center text-sm font-semibold text-gray-900">
           {maskedPhone}
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-8">
-          <div className="flex justify-center gap-4">
-            {(["d1", "d2", "d3", "d4"] as const).map((key, index) => {
-              const { ref, ...rest } = register(key);
-              return (
-                <input
-                  key={key}
-                  ref={(element) => {
-                    ref(element);
-                    setInputRef(index, element);
-                  }}
-                  inputMode="numeric"
-                  maxLength={4}
-                  disabled={isVerifying}
-                  className="h-14 w-14 rounded-xl border border-gray-200 text-center text-xl font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  {...rest}
-                  onChange={onDigitChange(index as 0 | 1 | 2 | 3, key)}
-                  onKeyDown={onKeyDown(index as 0 | 1 | 2 | 3, key)}
-                />
-              );
-            })}
+          <div className="flex justify-center gap-2">
+            {(["d1", "d2", "d3", "d4", "d5", "d6"] as const).map(
+              (key, index) => {
+                const { ref, ...rest } = register(key);
+                return (
+                  <input
+                    key={key}
+                    ref={(element) => {
+                      ref(element);
+                      setInputRef(index, element);
+                    }}
+                    inputMode="numeric"
+                    maxLength={6}
+                    disabled={isVerifying}
+                    className="h-12 w-10 rounded-xl border border-gray-200 text-center text-xl font-semibold text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    {...rest}
+                    onChange={onDigitChange(
+                      index as 0 | 1 | 2 | 3 | 4 | 5,
+                      key,
+                    )}
+                    onKeyDown={onKeyDown(index as 0 | 1 | 2 | 3 | 4 | 5, key)}
+                  />
+                );
+              },
+            )}
           </div>
 
           {!hasPhone ? (
@@ -129,7 +134,7 @@ export function OtpVerifyCard({
           </LoadingButton>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            Didn’t receive the code?{" "}
+            Didn't receive the code?{" "}
             <LoadingButton
               type="button"
               variant="secondary"
@@ -139,7 +144,9 @@ export function OtpVerifyCard({
               isLoading={isResending}
               loadingText="Resending..."
             >
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend code"}
+              {resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : "Resend code"}
             </LoadingButton>
             {resendError ? (
               <div className="mt-4">

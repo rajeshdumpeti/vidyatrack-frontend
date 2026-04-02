@@ -55,7 +55,7 @@ export function useOtpVerifyPage() {
     watch,
     formState: { isSubmitting },
   } = useForm<OtpVerifyFormValues>({
-    defaultValues: { d1: "", d2: "", d3: "", d4: "" },
+    defaultValues: { d1: "", d2: "", d3: "", d4: "", d5: "", d6: "" },
   });
 
   const watchedValues = watch();
@@ -63,7 +63,9 @@ export function useOtpVerifyPage() {
     watchedValues.d1.length === 1 &&
     watchedValues.d2.length === 1 &&
     watchedValues.d3.length === 1 &&
-    watchedValues.d4.length === 1;
+    watchedValues.d4.length === 1 &&
+    watchedValues.d5.length === 1 &&
+    watchedValues.d6.length === 1;
 
   const maskedPhone = useMemo(
     () => maskPhoneDigits(locationState.phoneDigits, countryCode),
@@ -96,26 +98,33 @@ export function useOtpVerifyPage() {
   };
 
   const handleDigitChange =
-    (index: 0 | 1 | 2 | 3, key: keyof OtpVerifyFormValues) =>
+    (index: 0 | 1 | 2 | 3 | 4 | 5, key: keyof OtpVerifyFormValues) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const raw = event.target.value;
-      const pasted = digitsFromInput(raw, 4);
+      const pasted = digitsFromInput(raw, 6);
       if (pasted.length > 1) {
-        const keys: (keyof OtpVerifyFormValues)[] = ["d1", "d2", "d3", "d4"];
+        const keys: (keyof OtpVerifyFormValues)[] = [
+          "d1",
+          "d2",
+          "d3",
+          "d4",
+          "d5",
+          "d6",
+        ];
         keys.forEach((digitKey, digitIndex) =>
           setDigit(digitKey, pasted[digitIndex] ?? ""),
         );
-        focusIndex(Math.min(pasted.length - 1, 3));
+        focusIndex(Math.min(pasted.length - 1, 5));
         return;
       }
 
       const single = digitsFromInput(raw, 1)[0] ?? "";
       setDigit(key, single);
-      if (single && index < 3) focusIndex(index + 1);
+      if (single && index < 5) focusIndex(index + 1);
     };
 
   const handleKeyDown =
-    (index: 0 | 1 | 2 | 3, key: keyof OtpVerifyFormValues) =>
+    (index: 0 | 1 | 2 | 3 | 4 | 5, key: keyof OtpVerifyFormValues) =>
     (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === "Backspace") {
         const current = getValues()[key];
@@ -130,9 +139,7 @@ export function useOtpVerifyPage() {
     if (!hasPhone) {
       logger.warn(
         "[auth][otp-verify] missing phoneDigits in navigation state",
-        {
-          trace,
-        },
+        { trace },
       );
       return;
     }
@@ -149,7 +156,6 @@ export function useOtpVerifyPage() {
           try {
             setToken(data.access_token);
 
-            // Multi-role: show role picker before loading /auth/me
             if (
               data.requires_role_selection &&
               data.available_roles.length > 1
@@ -163,11 +169,7 @@ export function useOtpVerifyPage() {
             setSchools(Array.isArray(me.schools) ? me.schools : []);
 
             const role = me.role?.toLowerCase().trim();
-
-            setAuthMeta({
-              role: role ?? null,
-              schoolId: me.school_id ?? null,
-            });
+            setAuthMeta({ role: role ?? null, schoolId: me.school_id ?? null });
 
             if (!role) {
               clearAuth();
