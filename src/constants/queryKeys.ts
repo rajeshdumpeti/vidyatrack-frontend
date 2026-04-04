@@ -1,4 +1,6 @@
 export const queryKeys = {
+  superadminDashboard: () => ["superadmin", "dashboard"] as const,
+  superadminSchools: (params: object) => ["superadmin", "schools", params] as const,
   academicSetup: (schoolId: number | null | undefined) =>
     ["academic-setup", schoolId ?? null] as const,
   classes: (schoolId: number | null | undefined) =>
