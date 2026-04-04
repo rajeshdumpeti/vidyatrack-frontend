@@ -58,6 +58,7 @@ export function PasswordLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [noPasswordSet, setNoPasswordSet] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [lockoutUntil, setLockoutUntil] = useState<string | null>(null);
   const [requires2FA, setRequires2FA] = useState(false);
@@ -86,6 +87,7 @@ export function PasswordLoginPage() {
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
+    setNoPasswordSet(false);
     setAttemptsRemaining(null);
     setIsLoading(true);
     try {
@@ -118,8 +120,15 @@ export function PasswordLoginPage() {
       if (typeof detail === "object" && detail?.code === "ACCOUNT_LOCKED") {
         setLockoutUntil(detail.lockout_until ?? null);
         setAttemptsRemaining(0);
+        setNoPasswordSet(false);
+        setServerError(null);
+      } else if (typeof detail === "object" && detail?.code === "NO_PASSWORD_SET") {
+        setNoPasswordSet(true);
+        setLockoutUntil(null);
+        setAttemptsRemaining(null);
         setServerError(null);
       } else {
+        setNoPasswordSet(false);
         setLockoutUntil(null);
         setAttemptsRemaining(
           typeof detail === "object" && detail?.attempts_remaining != null
@@ -407,6 +416,32 @@ export function PasswordLoginPage() {
                 </span>
               </label>
 
+              {/* No password set — guide to OTP / forgot password */}
+              {noPasswordSet && (
+                <div className="rounded-xl bg-blue-50 px-3 py-3">
+                  <p className="text-sm font-semibold text-blue-700">
+                    No password set on this account.
+                  </p>
+                  <p className="mt-0.5 text-xs text-blue-600">
+                    Use{" "}
+                    <Link
+                      to="/auth/otp-login"
+                      className="font-semibold underline hover:text-blue-800"
+                    >
+                      OTP login
+                    </Link>{" "}
+                    or{" "}
+                    <Link
+                      to="/auth/forgot-password"
+                      className="font-semibold underline hover:text-blue-800"
+                    >
+                      reset your password
+                    </Link>{" "}
+                    to get started.
+                  </p>
+                </div>
+              )}
+
               {/* Failed attempt warning */}
               {attemptsRemaining != null && attemptsRemaining > 0 && (
                 <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5">
@@ -422,7 +457,7 @@ export function PasswordLoginPage() {
                 </div>
               )}
 
-              {serverError && attemptsRemaining === null && (
+              {serverError && !noPasswordSet && attemptsRemaining === null && (
                 <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
                   {serverError}
                 </p>

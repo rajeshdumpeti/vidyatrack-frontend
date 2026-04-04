@@ -48,7 +48,10 @@ apiClient.interceptors.response.use(
     const status = error?.response?.status;
     const detail = error?.response?.data?.detail;
 
-    if (status === 401) {
+    const requestUrl = error?.config?.url ?? "";
+    const isAuthRequest = requestUrl.includes("/api/v1/auth/");
+
+    if (status === 401 && !isAuthRequest) {
       const { clearAuth } = useAuthStore.getState();
       const { setFlash } = useFlashStore.getState();
       clearAuth();

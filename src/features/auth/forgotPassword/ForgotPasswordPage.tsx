@@ -87,9 +87,12 @@ export function ForgotPasswordPage() {
       setSuccessMsg("Password updated successfully!");
       setStep("done");
     } catch (err: unknown) {
-      const detail = (err as { response?: { data?: { detail?: { message?: string } } } })
-        ?.response?.data?.detail;
-      setServerError(detail?.message ?? "Failed to reset password. Please try again.");
+      const detail = (
+        err as { response?: { data?: { detail?: { message?: string } } } }
+      )?.response?.data?.detail;
+      setServerError(
+        detail?.message ?? "Failed to reset password. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -115,16 +118,22 @@ export function ForgotPasswordPage() {
 
       {/* Card */}
       <div className="w-full max-w-sm rounded-2xl bg-white px-8 py-10 shadow-lg">
-
         {/* Step 1: Request OTP */}
         {step === "request" && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900">Reset your password</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Reset your password
+            </h1>
             <p className="mt-2 text-sm text-gray-500 text-center">
-              Enter your registered email address or phone number and we'll send you a recovery link.
+              Enter your registered email address or phone number and we'll send
+              you a recovery link.
             </p>
 
-            <form onSubmit={handleRequest(onRequestSubmit)} className="mt-6 space-y-4" noValidate>
+            <form
+              onSubmit={handleRequest(onRequestSubmit)}
+              className="mt-6 space-y-4"
+              noValidate
+            >
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600">
                   Email or Phone
@@ -132,13 +141,17 @@ export function ForgotPasswordPage() {
                 <div
                   className={[
                     "mt-1 flex items-center gap-2 rounded-xl border bg-gray-50 px-3 py-3",
-                    requestErrors.identifier ? "border-red-400" : "border-gray-200",
+                    requestErrors.identifier
+                      ? "border-red-400"
+                      : "border-gray-200",
                     "focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100",
                   ].join(" ")}
                 >
                   <span className="text-gray-400 text-sm">@</span>
                   <input
-                    {...registerRequest("identifier", { required: "Email or phone is required" })}
+                    {...registerRequest("identifier", {
+                      required: "Email or phone is required",
+                    })}
                     type="text"
                     placeholder="name@school.com"
                     autoComplete="username"
@@ -146,12 +159,16 @@ export function ForgotPasswordPage() {
                   />
                 </div>
                 {requestErrors.identifier && (
-                  <p className="mt-1 text-xs text-red-600">{requestErrors.identifier.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {requestErrors.identifier.message}
+                  </p>
                 )}
               </div>
 
               {serverError && (
-                <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>
+                <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {serverError}
+                </p>
               )}
 
               <LoadingButton
@@ -166,7 +183,10 @@ export function ForgotPasswordPage() {
             </form>
 
             <div className="mt-4 text-center">
-              <Link to="/auth/login" className="text-sm text-indigo-600 hover:text-indigo-700">
+              <Link
+                to="/auth/login"
+                className="text-sm text-indigo-600 hover:text-indigo-700"
+              >
                 ← Back to Login
               </Link>
             </div>
@@ -179,7 +199,8 @@ export function ForgotPasswordPage() {
             <h1 className="text-2xl font-bold text-gray-900">Enter OTP</h1>
             <p className="mt-2 text-sm text-gray-500">
               A 6-digit code was sent to{" "}
-              <span className="font-semibold text-gray-700">{identifier}</span>. Enter it below.
+              <span className="font-semibold text-gray-700">{identifier}</span>.
+              Enter it below.
             </p>
 
             <div className="mt-6">
@@ -189,13 +210,17 @@ export function ForgotPasswordPage() {
                 maxLength={6}
                 placeholder="Enter 6-digit OTP"
                 value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onChange={(e) =>
+                  setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-2xl font-bold tracking-widest text-gray-900 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
             {serverError && (
-              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>
+              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                {serverError}
+              </p>
             )}
 
             <LoadingButton
@@ -212,7 +237,11 @@ export function ForgotPasswordPage() {
 
             <button
               type="button"
-              onClick={() => { setStep("request"); setServerError(null); setOtpCode(""); }}
+              onClick={() => {
+                setStep("request");
+                setServerError(null);
+                setOtpCode("");
+              }}
               className="mt-4 block w-full text-center text-sm text-indigo-600 hover:text-indigo-700"
             >
               ← Resend or change contact
@@ -223,12 +252,19 @@ export function ForgotPasswordPage() {
         {/* Step 3: Reset password */}
         {step === "reset" && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Set new password
+            </h1>
             <p className="mt-2 text-sm text-gray-500">
-              Choose a strong password with at least 8 characters, including a letter and a number.
+              Choose a strong password with at least 8 characters, including a
+              letter and a number.
             </p>
 
-            <form onSubmit={handleReset(onResetSubmit)} className="mt-6 space-y-4" noValidate>
+            <form
+              onSubmit={handleReset(onResetSubmit)}
+              className="mt-6 space-y-4"
+              noValidate
+            >
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600">
                   New Password
@@ -246,12 +282,19 @@ export function ForgotPasswordPage() {
                     placeholder="••••••••"
                     className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
                   />
-                  <button type="button" tabIndex={-1} onClick={() => setShowPassword((s) => !s)} className="text-gray-400 hover:text-gray-600 text-xs">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="text-gray-400 hover:text-gray-600 text-xs"
+                  >
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
                 {resetErrors.new_password && (
-                  <p className="mt-1 text-xs text-red-600">{resetErrors.new_password.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {resetErrors.new_password.message}
+                  </p>
                 )}
               </div>
 
@@ -263,7 +306,9 @@ export function ForgotPasswordPage() {
                   <input
                     {...registerReset("confirm_password", {
                       required: "Please confirm your password",
-                      validate: (v) => v === watchReset("new_password") || "Passwords do not match",
+                      validate: (v) =>
+                        v === watchReset("new_password") ||
+                        "Passwords do not match",
                     })}
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
@@ -271,12 +316,16 @@ export function ForgotPasswordPage() {
                   />
                 </div>
                 {resetErrors.confirm_password && (
-                  <p className="mt-1 text-xs text-red-600">{resetErrors.confirm_password.message}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {resetErrors.confirm_password.message}
+                  </p>
                 )}
               </div>
 
               {serverError && (
-                <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">{serverError}</p>
+                <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {serverError}
+                </p>
               )}
 
               <LoadingButton
@@ -298,7 +347,9 @@ export function ForgotPasswordPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <HiShieldCheck className="h-7 w-7 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Password Updated!</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Password Updated!
+            </h1>
             <p className="mt-2 text-sm text-gray-500">{successMsg}</p>
             <Link
               to="/auth/login"

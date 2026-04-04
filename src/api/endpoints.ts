@@ -109,4 +109,8 @@ export const API_ENDPOINTS = {
   cms: {
     byContentType: (contentType: string) => `/api/v1/cms/${contentType}`,
   },
+  superadmin: {
+    dashboard: "/api/v1/superadmin/dashboard",
+    schools: "/api/v1/superadmin/schools",
+  },
 } as const;
