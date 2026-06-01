@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Check, School } from "lucide-react";
 
 import {
@@ -16,6 +17,7 @@ import {
   SelectField,
   SwitchField,
 } from "./PlatformCreateSchoolFields";
+import { lookupPincode, checkPhoneAvailability } from "@/api/schools.api";
 
 type CommonStepProps = {
   form: OnboardingForm;
@@ -43,10 +45,10 @@ export function PlatformCreateSchoolIdentityStep({
         icon={<School className="h-4 w-4 text-gray-400" />}
       />
       <Field
-        label="School Code"
+        label="School Code (Optional)"
         value={form.school_code}
         onChange={(value) => updateField("school_code", value.toUpperCase())}
-        placeholder="e.g. SXH001"
+        placeholder="Leave blank to auto-generate"
       />
       <SelectField
         label="Board"
@@ -98,16 +100,59 @@ export function PlatformCreateSchoolLocationStep({
   form,
   updateField,
 }: CommonStepProps) {
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeError, setPincodeError] = useState<string | null>(null);
+  const prevPincode = useRef("");
+
+  useEffect(() => {
+    const digits = form.pin_code.replace(/\D/g, "");
+    if (digits.length !== 6 || digits === prevPincode.current) return;
+    prevPincode.current = digits;
+    setPincodeLoading(true);
+    setPincodeError(null);
+    lookupPincode(digits)
+      .then((data) => {
+        updateField("city", data.city);
+        updateField("district", data.district);
+        updateField("state", data.state);
+        updateField("country", data.country);
+      })
+      .catch(() => setPincodeError("Could not auto-fill. Enter manually."))
+      .finally(() => setPincodeLoading(false));
+  }, [form.pin_code, updateField]);
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Field label="Street Address" value={form.street} onChange={(value) => updateField("street", value)} placeholder="123 Education Road" />
       <Field label="Area" value={form.area} onChange={(value) => updateField("area", value)} placeholder="Koramangala" />
+      <div className="relative">
+        <Field
+          label={pincodeLoading ? "Pin Code (looking up…)" : "Pin Code"}
+          value={form.pin_code}
+          onChange={(value) => updateField("pin_code", value)}
+          placeholder="560034"
+        />
+        {pincodeError && (
+          <p className="mt-1 text-xs text-amber-600">{pincodeError}</p>
+        )}
+      </div>
       <Field label="City" value={form.city} onChange={(value) => updateField("city", value)} placeholder="Bangalore" />
       <Field label="District" value={form.district} onChange={(value) => updateField("district", value)} placeholder="Bangalore Urban" />
       <Field label="State" value={form.state} onChange={(value) => updateField("state", value)} placeholder="Karnataka" />
-      <Field label="Pin Code" value={form.pin_code} onChange={(value) => updateField("pin_code", value)} placeholder="560034" />
-      <Field label="Country" value={form.country} onChange={(value) => updateField("country", value)} placeholder="India" />
+      <label>
+        <span className="mb-1.5 block text-sm font-semibold text-gray-700">Country</span>
+        <div className="flex items-center rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+          <input
+            type="text"
+            value={form.country}
+            readOnly
+            className="w-full bg-transparent text-sm text-gray-600 outline-none"
+          />
+        </div>
+      </label>
       <Field label="Landmark" value={form.landmark} onChange={(value) => updateField("landmark", value)} placeholder="Near Central Park" />
+      <Field label="Latitude (Optional)" value={form.latitude} onChange={(value) => updateField("latitude", value)} placeholder="17.3850" />
+      <Field label="Longitude (Optional)" value={form.longitude} onChange={(value) => updateField("longitude", value)} placeholder="78.4867" />
       <PhoneField label="School Phone" value={form.school_phone} onChange={(value) => updateField("school_phone", value)} />
       <Field label="School Email" value={form.school_email} onChange={(value) => updateField("school_email", value)} placeholder="contact@school.edu" />
       <Field label="Website" value={form.website} onChange={(value) => updateField("website", value)} placeholder="www.school.edu" />
@@ -119,23 +164,100 @@ export function PlatformCreateSchoolAdminStep({
   form,
   updateField,
 }: CommonStepProps) {
+  const [phoneStatus, setPhoneStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePhoneBlur = () => {
+    const digits = form.admin_phone.replace(/\D/g, "");
+    if (digits.length < 10) { setPhoneStatus("idle"); return; }
+    setPhoneStatus("checking");
+    const fullPhone = `${form.admin_phone_country}${digits.slice(-10)}`;
+    checkPhoneAvailability(fullPhone)
+      .then((res) => setPhoneStatus(res.available ? "available" : "taken"))
+      .catch(() => setPhoneStatus("idle"));
+  };
+
+  // Debounce resets on change
+  const handlePhoneChange = (value: string) => {
+    updateField("admin_phone", value);
+    setPhoneStatus("idle");
+    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <Field label="First Name" value={form.admin_first_name} onChange={(value) => updateField("admin_first_name", value)} placeholder="John" />
-      <Field label="Last Name" value={form.admin_last_name} onChange={(value) => updateField("admin_last_name", value)} placeholder="Doe" />
-      <Field label="Designation" value={form.admin_designation} onChange={(value) => updateField("admin_designation", value)} placeholder="Regional Director" />
-      <Field label="Department" value={form.admin_department} onChange={(value) => updateField("admin_department", value)} placeholder="Operations" />
-      <Field label="Employee ID" value={form.admin_employee_id} onChange={(value) => updateField("admin_employee_id", value)} placeholder="MGT001" />
-      <CountryPhoneField
-        label="Management Admin Phone"
-        value={form.admin_phone}
-        countryCode={form.admin_phone_country}
-        onCountryChange={(value) => updateField("admin_phone_country", value)}
-        onChange={(value) => updateField("admin_phone", value)}
-      />
-      <Field label="Management Admin Email" value={form.admin_email} onChange={(value) => updateField("admin_email", value)} placeholder="management@eduorg.com" />
-      <SelectField label="Language" value={form.language_preference} onChange={(value) => updateField("language_preference", value)} options={["en", "hi", "te", "ta", "kn"]} />
-      <SelectField label="Timezone" value={form.timezone} onChange={(value) => updateField("timezone", value)} options={["Asia/Kolkata", "Asia/Dubai", "Europe/London"]} />
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="First Name" value={form.admin_first_name} onChange={(value) => updateField("admin_first_name", value)} placeholder="John" />
+        <Field label="Last Name" value={form.admin_last_name} onChange={(value) => updateField("admin_last_name", value)} placeholder="Doe" />
+        <Field label="Designation" value={form.admin_designation} onChange={(value) => updateField("admin_designation", value)} placeholder="Regional Director" />
+        <Field label="Department" value={form.admin_department} onChange={(value) => updateField("admin_department", value)} placeholder="Operations" />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Employee ID</label>
+          <input
+            type="text"
+            readOnly
+            value="Auto-generated"
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+          />
+        </div>
+        <div>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <CountryPhoneField
+                label="Management Admin Phone"
+                value={form.admin_phone}
+                countryCode={form.admin_phone_country}
+                onCountryChange={(value) => updateField("admin_phone_country", value)}
+                onChange={handlePhoneChange}
+                onBlur={handlePhoneBlur}
+              />
+            </div>
+          </div>
+          {phoneStatus === "checking" && (
+            <p className="mt-1 text-xs text-gray-400">Checking availability…</p>
+          )}
+          {phoneStatus === "available" && (
+            <p className="mt-1 text-xs text-green-600">✓ Phone number is available</p>
+          )}
+          {phoneStatus === "taken" && (
+            <p className="mt-1 text-xs text-red-600">✗ This phone is already registered</p>
+          )}
+        </div>
+        <Field label="Management Admin Email" value={form.admin_email} onChange={(value) => updateField("admin_email", value)} placeholder="management@eduorg.com" />
+        <SelectField label="Language" value={form.language_preference} onChange={(value) => updateField("language_preference", value)} options={["en", "hi", "te", "ta", "kn"]} />
+        <SelectField label="Timezone" value={form.timezone} onChange={(value) => updateField("timezone", value)} options={["Asia/Kolkata", "Asia/Dubai", "Europe/London"]} />
+      </div>
+
+      {/* Send credentials via */}
+      <div>
+        <p className="mb-2 text-sm font-semibold text-gray-700">Send Login Credentials Via</p>
+        <div className="flex flex-wrap gap-3">
+          {(["sms", "email", "both"] as const).map((option) => (
+            <label
+              key={option}
+              className={[
+                "flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors",
+                form.send_credentials_via === option
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300",
+              ].join(" ")}
+            >
+              <input
+                type="radio"
+                name="send_credentials_via"
+                value={option}
+                checked={form.send_credentials_via === option}
+                onChange={() => updateField("send_credentials_via", option)}
+                className="sr-only"
+              />
+              {option === "sms" ? "SMS (Recommended)" : option === "email" ? "Email" : "Both"}
+            </label>
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-gray-400">
+          Login credentials will be sent to the admin after school creation.
+        </p>
+      </div>
     </div>
   );
 }
@@ -151,7 +273,7 @@ export function PlatformCreateSchoolAcademicStep({
         <Field label="Current Session" value={form.current_session} onChange={(value) => updateField("current_session", value)} placeholder="2025-2026" />
         <SelectField label="Academic Start Month" value={form.academic_start_month} onChange={(value) => updateField("academic_start_month", value)} options={MONTH_OPTIONS} />
         <SelectField label="Academic End Month" value={form.academic_end_month} onChange={(value) => updateField("academic_end_month", value)} options={MONTH_OPTIONS} />
-        <SelectField label="Working Days Per Week" value={form.working_days_per_week} onChange={(value) => updateField("working_days_per_week", value)} options={["5", "6", "7"]} />
+        <SelectField label="Working Days Per Week" value={form.working_days_per_week} onChange={(value) => updateField("working_days_per_week", value)} options={["5", "6"]} />
       </div>
 
       <div>

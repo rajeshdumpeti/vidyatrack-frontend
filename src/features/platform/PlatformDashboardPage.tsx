@@ -127,7 +127,7 @@ export function PlatformDashboardPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Active Schools */}
           <button
-            onClick={() => navigate("/platform/schools")}
+            onClick={() => navigate("/superadmin/schools")}
             className="group rounded-2xl border border-blue-100 bg-blue-50 p-4 text-left hover:border-blue-300 hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
@@ -144,7 +144,7 @@ export function PlatformDashboardPage() {
 
           {/* Registered Teachers */}
           <button
-            onClick={() => navigate("/platform/schools")}
+            onClick={() => navigate("/superadmin/schools")}
             className="group rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-left hover:border-emerald-300 hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
@@ -164,7 +164,7 @@ export function PlatformDashboardPage() {
 
           {/* Registered Students */}
           <button
-            onClick={() => navigate("/platform/schools")}
+            onClick={() => navigate("/superadmin/schools")}
             className="group rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-left hover:border-indigo-300 hover:shadow-md transition-all"
           >
             <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ export function PlatformDashboardPage() {
                 ))}
                 {setupAlerts.length > 5 && (
                   <button
-                    onClick={() => navigate("/platform/schools")}
+                    onClick={() => navigate("/superadmin/schools")}
                     className="text-xs font-medium text-red-600 hover:underline"
                   >
                     + {setupAlerts.length - 5} more — view all schools →
@@ -297,7 +297,7 @@ export function PlatformDashboardPage() {
       {/* ── Action Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
-          onClick={() => navigate("/platform/schools")}
+          onClick={() => navigate("/superadmin/schools")}
           className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-shadow text-left"
         >
           <div className="rounded-xl bg-blue-50 p-3">
@@ -312,7 +312,7 @@ export function PlatformDashboardPage() {
         </button>
 
         <button
-          onClick={() => navigate("/platform/schools/new")}
+          onClick={() => navigate("/superadmin/schools/add")}
           className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm hover:shadow-md transition-shadow text-left"
         >
           <div className="rounded-xl bg-green-50 p-3">

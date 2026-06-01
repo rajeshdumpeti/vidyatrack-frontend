@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createSchool, getSchools } from "@/api/schools.api";
+import { createSchool, getSchools, type CreateSchoolPayload } from "@/api/schools.api";
 
 export function useSchools(search?: string) {
   const qc = useQueryClient();
@@ -14,8 +14,7 @@ export function useSchools(search?: string) {
   });
 
   const create = useMutation({
-    mutationFn: (payload: { name: string; admin_phone: string; admin_email?: string | null; idempotencyKey?: string }) =>
-      createSchool(payload),
+    mutationFn: (payload: CreateSchoolPayload) => createSchool(payload),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["schools"] });
     },

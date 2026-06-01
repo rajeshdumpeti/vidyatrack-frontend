@@ -13,6 +13,7 @@ import {
 export type SidebarProps = {
   role?: NavRole;
   items: NavItem[];
+  profilePath?: string | null;
   onClose?: () => void;
   onToggleCollapse?: () => void;
   onLogout?: () => void;
@@ -23,6 +24,7 @@ export type SidebarProps = {
 export function Sidebar({
   role,
   items,
+  profilePath,
   onClose,
   onToggleCollapse,
   onLogout,
@@ -118,6 +120,7 @@ export function Sidebar({
         <SidebarAccountMenu
           collapsed={collapsed}
           roleTitle={roleTitle}
+          profilePath={profilePath}
           isOpen={isAccountMenuOpen}
           onToggle={() => setIsAccountMenuOpen((prev) => !prev)}
           onLogout={onLogout}

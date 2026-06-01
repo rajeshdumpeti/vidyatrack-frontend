@@ -23,7 +23,7 @@ export function useManageSchoolsPage() {
       {
         name: values.name.trim(),
         admin_phone: values.admin_phone.trim(),
-        admin_email: values.admin_email.trim() || null,
+        admin_email: values.admin_email.trim(),
       },
       {
         onSuccess: () => {

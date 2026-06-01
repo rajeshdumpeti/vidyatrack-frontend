@@ -15,6 +15,7 @@ export type SchoolMapping = {
   id: number;
   name: string;
   role: AuthRole;
+  modules_enabled?: string[];
 };
 
 export type RoleOption = {

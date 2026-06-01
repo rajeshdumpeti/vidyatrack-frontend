@@ -32,6 +32,17 @@ export type PrincipalOnboardingResendInput = {
   session_id: number;
 };
 
+export type PrincipalOnboardingSessionResult = {
+  session_id: number;
+  name: string;
+  phone_masked: string;
+  email?: string | null;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  verified_at?: string | null;
+} | null;
+
 export type PrincipalOnboardingVerifyInput = {
   school_id: number;
   session_id: number;
@@ -69,6 +80,27 @@ export type ManagementPrincipalRetryOtpResult = {
   delivery_channel?: string | null;
   otp_error_code?: string | null;
   message: string;
+};
+
+export type PrincipalOnboardingCancelInput = {
+  school_id: number;
+  session_id: number;
+};
+
+export type PrincipalOnboardingCancelResult = {
+  success: boolean;
+  message: string;
+};
+
+export type PrincipalTimelineResult = {
+  items: Array<{
+    id: string;
+    event_type: string;
+    title: string;
+    description: string;
+    status: string;
+    created_at: string;
+  }>;
 };
 
 export type PrincipalDashboardDto = {

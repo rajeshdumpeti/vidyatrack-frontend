@@ -15,6 +15,7 @@ export type StudentDto = {
   parent_name?: string | null;
   student_code?: string | null;
   status?: string | null;
+  academic_year?: string | null;
 
   // Optional fields (do NOT assume they exist everywhere)
   roll_no?: string | number;
@@ -28,13 +29,31 @@ export type StudentCreateInput = {
   first_name?: string;
   last_name?: string;
   section_id?: number;
+  status?: "DRAFT" | "ACTIVE";
+  academic_year?: string;
   parent_phone: string;
   parent_name?: string;
   date_of_birth?: string;
   gender?: string;
   roll_number?: string | number;
   admission_date?: string;
+  admission_number?: string;
+  blood_group?: string;
+  nationality?: string;
+  religion?: string;
+  caste_category?: string;
+  mother_tongue?: string;
+  aadhaar_number?: string;
+  birth_cert_number?: string;
+  previous_school_name?: string;
+  previous_school_tc_number?: string;
+  address?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  emergency_contact_phone?: string;
 };
+
+export type StudentUpdateInput = Partial<StudentCreateInput>;
 
 export type StudentImportPreviewRow = {
   row_number: number;
@@ -73,7 +92,12 @@ export type StudentPersonalDetails = {
   date_of_birth?: string | null;
   gender?: string | null;
   blood_group?: string | null;
+  nationality?: string | null;
   religion?: string | null;
+  caste_category?: string | null;
+  mother_tongue?: string | null;
+  aadhaar_number?: string | null;
+  birth_cert_number?: string | null;
   address?: string | null;
 };
 
@@ -101,9 +125,15 @@ export type StudentProfileDto = {
   public_id?: string;
   name?: string | null;
   student_code?: string | null;
+  class_id?: number | null;
   class_name?: string | null;
+  section_id?: number | null;
   section_name?: string | null;
   status?: string | null;
+  academic_year?: string | null;
+  admission_number?: string | null;
+  previous_school_name?: string | null;
+  previous_school_tc_number?: string | null;
   personal_details?: StudentPersonalDetails | null;
   guardians?: StudentGuardian[] | null;
   attendance?: StudentAttendanceSummary | null;
@@ -125,6 +155,9 @@ export type StudentReportCardDto = {
   student_code: string;
   class_name?: string | null;
   section_name?: string | null;
+  school_name?: string | null;
+  school_address?: string | null;
+  academic_year?: string | null;
   attendance_percentage: number;
   present_days: number;
   absent_days: number;

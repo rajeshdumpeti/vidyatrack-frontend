@@ -28,6 +28,7 @@ export function AppShell() {
             role={shell.role}
             breadcrumbs={shell.breadcrumbs}
             showMenuButton={shell.role !== "teacher"}
+            profilePath={shell.profilePath}
             onOpenDrawer={shell.openDrawer}
             onLogout={shell.onLogout}
           />
@@ -41,6 +42,7 @@ export function AppShell() {
                   items={shell.navItems.items}
                   collapsed={shell.isSidebarCollapsed}
                   onToggleCollapse={shell.toggleSidebarCollapse}
+                  profilePath={shell.profilePath}
                   onLogout={shell.onLogout}
                 />
               </div>
@@ -74,6 +76,7 @@ export function AppShell() {
                 role={shell.navItems.role}
                 items={shell.navItems.items}
                 onClose={shell.closeDrawer}
+                profilePath={shell.profilePath}
                 onLogout={shell.onLogout}
                 showCollapseToggle={false}
               />

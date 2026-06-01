@@ -34,6 +34,7 @@ export function useAppShell() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const schools = useAuthStore((state) => state.schools);
   const schoolsLoaded = useAuthStore((state) => state.schoolsLoaded);
+  const activeSchoolId = useAuthStore((state) => state.schoolId);
   const hardStopReason = useHardStopStore((state) => state.reason);
   const hardStopDetail = useHardStopStore((state) => state.detail);
   const clearHardStop = useHardStopStore((state) => state.clearReason);
@@ -48,17 +49,101 @@ export function useAppShell() {
   }, [clearAuth, navigate]);
 
   const navItems = useMemo(() => {
-    if (
-      role === "principal" ||
-      role === "management" ||
+    const activeSchool = activeSchoolId
+      ? schools.find((s) => s.id === activeSchoolId)
+      : null;
+    const enabled = new Set((activeSchool as { modules_enabled?: string[] } | null)?.modules_enabled ?? []);
+
+    const filterByModules = (items: { label: string; to: string }[]) => {
+      // If backend hasn't sent module info yet, don't hide anything.
+      if (!activeSchool || enabled.size === 0) return items;
+      return items.filter((item) => {
+        const path = item.to;
+        if (path.includes("/attendance")) return enabled.has("attendance");
+        if (path.includes("/marks")) return enabled.has("exams");
+        if (path.includes("/communication")) return enabled.has("communication");
+        if (path.includes("/fees")) return enabled.has("fees");
+        if (path.includes("/reports")) return enabled.has("reports");
+        return true;
+      });
+    };
+
+    const superAdminSchoolMatch =
       role === "super_admin"
-    ) {
+      ? /^\/superadmin\/schools\/([^/]+)(\/.*)?$/.exec(location.pathname)
+      : null;
+    const superAdminSchoolId = superAdminSchoolMatch?.[1] ?? null;
+    const superAdminEnabledModules = superAdminSchoolId
+      ? (() => {
+          try {
+            const raw = sessionStorage.getItem(
+              `vt_superadmin_school_modules_${superAdminSchoolId}`,
+            );
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as { enabled?: unknown };
+            return Array.isArray(parsed?.enabled)
+              ? (parsed.enabled as string[])
+              : null;
+          } catch {
+            return null;
+          }
+        })()
+      : null;
+    const superAdminEnabledSet = new Set(superAdminEnabledModules ?? []);
+
+    if (role === "super_admin") {
+      // When inside a specific school context, show a management-like "console" menu.
+      // This matches PRD expectation that Super Admin can quickly inspect module areas per school.
+      if (superAdminSchoolId) {
+        const moduleEntries: { label: string; to: string }[] = [
+          { label: "Attendance", to: `/superadmin/schools/${superAdminSchoolId}/attendance` },
+          { label: "Exams", to: `/superadmin/schools/${superAdminSchoolId}/marks` },
+          { label: "Fees", to: `/superadmin/schools/${superAdminSchoolId}/fees` },
+          { label: "Reports", to: `/superadmin/schools/${superAdminSchoolId}/reports` },
+        ].filter((item) => {
+          // If modules aren't loaded yet, show everything for discoverability.
+          if (!superAdminEnabledModules) return true;
+          if (item.label === "Attendance") return superAdminEnabledSet.has("attendance");
+          if (item.label === "Exams") return superAdminEnabledSet.has("exams");
+          if (item.label === "Fees") return superAdminEnabledSet.has("fees");
+          if (item.label === "Reports") return superAdminEnabledSet.has("reports");
+          return true;
+        });
+
+        return {
+          role,
+          items: [
+            { label: "School Directory", to: "/superadmin/schools" },
+            { label: "Overview", to: `/superadmin/schools/${superAdminSchoolId}` },
+            { label: "Academic Setup", to: `/superadmin/schools/${superAdminSchoolId}/setup/academic` },
+            { label: "Principals", to: `/superadmin/schools/${superAdminSchoolId}/principals` },
+            { label: "Onboard Staff", to: `/superadmin/schools/${superAdminSchoolId}/setup/teachers` },
+            { label: "Students", to: `/superadmin/schools/${superAdminSchoolId}/students` },
+            { label: "Teachers", to: `/superadmin/schools/${superAdminSchoolId}/teachers` },
+            ...moduleEntries,
+          ],
+        };
+      }
+      // Outside school context, keep platform-level Super Admin menu.
       return { role, items: NAV_ITEMS[role] };
+    }
+
+    if (role === "principal" || role === "management") {
+      const items = filterByModules(NAV_ITEMS[role]);
+      return { role, items };
     }
 
     logger.warn("[layout][nav] missing_or_unknown_role", { trace, role });
     return { role: undefined, items: [{ label: "Dashboard", to: "/" }] };
-  }, [role, trace]);
+  }, [role, trace, activeSchoolId, schools]);
+
+  const profilePath = useMemo(() => {
+    if (role === "management") return "/management/profile";
+    if (role === "principal") return "/principal";
+    if (role === "super_admin") return "/superadmin/overview";
+    if (role === "teacher") return "/teacher";
+    return null;
+  }, [role]);
 
   const breadcrumbs = useMemo(
     () =>
@@ -219,6 +304,7 @@ export function useAppShell() {
     shouldShowIdleModal,
     role,
     navItems,
+    profilePath,
     breadcrumbs,
     openDrawer: () => setIsDrawerOpen(true),
     closeDrawer: () => setIsDrawerOpen(false),

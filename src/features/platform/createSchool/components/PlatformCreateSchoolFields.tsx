@@ -67,12 +67,14 @@ export function CountryPhoneField({
   countryCode,
   onCountryChange,
   onChange,
+  onBlur,
 }: {
   label: string;
   value: string;
   countryCode: string;
   onCountryChange: (value: string) => void;
   onChange: (value: string) => void;
+  onBlur?: () => void;
 }) {
   return (
     <label>
@@ -92,6 +94,7 @@ export function CountryPhoneField({
           inputMode="numeric"
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
           placeholder="98765 43210"
           className="w-full bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400"
         />

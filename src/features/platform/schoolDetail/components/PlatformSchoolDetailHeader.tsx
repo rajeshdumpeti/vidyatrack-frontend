@@ -14,7 +14,7 @@ export function PlatformSchoolDetailHeader({
     <>
       <div className="flex justify-center">
         <Link
-          to="/platform/schools"
+          to="/superadmin/schools"
           className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-blue-700 hover:bg-blue-100"
         >
           <ArrowRightLeft className="h-4 w-4" />

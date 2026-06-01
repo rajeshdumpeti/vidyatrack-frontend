@@ -70,6 +70,9 @@ export function buildReportCardHtml(report: StudentReportCardDto): string {
     )
     .join("");
 
+  const schoolLine = [report.school_name, report.school_address].filter(Boolean).join(" • ");
+  const academicYearLine = report.academic_year ? `Academic Year: ${safe(report.academic_year)}` : "";
+
   return `
     <!DOCTYPE html>
     <html>
@@ -79,9 +82,13 @@ export function buildReportCardHtml(report: StudentReportCardDto): string {
         <style>
           body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 24px; color: #0f172a; background: #f1f5f9; }
           .sheet { max-width: 980px; margin: 0 auto; border-radius: 16px; background: #ffffff; border: 1px solid #dbeafe; box-shadow: 0 20px 40px rgba(2, 6, 23, 0.08); overflow: hidden; }
-          .header { display:flex; justify-content:space-between; align-items:flex-start; gap: 12px; padding: 18px 20px; background: linear-gradient(135deg, #0b6fc2, #1d4ed8); color: #eff6ff; }
-          .title { font-size: 26px; font-weight: 800; margin: 0; color: #ffffff; }
-          .meta { margin-top: 6px; font-size: 13px; color: #dbeafe; }
+          .school-header { text-align: center; padding: 18px 20px 14px; border-bottom: 2px solid #1d4ed8; background: #ffffff; }
+          .school-name { font-size: 22px; font-weight: 900; color: #1e3a8a; margin: 0 0 4px; letter-spacing: .01em; }
+          .school-sub { font-size: 12px; color: #475569; margin: 0 0 2px; }
+          .school-year { font-size: 12px; font-weight: 700; color: #1d4ed8; margin: 4px 0 0; }
+          .header { display:flex; justify-content:space-between; align-items:flex-start; gap: 12px; padding: 14px 20px; background: linear-gradient(135deg, #0b6fc2, #1d4ed8); color: #eff6ff; }
+          .title { font-size: 20px; font-weight: 800; margin: 0; color: #ffffff; }
+          .meta { margin-top: 4px; font-size: 12px; color: #dbeafe; }
           .badge { display:inline-block; padding: 6px 12px; border-radius: 999px; background:#dbeafe; color:#0b4ea2; font-weight:800; font-size:12px; }
           .print-btn { border: 1px solid #bfdbfe; background:#eff6ff; color:#1e40af; border-radius: 10px; padding: 8px 12px; font-weight: 800; cursor: pointer; }
           .metrics { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
@@ -102,12 +109,21 @@ export function buildReportCardHtml(report: StudentReportCardDto): string {
           tbody tr:hover { background: #eff6ff; }
           .overall-row td { font-weight: 800; background: #eef2ff; }
           .legend { margin: 10px 20px 0; border-radius: 10px; padding: 10px 12px; background: linear-gradient(90deg, #08b450, #16a34a); color: #ffffff; font-size: 13px; font-weight: 700; text-align: center; }
+          .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 20px 20px 0; padding: 18px 0 0; border-top: 1px solid #e2e8f0; }
+          .sig-block { text-align: center; }
+          .sig-line { border-bottom: 1px solid #334155; margin: 0 20px 6px; height: 32px; }
+          .sig-label { font-size: 12px; font-weight: 600; color: #475569; }
           .footer { margin: 14px 20px 20px; color:#64748b; font-size:12px; border-top: 1px dashed #cbd5e1; padding-top: 10px; }
           @media print { .print-btn { display:none; } }
         </style>
       </head>
       <body>
         <div class="sheet">
+          <div class="school-header">
+            <div class="school-name">${schoolLine ? safe(schoolLine) : "VidyaTrack School"}</div>
+            ${academicYearLine ? `<div class="school-year">${safe(academicYearLine)}</div>` : ""}
+          </div>
+
           <div class="header">
             <div>
               <h1 class="title">Student Report Card</h1>
@@ -155,7 +171,19 @@ export function buildReportCardHtml(report: StudentReportCardDto): string {
             </table>
           </div>
 
-          <div class="legend">A → Excellent &nbsp;&nbsp; B → Good &nbsp;&nbsp; C → Needs Support</div>
+          <div class="legend">A+ / A → Excellent &nbsp;&nbsp; B+ / B → Good &nbsp;&nbsp; C → Average &nbsp;&nbsp; D → Needs Support &nbsp;&nbsp; F → Fail</div>
+
+          <div class="signatures">
+            <div class="sig-block">
+              <div class="sig-line"></div>
+              <div class="sig-label">Class Teacher Signature</div>
+            </div>
+            <div class="sig-block">
+              <div class="sig-line"></div>
+              <div class="sig-label">Principal Signature</div>
+            </div>
+          </div>
+
           <div class="footer">Generated on: ${safe(new Date(report.generated_at).toLocaleString())}</div>
         </div>
       </body>

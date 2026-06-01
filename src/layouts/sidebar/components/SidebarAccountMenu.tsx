@@ -1,8 +1,10 @@
-import { LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import { LogOut, UserCircle2 } from "lucide-react";
 
 type SidebarAccountMenuProps = {
   collapsed: boolean;
   roleTitle: string;
+  profilePath?: string | null;
   isOpen: boolean;
   onToggle: () => void;
   onLogout?: () => void;
@@ -11,6 +13,7 @@ type SidebarAccountMenuProps = {
 export function SidebarAccountMenu({
   collapsed,
   roleTitle,
+  profilePath,
   isOpen,
   onToggle,
   onLogout,
@@ -52,6 +55,17 @@ export function SidebarAccountMenu({
           ].join(" ")}
           role="menu"
         >
+          {profilePath ? (
+            <Link
+              to={profilePath}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              role="menuitem"
+              onClick={onToggle}
+            >
+              <UserCircle2 className="h-3.5 w-3.5" />
+              Profile
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={onLogout}

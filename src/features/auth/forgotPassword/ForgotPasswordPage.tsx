@@ -125,8 +125,7 @@ export function ForgotPasswordPage() {
               Reset your password
             </h1>
             <p className="mt-2 text-sm text-gray-500 text-center">
-              Enter your registered email address or phone number and we'll send
-              you a recovery link.
+              Enter your registered email or phone and we'll send a 6-digit recovery code.
             </p>
 
             <form
@@ -178,7 +177,7 @@ export function ForgotPasswordPage() {
                 fullWidth
                 className="rounded-full bg-indigo-600 hover:bg-indigo-700"
               >
-                Send Recovery Link →
+                Send Recovery Code →
               </LoadingButton>
             </form>
 

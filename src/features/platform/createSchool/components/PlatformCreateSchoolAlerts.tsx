@@ -22,7 +22,7 @@ export function PlatformCreateSchoolAlerts({
         </div>
       ) : null}
 
-      {showCreateError ? (
+      {showCreateError && stepErrors.length === 0 ? (
         <div className="mt-6 rounded-xl border border-red-100 bg-red-50 p-4">
           <p className="text-sm font-medium text-red-600">
             Failed to create school. Admin phone might already be registered.

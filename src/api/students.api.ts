@@ -8,6 +8,7 @@ import type {
   StudentListItem,
   StudentProfileDto,
   StudentReportCardDto,
+  StudentUpdateInput,
 } from "@/types/student.types";
 import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
@@ -78,6 +79,21 @@ export async function createStudent(
 ): Promise<StudentDto> {
   const res = await apiClient.post<StudentDto>(
     API_ENDPOINTS.students.create,
+    payload,
+    {
+      params: schoolParams(schoolId),
+    },
+  );
+  return res.data;
+}
+
+export async function updateStudent(
+  studentId: string,
+  payload: StudentUpdateInput,
+  schoolId: number,
+): Promise<StudentDto> {
+  const res = await apiClient.patch<StudentDto>(
+    API_ENDPOINTS.students.detail(studentId),
     payload,
     {
       params: schoolParams(schoolId),

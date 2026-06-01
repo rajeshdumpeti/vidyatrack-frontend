@@ -24,9 +24,6 @@ export function validatePlatformCreateSchoolStep(
     if (form.school_name.trim().length < 3) {
       errors.push("School name must be at least 3 characters.");
     }
-    if (form.school_code.trim().length < 3) {
-      errors.push("School code is required.");
-    }
     if (!form.board.trim()) errors.push("Please select a board.");
     if (!form.category.trim()) errors.push("Please select a category.");
     if (!form.medium.trim()) errors.push("Please select medium.");
@@ -71,8 +68,8 @@ export function validatePlatformCreateSchoolStep(
     if (!form.academic_end_month.trim()) {
       errors.push("Academic end month is required.");
     }
-    if (!["5", "6", "7"].includes(form.working_days_per_week)) {
-      errors.push("Working days per week must be 5, 6, or 7.");
+    if (!["5", "6"].includes(form.working_days_per_week)) {
+      errors.push("Working days per week must be 5 or 6.");
     }
     if (form.class_levels.length === 0) {
       errors.push("Select at least one class level.");

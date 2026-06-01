@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  cancelPrincipalOnboarding,
   getPrincipalHistory,
+  getPrincipalOnboardingSession,
+  getPrincipalTimeline,
   getManagementPrincipalBySchool,
   resendPrincipalOnboardingOtp,
   retryManagementPrincipalOtp,
@@ -37,6 +40,9 @@ export function useRegisterManagementPrincipal() {
       await qc.invalidateQueries({
         queryKey: queryKeys.managementPrincipal(schoolId),
       });
+      await qc.invalidateQueries({
+        queryKey: ["management-principal-onboarding-session", schoolId],
+      });
     },
   });
 }
@@ -54,14 +60,24 @@ export function useVerifyPrincipalOnboarding() {
       await qc.invalidateQueries({
         queryKey: queryKeys.managementPrincipalHistory(schoolId),
       });
+      await qc.invalidateQueries({
+        queryKey: ["management-principal-onboarding-session", schoolId],
+      });
     },
   });
 }
 
 export function useResendPrincipalOnboardingOtp() {
+  const qc = useQueryClient();
+  const schoolId = useAuthStore((s) => s.schoolId);
   return useMutation({
     mutationFn: (payload: PrincipalOnboardingResendInput) =>
       resendPrincipalOnboardingOtp(payload),
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: ["management-principal-onboarding-session", schoolId],
+      });
+    },
   });
 }
 
@@ -74,9 +90,43 @@ export function usePrincipalHistory() {
   });
 }
 
+export function usePrincipalTimeline() {
+  const schoolId = useAuthStore((s) => s.schoolId);
+  return useQuery({
+    queryKey: ["management-principal-timeline", schoolId],
+    queryFn: () => getPrincipalTimeline(schoolId!),
+    enabled: Boolean(schoolId),
+  });
+}
+
+export function usePrincipalOnboardingSession() {
+  const schoolId = useAuthStore((s) => s.schoolId);
+  return useQuery({
+    queryKey: ["management-principal-onboarding-session", schoolId],
+    queryFn: () => getPrincipalOnboardingSession(schoolId!),
+    enabled: Boolean(schoolId),
+  });
+}
+
 export function useRetryManagementPrincipalOtp() {
   const schoolId = useAuthStore((s) => s.schoolId);
   return useMutation({
     mutationFn: () => retryManagementPrincipalOtp(schoolId!),
+  });
+}
+
+export function useCancelPrincipalOnboarding() {
+  const qc = useQueryClient();
+  const schoolId = useAuthStore((s) => s.schoolId);
+  return useMutation({
+    mutationFn: cancelPrincipalOnboarding,
+    onSuccess: async () => {
+      await qc.invalidateQueries({
+        queryKey: ["management-principal-onboarding-session", schoolId],
+      });
+      await qc.invalidateQueries({
+        queryKey: queryKeys.managementPrincipal(schoolId),
+      });
+    },
   });
 }

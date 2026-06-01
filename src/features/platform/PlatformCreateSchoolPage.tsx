@@ -4,16 +4,27 @@ import { PlatformCreateSchoolAlerts } from "./createSchool/components/PlatformCr
 import { PlatformCreateSchoolFooter } from "./createSchool/components/PlatformCreateSchoolFooter";
 import { PlatformCreateSchoolStepContent } from "./createSchool/components/PlatformCreateSchoolStepContent";
 import { PlatformCreateSchoolStepHeader } from "./createSchool/components/PlatformCreateSchoolSteps";
+import { PlatformCreateSchoolSuccess } from "./createSchool/components/PlatformCreateSchoolSuccess";
 import { usePlatformCreateSchool } from "./createSchool/hooks/usePlatformCreateSchool";
 
 export function PlatformCreateSchoolPage() {
   const page = usePlatformCreateSchool();
 
+  if (page.successData) {
+    return (
+      <PlatformCreateSchoolSuccess
+        data={page.successData}
+        onBackToSchools={page.navigateToSchools}
+        onCreateAnother={page.resetDraft}
+      />
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl p-6">
       <button
         type="button"
-        onClick={page.navigateBack}
+        onClick={page.navigateToSchools}
         className="mb-6 flex items-center gap-2 text-gray-500 transition-colors hover:text-gray-900"
       >
         <ArrowLeft className="h-4 w-4" />

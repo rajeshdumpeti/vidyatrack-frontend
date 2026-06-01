@@ -50,7 +50,7 @@ export function PlatformSchoolsListPage() {
           )}
         </div>
         <Link
-          to="/platform/schools/new"
+          to="/superadmin/schools/add"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-100 transition-transform active:scale-95"
         >
           <Plus className="h-5 w-5" />

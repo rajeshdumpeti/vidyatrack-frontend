@@ -58,7 +58,7 @@ function SchoolRow({ school }: { school: SuperAdminSchool }) {
 
   return (
     <Link
-      to={`/platform/schools/${school.id}?tab=overview`}
+      to={`/superadmin/schools/${school.id}`}
       className="group flex items-center justify-between gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
     >
       {/* Avatar */}

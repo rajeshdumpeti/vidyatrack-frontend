@@ -7,6 +7,7 @@ type School = {
   id: number;
   name: string;
   role: string;
+  modules_enabled?: string[];
 };
 
 type JwtPayload = {

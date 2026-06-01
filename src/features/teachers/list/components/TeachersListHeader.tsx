@@ -1,9 +1,11 @@
 export function TeachersListHeader({
   isManagement,
   onAddTeacher,
+  onExport,
 }: {
   isManagement: boolean;
   onAddTeacher: () => void;
+  onExport?: () => void;
 }) {
   return (
     <header className="px-4 pt-6">
@@ -18,13 +20,22 @@ export function TeachersListHeader({
             </p>
           </div>
           {isManagement ? (
-            <button
-              type="button"
-              className="h-10 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
-              onClick={onAddTeacher}
-            >
-              + Add Teacher
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="h-10 rounded-full border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                onClick={onExport}
+              >
+                Export CSV
+              </button>
+              <button
+                type="button"
+                className="h-10 rounded-full bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700"
+                onClick={onAddTeacher}
+              >
+                + Add Teacher
+              </button>
+            </div>
           ) : null}
         </div>
       </div>

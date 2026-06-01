@@ -10,9 +10,10 @@ type AcademicSetupShellProps = {
 };
 
 const modules = [
-  { label: "Class Preparation", to: "/management/setup/academic" },
-  { label: "Subject Catalog", to: "/management/setup/subjects" },
+  { label: "Sections", to: "/management/setup/sections" },
+  { label: "Grade Subjects", to: "/management/setup/subjects" },
   { label: "Assignment Management", to: "/management/setup/assign-subjects" },
+  { label: "Fee Plans", to: "/management/setup/fee-structure" },
 ];
 
 export function AcademicSetupShell({

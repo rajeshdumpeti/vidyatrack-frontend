@@ -2,6 +2,7 @@ import { apiClient } from "./apiClient";
 import { API_ENDPOINTS } from "./endpoints";
 import type {
   PaginatedDto,
+  CreateSchoolPayload as CreateSchoolPayloadBase,
   SchoolDashboardDto,
   SchoolDto,
   SchoolStaffListItemDto,
@@ -20,18 +21,33 @@ export async function getSchools(
   return res.data;
 }
 
-export async function createSchool(payload: {
-  name: string;
-  admin_phone: string;
-  admin_email?: string | null;
-  idempotencyKey?: string;
-}): Promise<SchoolDto> {
+export type CreateSchoolPayload = CreateSchoolPayloadBase & { idempotencyKey?: string };
+
+export async function createSchool(payload: CreateSchoolPayload): Promise<SchoolDto> {
   const { idempotencyKey, ...body } = payload;
   const res = await apiClient.post<SchoolDto>(
     API_ENDPOINTS.schools.create,
     body,
     idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined,
   );
+  return res.data;
+}
+
+export async function lookupPincode(pincode: string): Promise<{
+  pincode: string;
+  city: string;
+  district: string;
+  state: string;
+  country: string;
+  lat: number | null;
+  lng: number | null;
+}> {
+  const res = await apiClient.get(API_ENDPOINTS.schools.pincode(pincode));
+  return res.data;
+}
+
+export async function checkPhoneAvailability(phone: string): Promise<{ available: boolean; reason?: string }> {
+  const res = await apiClient.get(API_ENDPOINTS.superadmin.checkPhone, { params: { phone } });
   return res.data;
 }
 

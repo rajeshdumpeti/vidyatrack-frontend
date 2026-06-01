@@ -1,6 +1,8 @@
 import { Toast } from "@/components/feedback/Toast";
 
+import { PrincipalOnboardingStatusCard } from "./principals/components/PrincipalOnboardingStatusCard";
 import { PrincipalOtpVerifyModal } from "./principals/components/PrincipalOtpVerifyModal";
+import { PrincipalTimelineCard } from "./principals/components/PrincipalTimelineCard";
 import { PrincipalsHeader } from "./principals/components/PrincipalsHeader";
 import { PrincipalsHistoryCard } from "./principals/components/PrincipalsHistoryCard";
 import { PrincipalsRegistrationCard } from "./principals/components/PrincipalsRegistrationCard";
@@ -27,9 +29,23 @@ export function PrincipalsPage() {
           isPending={page.startMutation.isPending}
         />
 
+        <PrincipalOnboardingStatusCard
+          session={page.onboardingSessionQuery.data ?? null}
+          onOpenVerify={page.onOpenVerify}
+          onResend={page.onResend}
+          onCancel={page.onCancel}
+          isResending={page.resendMutation.isPending}
+          isCancelling={page.cancelMutation.isPending}
+        />
+
         <PrincipalsHistoryCard
           history={page.deactivated}
           isLoading={page.historyQuery.isLoading}
+        />
+
+        <PrincipalTimelineCard
+          timeline={page.timelineQuery.data}
+          isLoading={page.timelineQuery.isLoading}
         />
       </div>
 

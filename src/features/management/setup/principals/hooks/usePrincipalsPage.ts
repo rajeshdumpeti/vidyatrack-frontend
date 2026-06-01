@@ -2,8 +2,11 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  useCancelPrincipalOnboarding,
   useManagementPrincipal,
+  usePrincipalOnboardingSession,
   usePrincipalHistory,
+  usePrincipalTimeline,
   useRegisterManagementPrincipal,
   useResendPrincipalOnboardingOtp,
   useVerifyPrincipalOnboarding,
@@ -28,10 +31,13 @@ export function usePrincipalsPage() {
 
   const schoolId = useAuthStore((state) => state.schoolId);
   const principalQuery = useManagementPrincipal();
+  const onboardingSessionQuery = usePrincipalOnboardingSession();
   const historyQuery = usePrincipalHistory();
+  const timelineQuery = usePrincipalTimeline();
   const startMutation = useRegisterManagementPrincipal();
   const verifyMutation = useVerifyPrincipalOnboarding();
   const resendMutation = useResendPrincipalOnboardingOtp();
+  const cancelMutation = useCancelPrincipalOnboarding();
 
   const {
     register,
@@ -98,6 +104,14 @@ export function usePrincipalsPage() {
   };
 
   const onCloseModal = () => {
+    if (onboardingSessionQuery.data?.status === "PENDING") {
+      setPendingSession({
+        id: onboardingSessionQuery.data.session_id,
+        phoneMasked: onboardingSessionQuery.data.phone_masked,
+        expiresAt: onboardingSessionQuery.data.expires_at,
+      });
+      return;
+    }
     setPendingSession(null);
     setOtp("");
   };
@@ -120,6 +134,26 @@ export function usePrincipalsPage() {
     setToast({ variant: "info", message: response.message });
   };
 
+  const onOpenVerify = () => {
+    if (!onboardingSessionQuery.data) return;
+    setPendingSession({
+      id: onboardingSessionQuery.data.session_id,
+      phoneMasked: onboardingSessionQuery.data.phone_masked,
+      expiresAt: onboardingSessionQuery.data.expires_at,
+    });
+  };
+
+  const onCancel = async () => {
+    if (!schoolId || !onboardingSessionQuery.data) return;
+    const response = await cancelMutation.mutateAsync({
+      school_id: schoolId,
+      session_id: onboardingSessionQuery.data.session_id,
+    });
+    setPendingSession(null);
+    setOtp("");
+    setToast({ variant: "info", message: response.message });
+  };
+
   return {
     toast,
     setToast,
@@ -129,10 +163,13 @@ export function usePrincipalsPage() {
     otp,
     setOtp,
     principalQuery,
+    onboardingSessionQuery,
     historyQuery,
+    timelineQuery,
     startMutation,
     verifyMutation,
     resendMutation,
+    cancelMutation,
     register,
     handleSubmit,
     errors,
@@ -140,6 +177,8 @@ export function usePrincipalsPage() {
     onVerify,
     onCloseModal,
     onResend,
+    onOpenVerify,
+    onCancel,
     deactivated: historyQuery.data ?? [],
   };
 }

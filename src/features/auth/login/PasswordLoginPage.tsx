@@ -12,6 +12,8 @@ import { useAuthStore } from "@/store/auth.store";
 import { LoadingButton } from "@/components/ui/Button";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { NeedHelpDropdown } from "@/components/auth/NeedHelpDropdown";
+import type { SupportedCountryCode } from "@/types/auth.types";
+import { digitsOnly } from "@/utils/phone";
 
 type FormValues = {
   identifier: string;
@@ -66,6 +68,7 @@ export function PasswordLoginPage() {
   const [otpCode, setOtpCode] = useState("");
   const [is2FALoading, setIs2FALoading] = useState(false);
   const [twoFaError, setTwoFaError] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState<SupportedCountryCode>("+91");
 
   const { secondsLeft, minutes, seconds } = useCountdown(lockoutUntil);
   const isLocked = secondsLeft > 0;
@@ -82,8 +85,12 @@ export function PasswordLoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({ defaultValues: { remember_me: false } });
+
+  const identifierValue = watch("identifier");
+  const isEmailIdentifier = (identifierValue ?? "").trim().includes("@");
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
@@ -91,8 +98,29 @@ export function PasswordLoginPage() {
     setAttemptsRemaining(null);
     setIsLoading(true);
     try {
+      const rawIdentifier = values.identifier.trim();
+
+      // Disambiguate 10-digit phone numbers (IN vs US) via the UI country code.
+      // Backend normalizes and stores phones as E.164.
+      let identifierToSend = rawIdentifier;
+      if (!rawIdentifier.includes("@")) {
+        const compact = rawIdentifier.replace(/\s+/g, "");
+        if (compact.startsWith("+")) {
+          const digits = digitsOnly(compact);
+          identifierToSend = digits ? `+${digits}` : rawIdentifier;
+        } else {
+          const digits = digitsOnly(rawIdentifier);
+          if (digits.length === 10) identifierToSend = `${countryCode}${digits}`;
+          else if (
+            (digits.length === 11 && digits.startsWith("1")) ||
+            (digits.length === 12 && digits.startsWith("91"))
+          )
+            identifierToSend = `+${digits}`;
+        }
+      }
+
       const res = await apiClient.post(API_ENDPOINTS.auth.login, {
-        identifier: values.identifier.trim(),
+        identifier: identifierToSend,
         password: values.password,
         remember_me: values.remember_me,
         login_method: "password",
@@ -306,9 +334,9 @@ export function PasswordLoginPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Sign in to VidyaTrack</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Please enter your credentials to access the dashboard.
+              Enter your registered phone or email to access your dashboard.
             </p>
 
             <form
@@ -329,6 +357,22 @@ export function PasswordLoginPage() {
                   ].join(" ")}
                 >
                   <FiUser className="h-4 w-4 shrink-0 text-gray-400" />
+                  <select
+                    aria-label="Country code"
+                    value={countryCode}
+                    onChange={(e) =>
+                      setCountryCode(e.target.value as SupportedCountryCode)
+                    }
+                    disabled={isEmailIdentifier}
+                    className={[
+                      "bg-transparent text-sm font-medium text-gray-700 outline-none",
+                      isEmailIdentifier ? "opacity-40" : "",
+                    ].join(" ")}
+                  >
+                    <option value="+91">+91</option>
+                    <option value="+1">+1</option>
+                  </select>
+                  <span className="h-5 w-px bg-gray-200" />
                   <input
                     {...register("identifier", {
                       required: "Email or phone is required",
@@ -336,8 +380,16 @@ export function PasswordLoginPage() {
                         const t = v.trim();
                         if (t.includes("@")) return true;
                         const digits = t.replace(/\D/g, "");
+                        // Accept:
+                        // - 10-digit (assume IN/US based on backend normalizer)
+                        // - E.164 with '+' (8-15 digits)
+                        // - 11-digit starting with '1' (US/CA with country code)
+                        // - 12-digit starting with '91' (India with country code)
                         if (digits.length === 10) return true;
-                        return "Enter a valid email or 10-digit phone number";
+                        if (t.startsWith("+") && digits.length >= 8 && digits.length <= 15) return true;
+                        if (digits.length === 11 && digits.startsWith("1")) return true;
+                        if (digits.length === 12 && digits.startsWith("91")) return true;
+                        return "Enter a valid email or phone number";
                       },
                     })}
                     type="text"

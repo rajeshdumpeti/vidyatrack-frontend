@@ -11,6 +11,7 @@ type AppShellHeaderProps = {
   role?: string | null;
   breadcrumbs: BreadcrumbItem[];
   showMenuButton: boolean;
+  profilePath?: string | null;
   onOpenDrawer: () => void;
   onLogout: () => void;
 };
@@ -19,6 +20,7 @@ export function AppShellHeader({
   role,
   breadcrumbs,
   showMenuButton,
+  profilePath,
   onOpenDrawer,
   onLogout,
 }: AppShellHeaderProps) {
@@ -83,12 +85,24 @@ export function AppShellHeader({
       <div className="flex items-center gap-3">
         {/* Role badge */}
         {role ? (
-          <div className="hidden items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 md:flex">
-            <User className="h-3.5 w-3.5 text-gray-500" />
-            <span className="text-xs font-medium capitalize text-gray-700">
-              {role === "super_admin" ? "Super Admin" : role}
-            </span>
-          </div>
+          profilePath ? (
+            <Link
+              to={profilePath}
+              className="hidden items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 md:flex"
+            >
+              <User className="h-3.5 w-3.5 text-gray-500" />
+              <span className="text-xs font-medium capitalize text-gray-700">
+                {role === "super_admin" ? "Super Admin" : role}
+              </span>
+            </Link>
+          ) : (
+            <div className="hidden items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 md:flex">
+              <User className="h-3.5 w-3.5 text-gray-500" />
+              <span className="text-xs font-medium capitalize text-gray-700">
+                {role === "super_admin" ? "Super Admin" : role}
+              </span>
+            </div>
+          )
         ) : null}
 
         {/* Logout button */}

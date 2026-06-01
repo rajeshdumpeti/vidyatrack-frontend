@@ -1,11 +1,13 @@
 type ManagementStudentsHeaderProps = {
   onImport: () => void;
   onAdd: () => void;
+  onExport: () => void;
 };
 
 export function ManagementStudentsHeader({
   onImport,
   onAdd,
+  onExport,
 }: ManagementStudentsHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -17,6 +19,13 @@ export function ManagementStudentsHeader({
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          onClick={onExport}
+        >
+          Export CSV
+        </button>
         <button
           type="button"
           className="h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"

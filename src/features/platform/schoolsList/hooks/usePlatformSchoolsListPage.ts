@@ -7,7 +7,7 @@ import { queryKeys } from "@/constants/queryKeys";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export type SuperAdminSchool = {
-  id: number;
+  id: string;
   vt_school_id: string;
   name: string;
   initials: string;

@@ -1,6 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { getManagementStudentsExportUrl, getManagementStudentsSummary } from "@/api/managementPortfolio.api";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { LoadingState } from "@/components/feedback/LoadingState";
 import { Toast } from "@/components/feedback/Toast";
+import { useAuthStore } from "@/store/auth.store";
 
 import { ManagementStudentsCreateModal } from "./students/components/ManagementStudentsCreateModal";
 import { ManagementStudentsFilters } from "./students/components/ManagementStudentsFilters";
@@ -13,13 +17,48 @@ import { InsightState } from "@/components/feedback/InsightState";
 
 export function ManagementSetupStudentsPage() {
   const page = useManagementStudentsPage();
+  const schoolId = useAuthStore((state) => state.schoolId);
+  const summaryQuery = useQuery({
+    queryKey: ["management-portfolio-students-summary", schoolId],
+    queryFn: () => getManagementStudentsSummary(schoolId!),
+    enabled: Boolean(schoolId),
+  });
 
   return (
     <div className="px-4 py-4">
       <ManagementStudentsHeader
         onImport={page.onOpenImport}
         onAdd={() => page.setIsOpen(true)}
+        onExport={() => {
+          if (!schoolId) return;
+          window.open(getManagementStudentsExportUrl(schoolId), "_blank", "noopener,noreferrer");
+        }}
       />
+
+      {summaryQuery.data ? (
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Total Students</div>
+            <div className="mt-2 text-2xl font-black text-slate-900">{summaryQuery.data.total_students}</div>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Gender Split</div>
+            <div className="mt-2 text-sm font-semibold text-slate-900">
+              Girls {summaryQuery.data.girls_count} • Boys {summaryQuery.data.boys_count} • Other {summaryQuery.data.other_gender_count}
+            </div>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Coverage</div>
+            <div className="mt-2 text-sm font-semibold text-slate-900">
+              {summaryQuery.data.classes_covered} classes • {summaryQuery.data.sections_covered} sections
+            </div>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">New Admissions</div>
+            <div className="mt-2 text-2xl font-black text-slate-900">{summaryQuery.data.new_admissions_this_month}</div>
+          </article>
+        </div>
+      ) : null}
 
       <ManagementStudentsFilters
         search={page.search}

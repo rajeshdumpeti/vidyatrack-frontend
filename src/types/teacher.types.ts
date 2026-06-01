@@ -4,6 +4,7 @@ export type TeacherDto = {
   id: number;
   public_id?: string;
   school_id: number;
+  user_id?: number | null;
 
   name?: string | null;
   phone?: string | null;

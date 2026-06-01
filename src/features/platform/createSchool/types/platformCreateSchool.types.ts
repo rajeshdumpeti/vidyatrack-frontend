@@ -16,6 +16,8 @@ export type OnboardingForm = {
   pin_code: string;
   country: string;
   landmark: string;
+  latitude: string;
+  longitude: string;
   school_phone: string;
   school_email: string;
   website: string;
@@ -27,6 +29,7 @@ export type OnboardingForm = {
   admin_phone: string;
   admin_phone_country: string;
   admin_email: string;
+  send_credentials_via: "sms" | "email" | "both";
   language_preference: string;
   timezone: string;
   current_session: string;
